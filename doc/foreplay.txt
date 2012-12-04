@@ -1,0 +1,152 @@
+*foreplay.txt*  Clojure REPL tease
+
+Author:  Tim Pope <http://tpo.pe/>
+License: Same terms as Vim itself (see |license|)
+
+This plugin is only available if 'compatible' is not set.
+
+You need Clojure runtime files to use this plugin.  Try VimClojure.  You don't
+need the interactive stuff.
+
+CLASSPATH                                       *foreplay-classpath*
+
+Upon loading a Clojure buffer, the 'path' option is automatically set to your
+class path.  The class path is found by `lein classpath`, `mvn
+dependency:build-classpath`, or failing both of those, $CLASSPATH.
+
+Finding the class path can be slow.  To cache it across multiple invocations
+of Vim, try
+
+    set viminfo+=!
+
+LEININGEN                                       *foreplay-leiningen*
+
+Leiningen support is currently bare bones.  If a Leiningen project is found,
+'makeprg' will be set to "lein".
+
+Leiningen 2.x writes to target/repl-port when `lein repl` is invoked.  If this
+file is found, an nREPL connection will be established automatically.
+
+CONNECTING TO A REPL                            *foreplay-connect*
+
+                                                *foreplay-:Connect*
+:Connect {proto}://{host}:{port}
+                        Connect to a REPL server.
+
+:Connect                Interactively prompt for the options to connect to a
+                        REPL server.
+
+The REPL is used for the commands below. If no REPL is found for the current
+buffer, java (or $JAVA_CMD) is invoked directly (using 'path' as the class
+path), which can be quite slow depending on your setup.
+
+The only adapter shipped with foreplay.vim is for nREPL.  You need Ruby
+installed and either |if_ruby| or the ruby command in your PATH.
+
+DOCUMENTATION                                   *foreplay-documentation*
+
+                                                *foreplay-:Doc*
+:Doc {symbol}           Show the docs for the given symbol.
+
+                                                *foreplay-K*
+K                       Look up docs for keyword under cursor.
+
+                                                *foreplay-:FindDoc*
+:FindDoc {arg}          Wrapper around (clojure.repl/find-doc ...).
+
+                                                *foreplay-:Apropos*
+:Apropos {arg}          Wrapper around (clojure.repl/apropos ...).
+
+                                                *foreplay-:Source*
+:Source {symbol}        Show the source for the given symbol.
+
+                                                *foreplay-[d*
+[d                      Show source for keyword under cursor.
+]d
+
+NAVIGATING                                      *foreplay-navigating*
+
+These commands will never use a remote REPL, only a local one, as file paths
+on a remote server wouldn't be very useful locally.
+
+                                                *foreplay-[_CTRL-D*
+[<C-D>                  Jump to the source of the keyword under the cursor.
+]<C-D>
+
+                                                *foreplay-CTRL-W_CTRL-D*
+<C-W><C-D>              Jump to the source of the keyword under the cursor in
+<C-W>d                  a split.
+
+                                                *foreplay-gf*
+gf                      Go to the file for the namespace under the cursor.
+
+                                                *foreplay-:Djump*
+:Djump {symbol}         Jump to the definition for the given symbol.
+
+                                                *foreplay-:Dsplit*
+:Dsplit {symbol}        Jump to the definition for the given symbol in a
+                        split.
+
+EVALUATING CODE                                 *foreplay-eval*
+
+All code is evaluated in the namespace of the current file, requiring it if
+necessary.  If the current file sits outside the class path (project.clj, for
+example), the user namespace is used instead.
+
+                                                *foreplay-:Require*
+:Require [ns]           Require :reload the given/current namespace.
+
+                                                *foreplay-:Require!*
+:Require! [ns]          Require :reload-all the given/current namespace.
+
+                                                *foreplay-:Eval*
+:Eval                   Eval/print the outermost expression for the current
+                        line.
+
+:{range}Eval            Eval/print the given range.
+
+:Eval {expr}            Eval/print the given expression.
+
+                                                *foreplay-:Eval!*
+:[range]Eval!           Eval the given range or outermost expression and
+                        replace it with its result.
+
+:[range]Eval! {expr}    Eval the given expression and insert it after
+                        the given range or current line.
+
+                                                *foreplay-cp*
+cp{motion}              Eval/print the code indicated by {motion}.
+
+cpp                     Eval/print the inner-most expr at the cursor.
+
+                                                *foreplay-c!*
+c!{motion}              Eval/replace the code indicated by {motion}.
+
+c!!                     Eval/replace the inner-most expr at the cusror.
+
+                                                *foreplay-cqp*
+cqp                     Bring up a prompt for code to eval/print.
+
+                                                *foreplay-cqc*
+cqc                     Bring up a |command-line-window| for code to
+                        eval/print.  Equivalent to cqp<C-F>i.
+
+                                                *foreplay-cq*
+cq{motion}              Bring up a |command-line-window| with text indicated
+                        by {motion} prepopulated.
+
+And insert mode:
+
+                                                *foreplay-i_CTRL-R_(*
+<C-R>(                  Evaluate the given expression and insert the result.
+
+There's omnicomplete on |CTRL-X_CTRL-O|, which works in Clojure buffers and
+in the |command-line-window|, and tab complete at the cqp prompt.
+
+ABOUT                                           *foreplay-about*
+
+Grab the latest version or report a bug on GitHub:
+
+http://github.com/tpope/vim-foreplay
+
+ vim:tw=78:et:ft=help:norl:
