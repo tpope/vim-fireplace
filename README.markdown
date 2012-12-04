@@ -119,7 +119,7 @@ feature request is just to tell me the pain you're experiencing, and perhaps
 some ideas for what might eliminate it.  I know Vimscript; you know Clojure.
 Let's synergize.
 
-I'm a stickler for [commit messages][], so if you send me a pull request
+I'm a stickler for [commit messages][], so if you send me a pull
 request with so much as superfluous period in the subject line, I will
 reject it, then TP your house.
 
