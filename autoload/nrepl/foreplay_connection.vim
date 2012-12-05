@@ -117,6 +117,9 @@ function! s:nrepl_process(payload) dict abort
       echo substitute(packet.err, '\n$', '', '')
       echohl NONE
     endif
+    if has_key(packet, 'status') && index(packet.status, 'error') >= 0
+      throw 'nREPL: ' . tr(packet.status[0], '-', ' ')
+    endif
     if has_key(packet, 'ex') || has_key(packet, 'value')
       let result = packet
     endif
