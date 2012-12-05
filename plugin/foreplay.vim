@@ -11,7 +11,10 @@ let g:loaded_foreplay = 1
 augroup foreplay_file_type
   autocmd!
   autocmd BufNewFile,BufReadPost *.clj setfiletype clojure
-  autocmd FileType clojure let &l:path = classpath#detect()
+  autocmd FileType clojure
+        \ if expand('%:p') !~# '^zipfile:' |
+        \   let &l:path = classpath#detect() |
+        \ endif
 augroup END
 
 " }}}1
