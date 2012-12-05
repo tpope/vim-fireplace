@@ -47,14 +47,14 @@ endfunction
 function! foreplay#ns_complete(A, L, P) abort
   let matches = []
   for pattern in split(&path, ',')
-    for dir in split(glob(pattern), "\n")
+    for dir in split(glob(pattern, 1), "\n")
       if dir =~# '\.jar$' && executable('zipinfo')
         let files = split(system('zipinfo -1 '.shellescape(dir).' "*.clj"'), "\n")
         if v:shell_error
           let files = []
         endif
       else
-        let files = split(glob(dir."/**/*.clj"), "\n")
+        let files = split(glob(dir."/**/*.clj", 1), "\n")
         call map(files, 'v:val[strlen(dir)+1 : -1]')
       endif
       let matches += files

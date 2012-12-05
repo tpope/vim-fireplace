@@ -38,7 +38,7 @@ function! classpath#from_vim(path) abort
     if elem ==# ''
       let path += ['.']
     else
-      let path += split(glob(substitute(elem, '\\\ze[\\ ,]', '', 'g')), "\n")
+      let path += split(glob(substitute(elem, '\\\ze[\\ ,]', '', 'g'), 1), "\n")
     endif
   endfor
   return join(path, classpath#separator())
