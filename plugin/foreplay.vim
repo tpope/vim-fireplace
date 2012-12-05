@@ -433,7 +433,7 @@ endfunction
 
 function! s:editop(type) abort
   call feedkeys(&cedit . "\<Home>", 'n')
-  let input = s:input(substitute(s:opfunc(a:type), '\n\s*', ' ', 'g'))
+  let input = s:input(substitute(substitute(s:opfunc(a:type), "\s*;[^\n]*", '', 'g'), '\n\+\s*', ' ', 'g'))
   try
     if input !=# ''
       echo foreplay#eval(input)
