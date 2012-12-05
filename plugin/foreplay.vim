@@ -135,12 +135,13 @@ function! s:repl.eval(expr, ns) dict abort
 endfunction
 
 function! s:repl.require(lib) dict abort
-  if a:lib =~# '^\%(user\)\=$' || has_key(self.requires, a:lib)
-    return ''
+  if a:lib !~# '^\%(user\)\=$' && !get(self.requires, a:lib, 0)
+    let reload = has_key(self.requires, a:lib) ? ' :reload' : ''
+    let self.requires[a:lib] = 0
+    call self.eval('(doto '.s:qsym(a:lib).' (require'.reload.') the-ns)', 'user')
+    let self.requires[a:lib] = 1
   endif
-  let result = self.eval('(require '.s:qsym(a:lib).')', 'user')
-  let self.requires[a:lib] = 1
-  return result
+  return ''
 endfunction
 
 function! s:repl.includes_file(file) dict abort
