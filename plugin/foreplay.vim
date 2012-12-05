@@ -665,7 +665,7 @@ function! s:Edit(cmd, keyword) abort
       return a:cmd.' '.location.'|let &l:path = '.string(&l:path)
     endif
   endif
-  let v:errmsg = "Couldn't find source for ".a:keyword.': '.location
+  let v:errmsg = "Couldn't find source for ".a:keyword
   return 'echoerr v:errmsg'
 endfunction
 
