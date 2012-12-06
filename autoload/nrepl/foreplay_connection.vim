@@ -178,11 +178,13 @@ endif
 ruby <<
 require 'timeout'
 require 'socket'
-def VIM.string_encode(str)
-  '"' + str.gsub(/[\000-\037"\\]/) { |x| "\\%03o" % (x.respond_to?(:ord) ? x.ord : x[0]) } + '"'
-end
-def VIM.let(var, value)
-  VIM.command("let #{var} = #{string_encode(value)}")
+class << ::VIM
+  def string_encode(str)
+    '"' + str.gsub(/[\000-\037"\\]/) { |x| "\\%03o" % (x.respond_to?(:ord) ? x.ord : x[0]) } + '"'
+  end
+  def let(var, value)
+    VIM.command("let #{var} = #{string_encode(value)}")
+  end
 end
 .
 
