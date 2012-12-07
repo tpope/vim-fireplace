@@ -354,7 +354,7 @@ endfunction
 
 function! foreplay#eval(expr, ...) abort
   let c = s:client()
-  if !a:0
+  if !a:0 && foreplay#ns() !~# '^\%(user\)$'
     call c.require(foreplay#ns())
   endif
   return c.eval(a:expr, a:0 ? a:1 : foreplay#ns())
@@ -770,7 +770,8 @@ function! s:tons(path) abort
 endfunction
 
 function! foreplay#ns() abort
-  return s:tons(s:buffer_path())
+  let path = s:buffer_path()
+  return s:tons(path ==# '' ? 'user' : path)
 endfunction
 
 function! s:Lookup(macro, arg) abort
