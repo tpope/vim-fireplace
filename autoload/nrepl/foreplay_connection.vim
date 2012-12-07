@@ -183,7 +183,7 @@ class << ::VIM
     '"' + str.gsub(/[\000-\037"\\]/) { |x| "\\%03o" % (x.respond_to?(:ord) ? x.ord : x[0]) } + '"'
   end
   def let(var, value)
-    VIM.command("let #{var} = #{string_encode(value)}")
+    command("let #{var} = #{string_encode(value)}")
   end
 end
 .
@@ -194,18 +194,18 @@ function! s:nrepl_call(payload) dict abort
   begin
     buffer = ''
     Timeout.timeout(16) do
-      TCPSocket.open(VIM.evaluate('self.host'), VIM.evaluate('self.port').to_i) do |s|
-        s.write(VIM.evaluate('payload'))
+      TCPSocket.open(::VIM.evaluate('self.host'), ::VIM.evaluate('self.port').to_i) do |s|
+        s.write(::VIM.evaluate('payload'))
         loop do
           body = s.readpartial(8192)
           buffer << body
           break if body.include?("6:statusl4:done")
         end
-        VIM.let('out', buffer)
+        ::VIM.let('out', buffer)
       end
     end
   rescue
-    VIM.let('err', $!.to_s)
+    ::VIM.let('err', $!.to_s)
   end
 .
   if !exists('err')
