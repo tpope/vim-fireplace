@@ -563,37 +563,37 @@ function! s:histswap(list)
   return old
 endfunction
 
-nnoremap <silent> <Plug>ForeplacePrint  :<C-U>set opfunc=<SID>printop<CR>g@
-xnoremap <silent> <Plug>ForeplacePrint  :<C-U>call <SID>printop(visualmode())<CR>
+nnoremap <silent> <Plug>ForeplayPrint  :<C-U>set opfunc=<SID>printop<CR>g@
+xnoremap <silent> <Plug>ForeplayPrint  :<C-U>call <SID>printop(visualmode())<CR>
 
-nnoremap <silent> <Plug>ForeplaceFilter :<C-U>set opfunc=<SID>filterop<CR>g@
-xnoremap <silent> <Plug>ForeplaceFilter :<C-U>call <SID>filterop(visualmode())<CR>
+nnoremap <silent> <Plug>ForeplayFilter :<C-U>set opfunc=<SID>filterop<CR>g@
+xnoremap <silent> <Plug>ForeplayFilter :<C-U>call <SID>filterop(visualmode())<CR>
 
-nnoremap <silent> <Plug>ForeplaceEdit   :<C-U>set opfunc=<SID>editop<CR>g@
-xnoremap <silent> <Plug>ForeplaceEdit   :<C-U>call <SID>editop(visualmode())<CR>
+nnoremap <silent> <Plug>ForeplayEdit   :<C-U>set opfunc=<SID>editop<CR>g@
+xnoremap <silent> <Plug>ForeplayEdit   :<C-U>call <SID>editop(visualmode())<CR>
 
-nnoremap          <Plug>ForeplacePrompt :exe <SID>inputeval()<CR>
+nnoremap          <Plug>ForeplayPrompt :exe <SID>inputeval()<CR>
 
-noremap!          <Plug>ForeplaceRecall <C-R>=<SID>recall()<CR>
+noremap!          <Plug>ForeplayRecall <C-R>=<SID>recall()<CR>
 
 function! s:eval_setup() abort
   command! -buffer -bang -range=0 -nargs=? -complete=customlist,foreplay#eval_complete Eval :exe s:Eval(<bang>0, <line1>, <line2>, <count>, <q-args>)
 
-  nmap <buffer> cp <Plug>ForeplacePrint
-  xmap <buffer> cp <Plug>ForeplacePrint
-  nmap <buffer> cpp <Plug>ForeplacePrintab
+  nmap <buffer> cp <Plug>ForeplayPrint
+  xmap <buffer> cp <Plug>ForeplayPrint
+  nmap <buffer> cpp <Plug>ForeplayPrintab
 
-  nmap <buffer> c! <Plug>ForeplaceFilter
-  xmap <buffer> c! <Plug>ForeplaceFilter
-  nmap <buffer> c!! <Plug>ForeplaceFilterab
+  nmap <buffer> c! <Plug>ForeplayFilter
+  xmap <buffer> c! <Plug>ForeplayFilter
+  nmap <buffer> c!! <Plug>ForeplayFilterab
 
-  nmap <buffer> cq <Plug>ForeplaceEdit
-  nmap <buffer> cqq <Plug>ForeplaceEditab
+  nmap <buffer> cq <Plug>ForeplayEdit
+  nmap <buffer> cqq <Plug>ForeplayEditab
 
-  nmap <buffer> cqp <Plug>ForeplacePrompt
-  exe 'nmap <buffer> cqc <Plug>ForeplacePrompt' . &cedit . 'i'
+  nmap <buffer> cqp <Plug>ForeplayPrompt
+  exe 'nmap <buffer> cqc <Plug>ForeplayPrompt' . &cedit . 'i'
 
-  map! <buffer> <C-R>( <Plug>ForeplaceRecall
+  map! <buffer> <C-R>( <Plug>ForeplayRecall
 endfunction
 
 function! s:cmdwinenter()
@@ -888,7 +888,7 @@ endfunction
 
 augroup foreplay_leiningen
   autocmd!
-  autocmd User ForeplacePreConnect call s:leiningen_connect()
+  autocmd User ForeplayPreConnect call s:leiningen_connect()
   autocmd FileType clojure call s:leiningen_init()
 augroup END
 
