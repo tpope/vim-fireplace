@@ -426,11 +426,16 @@ function! s:filterop(type) abort
 endfunction
 
 function! s:printop(type) abort
+  let s:todo = s:opfunc(a:type)
+  call feedkeys("\<Plug>ForeplayPrintLast")
+endfunction
+
+function! s:print_last() abort
   try
-    echo foreplay#eval(s:opfunc(a:type))
+    echo foreplay#eval(s:todo)
   catch /^Clojure:/
-    return ''
   endtry
+  return ''
 endfunction
 
 function! s:editop(type) abort
@@ -563,6 +568,7 @@ function! s:histswap(list)
   return old
 endfunction
 
+nnoremap <silent> <Plug>ForeplayPrintLast :exe <SID>print_last()<CR>
 nnoremap <silent> <Plug>ForeplayPrint  :<C-U>set opfunc=<SID>printop<CR>g@
 xnoremap <silent> <Plug>ForeplayPrint  :<C-U>call <SID>printop(visualmode())<CR>
 
