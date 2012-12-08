@@ -582,7 +582,7 @@ nnoremap          <Plug>ForeplayPrompt :exe <SID>inputeval()<CR>
 
 noremap!          <Plug>ForeplayRecall <C-R>=<SID>recall()<CR>
 
-function! s:eval_setup() abort
+function! s:setup_eval() abort
   command! -buffer -bang -range=0 -nargs=? -complete=customlist,foreplay#eval_complete Eval :exe s:Eval(<bang>0, <line1>, <line2>, <count>, <q-args>)
 
   nmap <buffer> cp <Plug>ForeplayPrint
@@ -612,7 +612,7 @@ endfunction
 
 augroup foreplay_eval
   autocmd!
-  autocmd FileType clojure call s:eval_setup()
+  autocmd FileType clojure call s:setup_eval()
   autocmd CmdWinEnter @ if exists('s:input') | call s:cmdwinenter() | endif
   autocmd CmdWinLeave @ if exists('s:input') | call s:cmdwinleave() | endif
 augroup END
@@ -631,9 +631,15 @@ function! s:Require(bang, ns)
   endtry
 endfunction
 
+function! s:setup_require()
+  command! -buffer -bar -bang -complete=customlist,foreplay#ns_complete -nargs=? Require :exe s:Require(<bang>0, <q-args>)
+  nnoremap <silent><buffer> cpr :Require<CR>
+  nnoremap <silent><buffer> cpR :Require!<CR>
+endfunction
+
 augroup foreplay_require
   autocmd!
-  autocmd FileType clojure command! -buffer -bar -bang -complete=customlist,foreplay#ns_complete -nargs=? Require :exe s:Require(<bang>0, <q-args>)
+  autocmd FileType clojure call s:setup_require()
 augroup END
 
 " }}}1

@@ -119,6 +119,12 @@ cp{motion}              Eval/print the code indicated by {motion}.
 
 cpp                     Eval/print the inner-most expr at the cursor.
 
+                                                *foreplay-cpr*
+cpr                     Eval a require :reload form.
+
+                                                *foreplay-cpR*
+cpR                     Eval a require :reload-all form.
+
                                                 *foreplay-c!*
 c!{motion}              Eval/replace the code indicated by {motion}.
 
