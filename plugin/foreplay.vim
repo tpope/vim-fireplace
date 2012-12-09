@@ -365,7 +365,7 @@ function! foreplay#evalparse(expr) abort
         \ '(symbol ((fn *vimify [x]' .
         \ '  (cond' .
         \ '    (map? x)     (str "{" (apply str (interpose ", " (map (fn [[k v]] (str (*vimify k) ": " (*vimify v))) x))) "}")' .
-        \ '    (coll? x)    (str "[" (apply str (interpose ", " (map #(*vimify %) x))) "]")' .
+        \ '    (coll? x)    (str "[" (apply str (interpose ", " (map *vimify x))) "]")' .
         \ '    (number? x)  (pr-str x)' .
         \ '    (keyword? x) (pr-str (name x))' .
         \ '    :else        (pr-str (str x)))) '.a:expr.'))',
