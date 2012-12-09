@@ -846,7 +846,7 @@ augroup END
 
 function! s:hunt(start, anchor) abort
   let root = simplify(fnamemodify(a:start, ':p:s?[\/]$??'))
-  if !isdirectory(fnamemodify(root, ':p'))
+  if !isdirectory(fnamemodify(root, ':h'))
     return ''
   endif
   let previous = ""
