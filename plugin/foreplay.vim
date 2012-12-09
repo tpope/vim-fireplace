@@ -848,9 +848,12 @@ augroup END
 
 function! s:hunt(start, anchor) abort
   let root = simplify(fnamemodify(a:start, ':p:s?[\/]$??'))
+  if !isdirectory(fnamemodify(root, ':p'))
+    return ''
+  endif
   let previous = ""
   while root !=# previous
-    if filereadable(root . '/' .a:anchor) && isdirectory(root . '/src')
+    if filereadable(root . '/' . a:anchor) && isdirectory(root . '/src')
       return root
     endif
     let previous = root

@@ -54,7 +54,7 @@ function! classpath#detect(...) abort
     let root = simplify(fnamemodify(bufname(buffer), ':p:s?[\/]$??'))
   endif
 
-  if root =~# '^zipfile:'
+  if !isdirectory(fnamemodify(root, ':h'))
     return default
   endif
 
