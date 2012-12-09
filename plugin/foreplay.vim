@@ -586,11 +586,9 @@ function! s:setup_eval() abort
   command! -buffer -bang -range=0 -nargs=? -complete=customlist,foreplay#eval_complete Eval :exe s:Eval(<bang>0, <line1>, <line2>, <count>, <q-args>)
 
   nmap <buffer> cp <Plug>ForeplayPrint
-  xmap <buffer> cp <Plug>ForeplayPrint
   nmap <buffer> cpp <Plug>ForeplayPrintab
 
   nmap <buffer> c! <Plug>ForeplayFilter
-  xmap <buffer> c! <Plug>ForeplayFilter
   nmap <buffer> c!! <Plug>ForeplayFilterab
 
   nmap <buffer> cq <Plug>ForeplayEdit
