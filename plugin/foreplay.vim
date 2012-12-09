@@ -401,6 +401,7 @@ function! s:opfunc(type) abort
     else
       silent exe "normal! `[v`]y"
     endif
+    redraw
     return @@
   finally
     let @@ = reg_save
