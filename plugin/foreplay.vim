@@ -233,10 +233,10 @@ function! s:Connect(arg)
   endif
   let client = s:register_connection(connection)
   echo 'Connected to '.proto.'://'.arg
-  let path = exists('b:java_root') ? b:java_root : fnamemodify(expand('%'), ':p:s?.*\zs[\/]src[\/].*??')
+  let path = fnamemodify(exists('b:java_root') ? b:java_root : fnamemodify(expand('%'), ':p:s?.*\zs[\/]src[\/].*??'), ':~')
   let root = input('Path to root of project: ', path, 'dir')
   if root !=# ''
-    let s:repl_paths[root] = client
+    let s:repl_paths[fnamemodify(root, ':p:s?[\/]$??')] = client
   endif
   return ''
 endfunction
