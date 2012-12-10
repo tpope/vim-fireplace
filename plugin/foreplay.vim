@@ -236,9 +236,8 @@ function! s:Connect(arg)
   let path = exists('b:java_root') ? b:java_root : fnamemodify(expand('%'), ':p:s?.*\zs[\/]src[\/].*??')
   let root = input('Path to root of project: ', path, 'dir')
   if root !=# ''
-    let s:repls[root] = client
+    let s:repl_paths[root] = client
   endif
-  echo "\n"
   return ''
 endfunction
 
