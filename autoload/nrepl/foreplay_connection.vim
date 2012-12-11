@@ -97,7 +97,13 @@ function! nrepl#foreplay_connection#open(arg) abort
   let client = deepcopy(s:nrepl)
   let client.host = host
   let client.port = port
-  let client._path = client.eval('(symbol (str (System/getProperty "path.separator") (System/getProperty "java.class.path")))')
+  let session = client.call({'op': 'clone'})[0]['new-session']
+  let response = client.call({'op': 'eval', 'session': session, 'code':
+        \ '(do (println "success") (symbol (str (System/getProperty "path.separator") (System/getProperty "java.class.path"))))'})
+  let client._path = response[-2]['value']
+  if len(response) == 3
+    let client.session = session
+  endif
   return client
 endfunction
 
@@ -133,6 +139,9 @@ function! s:nrepl_eval(expr, ...) dict abort
     let payload.ns = a:1
   elseif has_key(self, 'ns')
     let payload.ns = self.ns
+  endif
+  if has_key(self, 'session')
+    let payload.session = self.session
   endif
   let packet = self.process(payload)
   if has_key(packet, 'value')
