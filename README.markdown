@@ -6,9 +6,8 @@ Clojure.
 
 ## Installation
 
-You'll need a set of Clojure runtime files.
-[VimClojure](http://www.vim.org/scripts/script.php?script_id=2501) is popular.
-You don't need to bother with the interactive setup.
+Foreplay.vim doesn't provide indenting or syntax highlighting, so you'll want
+[a set of Clojure runtime files](https://github.com/guns/vim-clojure-static).
 
 If you don't have a preferred installation method, I recommend
 installing [pathogen.vim](https://github.com/tpope/vim-pathogen), and
@@ -16,7 +15,7 @@ then simply copy and paste:
 
     cd ~/.vim/bundle
     git clone git://github.com/tpope/vim-foreplay.git
-    git clone git://github.com/vim-scripts/VimClojure.git
+    git clone git://github.com/guns/vim-clojure-static.git
 
 Once help tags have been generated, you can view the manual with
 `:help foreplay`.
