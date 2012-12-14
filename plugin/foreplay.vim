@@ -835,8 +835,9 @@ augroup foreplay_doc
   autocmd FileType clojure nnoremap <buffer> K  :Doc <C-R><C-W><CR>
   autocmd FileType clojure nnoremap <buffer> [d :Source <C-R><C-W><CR>
   autocmd FileType clojure nnoremap <buffer> ]d :Source <C-R><C-W><CR>
-  autocmd FileType clojure command! -buffer -nargs=1 FindDoc :exe s:Lookup('find-doc', printf('#"%s"', <q-args>))
   autocmd FileType clojure command! -buffer -nargs=1 Apropos :exe s:Apropos(<q-args>)
+  autocmd FileType clojure command! -buffer -nargs=1 FindDoc :exe s:Lookup('find-doc', printf('#"%s"', <q-args>))
+  autocmd FileType clojure command! -buffer -bar -nargs=1 Javadoc :exe s:Lookup('javadoc', <q-args>)
   autocmd FileType clojure command! -buffer -bar -nargs=1 -complete=customlist,foreplay#eval_complete Doc     :exe s:Lookup('doc', <q-args>)
   autocmd FileType clojure command! -buffer -bar -nargs=1 -complete=customlist,foreplay#eval_complete Source  :exe s:Lookup('source', <q-args>)
 augroup END

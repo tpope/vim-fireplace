@@ -48,6 +48,9 @@ DOCUMENTATION                                   *foreplay-documentation*
                                                 *foreplay-:Doc*
 :Doc {symbol}           Show the docs for the given symbol.
 
+                                                *foreplay-:Javadoc*
+:Javadoc {class}        Open the java docs for the given class in a browser.
+
                                                 *foreplay-K*
 K                       Look up docs for keyword under cursor.
 
