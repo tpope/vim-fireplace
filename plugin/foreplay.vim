@@ -457,7 +457,7 @@ function! s:Eval(bang, line1, line2, count, args) abort
     if a:count ==# 0
       normal! ^
       let line1 = searchpair('(','',')', 'bcrn', g:foreplay#skip)
-      let line2 = searchpair('(','',')', 'n', g:foreplay#skip)
+      let line2 = searchpair('(','',')', 'crn', g:foreplay#skip)
     else
       let line1 = a:line1
       let line2 = a:line2
