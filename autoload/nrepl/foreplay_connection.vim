@@ -97,11 +97,11 @@ function! nrepl#foreplay_connection#open(arg) abort
   let client = deepcopy(s:nrepl)
   let client.host = host
   let client.port = port
-  let session = client.call({'op': 'clone'})[0]['new-session']
-  let response = client.call({'op': 'eval', 'session': session, 'code':
+  let session = client.process({'op': 'clone'})['new-session']
+  let response = client.process({'op': 'eval', 'session': session, 'code':
         \ '(do (println "success") (symbol (str (System/getProperty "path.separator") (System/getProperty "java.class.path"))))'})
-  let client._path = response[-2]['value']
-  if len(response) == 3
+  let client._path = response.value
+  if has_key(response, 'out')
     let client.session = session
   endif
   return client
@@ -112,25 +112,34 @@ function! s:nrepl_path() dict abort
 endfunction
 
 function! s:nrepl_process(payload) dict abort
-  let parsed = self.call(a:payload)
-  let result = {}
-  for packet in parsed
-    if has_key(packet, 'out')
-      echo substitute(packet.out, '\n$', '', '')
-    endif
-    if has_key(packet, 'err')
-      echohl ErrorMSG
-      echo substitute(packet.err, '\n$', '', '')
-      echohl NONE
-    endif
-    if has_key(packet, 'status') && index(packet.status, 'error') >= 0
-      throw 'nREPL: ' . tr(packet.status[0], '-', ' ')
-    endif
-    if has_key(packet, 'ex') || has_key(packet, 'value')
-      let result = packet
-    endif
+  let combined = {'status': [], 'session': []}
+  for response in self.call(a:payload)
+    for key in keys(response)
+      if key ==# 'id' || key ==# 'ns'
+        let combined[key] = response[key]
+      elseif key ==# 'value'
+        let combined.value = extend(get(combined, 'value', []), [response.value])
+      elseif key ==# 'status'
+        for entry in response[key]
+          if index(combined[key], entry) < 0
+            call extend(combined[key], [entry])
+          endif
+        endfor
+      elseif key ==# 'session'
+        if index(combined[key], response[key]) < 0
+          call extend(combined[key], [response[key]])
+        endif
+      elseif type(response[key]) == type('')
+        let combined[key] = get(combined, key, '') . response[key]
+      else
+        let combined[key] = response[key]
+      endif
+    endfor
   endfor
-  return result
+  if index(combined.status, 'error') >= 0
+    throw 'nREPL: ' . tr(combined.status[0], '-', ' ')
+  endif
+  return combined
 endfunction
 
 function! s:nrepl_eval(expr, ...) dict abort
@@ -143,16 +152,26 @@ function! s:nrepl_eval(expr, ...) dict abort
   if has_key(self, 'session')
     let payload.session = self.session
   endif
-  let packet = self.process(payload)
-  if has_key(packet, 'value')
-    if !a:0
-      let self.ns = packet.ns
-    endif
-    return packet.value
-  elseif has_key(packet, 'ex')
-    let err = 'Clojure: '.packet.ex
+  let response = self.process(payload)
+  if has_key(response, 'ns') && !a:0
+    let self.ns = response.ns
+  endif
+
+  if has_key(response, 'err')
+    echohl ErrorMSG
+    echo substitute(response.err, '\n$', '', '')
+    echohl NONE
+  endif
+  if has_key(response, 'out')
+    echo substitute(response.out, '\n$', '', '')
+  endif
+
+  if has_key(response, 'ex')
+    let err = 'Clojure: '.response.ex
+  elseif has_key(response, 'value')
+    return response.value[-1]
   else
-    let err = 'nREPL: '.string(packet)
+    let err = 'nREPL: Unrecognized response '.string(response)
   endif
   throw err
 endfunction
