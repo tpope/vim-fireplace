@@ -830,9 +830,19 @@ function! s:Apropos(pattern) abort
   endif
 endfunction
 
+function! s:K()
+  let word = expand('<cword>')
+  let java_candidate = matchstr(word, '^\%(\w\+\.\)*\u\w*\ze\%(\.\|\/\w\+\)\=$')
+  if java_candidate !=# ''
+    return 'Javadoc '.java_candidate
+  else
+    return 'Doc '.word
+  endif
+endfunction
+
 augroup foreplay_doc
   autocmd!
-  autocmd FileType clojure nnoremap <buffer> K  :Doc <C-R><C-W><CR>
+  autocmd FileType clojure nnoremap <buffer> K  :<C-R>=<SID>K()<CR><CR>
   autocmd FileType clojure nnoremap <buffer> [d :Source <C-R><C-W><CR>
   autocmd FileType clojure nnoremap <buffer> ]d :Source <C-R><C-W><CR>
   autocmd FileType clojure command! -buffer -nargs=1 Apropos :exe s:Apropos(<q-args>)
