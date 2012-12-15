@@ -288,26 +288,16 @@ function! s:oneoff.eval(expr, ns) dict abort
         \   '      (spit "'.s:oneoff_ex.'" (class e))))' .
         \   '  nil)')
   let wtf = system(command)
-  let pr  = join(readfile(s:oneoff_pr, 'b'), "\n")
-  let out = join(readfile(s:oneoff_out, 'b'), "\n")
-  let err = join(readfile(s:oneoff_err, 'b'), "\n")
-  let ex  = join(readfile(s:oneoff_err, 'b'), "\n")
-  if v:shell_error && ex ==# ''
+  let result = {}
+  let result.value = join(readfile(s:oneoff_pr, 'b'), "\n")
+  let result.out   = join(readfile(s:oneoff_out, 'b'), "\n")
+  let result.err   = join(readfile(s:oneoff_err, 'b'), "\n")
+  let result.ex    = join(readfile(s:oneoff_err, 'b'), "\n")
+  call filter(result, 'v:val !=# ""')
+  if v:shell_error && result.ex ==# ''
     throw 'Error running Clojure: '.wtf
   else
-    if err !=# ''
-      echohl ErrorMSG
-      echo substitute(err, '\n$', '', '')
-      echohl None
-    endif
-    if out !=# ''
-      echo substitute(out, "\n$", '', '')
-    endif
-    if v:shell_error
-      throw 'Clojure: '.ex
-    else
-      return pr
-    endif
+    return result
   endif
 endfunction
 
@@ -353,10 +343,30 @@ endfunction
 
 function! foreplay#eval(expr, ...) abort
   let c = s:client()
+
   if !a:0 && foreplay#ns() !~# '^\%(user\)$'
     call c.require(foreplay#ns())
   endif
-  return c.eval(a:expr, a:0 ? a:1 : foreplay#ns())
+
+  let result = c.eval(a:expr, a:0 ? a:1 : foreplay#ns())
+
+  if get(result, 'err', '') !=# ''
+    echohl ErrorMSG
+    echo substitute(result.err, '\n$', '', '')
+    echohl NONE
+  endif
+  if get(result, 'out', '') !=# ''
+    echo substitute(result.out, '\n$', '', '')
+  endif
+
+  if get(result, 'ex', '') !=# ''
+    let err = 'Clojure: '.result.ex
+  elseif has_key(result, 'value')
+    return result.value
+  else
+    let err = 'foreplay.vim: Something went wrong: '.string(result)
+  endif
+  throw err
 endfunction
 
 function! foreplay#evalparse(expr) abort

@@ -157,23 +157,10 @@ function! s:nrepl_eval(expr, ...) dict abort
     let self.ns = response.ns
   endif
 
-  if has_key(response, 'err')
-    echohl ErrorMSG
-    echo substitute(response.err, '\n$', '', '')
-    echohl NONE
+  if has_key(response, 'value')
+    let response.value = response.value[-1]
   endif
-  if has_key(response, 'out')
-    echo substitute(response.out, '\n$', '', '')
-  endif
-
-  if has_key(response, 'ex')
-    let err = 'Clojure: '.response.ex
-  elseif has_key(response, 'value')
-    return response.value[-1]
-  else
-    let err = 'nREPL: Unrecognized response '.string(response)
-  endif
-  throw err
+  return response
 endfunction
 
 function! s:nrepl_call(payload) dict abort
