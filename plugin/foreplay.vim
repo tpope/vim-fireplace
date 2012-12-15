@@ -664,7 +664,7 @@ function! foreplay#source(symbol) abort
         \ '            (if (= "jar" (.getProtocol url))' .
         \ '              (str "zip" (.replaceFirst (.getFile url) "!/" "::"))' .
         \ '              (.getFile url)))))))'
-  let result = get(split(c.eval(cmd, foreplay#ns()), "\n"), 0, '')
+  let result = get(split(c.eval(cmd, foreplay#ns()).value, "\n"), 0, '')
   return result ==# 'nil' ? '' : result
 endfunction
 

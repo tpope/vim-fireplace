@@ -100,7 +100,7 @@ function! nrepl#foreplay_connection#open(arg) abort
   let session = client.process({'op': 'clone'})['new-session']
   let response = client.process({'op': 'eval', 'session': session, 'code':
         \ '(do (println "success") (symbol (str (System/getProperty "path.separator") (System/getProperty "java.class.path"))))'})
-  let client._path = response.value
+  let client._path = response.value[-1]
   if has_key(response, 'out')
     let client.session = session
   endif
