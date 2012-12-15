@@ -152,6 +152,28 @@ And insert mode:
 There's omnicomplete on |CTRL-X_CTRL-O|, which works in Clojure buffers and
 in the |command-line-window|, and tab complete at the cqp prompt.
 
+The omnicompletion algorithm works as follows: First, it splits the text
+it's trying to complete around the periods and slash (if there is one).
+Each of those pieces will be used to match the completion target in that
+location. The first letter in each piece must be the same as the first
+letter in the target; the other letters must appear in the same order,
+but with any letters in between. For example, "clj" would match "clojure",
+but "ojr" would not match "clojure". Then, it tries to find a namespace,
+alias, var, or qualified var that matches the pattern. If there's nothing
+between 2 separators, anything can go there.
+
+Examples:
+"clj.c" matches "clojure.core"
+"clj.c/flt" matches "clojure.core/filter"
+"cl./def" matches "clojure.core/defn"
+"./pprint" matches "clojure.core/pprint"
+"rq" matches "require"
+"../sh" matches "clojure.java.shell/shell"
+"./sh" DOES NOT match "clojure.java.shell/shell", because it has the wrong
+       number of namespace parts.
+
+Omincompletion is not aware of Java packages and classes.
+
 ABOUT                                           *foreplay-about*
 
 Grab the latest version or report a bug on GitHub:
