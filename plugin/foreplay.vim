@@ -61,6 +61,27 @@ function! foreplay#ns_complete(A, L, P) abort
   return filter(map(matches, 's:tons(v:val)'), 'a:A ==# "" || a:A ==# v:val[0 : strlen(a:A)-1]')
 endfunction
 
+" This turns a string (potentially with '.' separators into a fuzzy-matching
+" regex. This is where fuzzy matching behavior is defined.
+function! foreplay#fuzzy(base)
+  let not_dot = '[^.]*'
+  let regex = ''
+  let anchor = 1 " means that the next char must be in the next position
+  for i in range(strlen(a:base))
+    let c = a:base[i]
+    if c ==# '.'
+      let regex .= not_dot.'\.'
+      let anchor = 1
+    elseif anchor
+      let regex .= c
+      let anchor = 0
+    else
+      let regex .= not_dot.c
+    endif
+  endfor
+  return '^'.regex.not_dot.'$'
+endfunction
+
 function! foreplay#omnicomplete(findstart, base) abort
   if a:findstart
     let line = getline('.')[0 : col('.')-2]
@@ -77,21 +98,32 @@ function! foreplay#omnicomplete(findstart, base) abort
             \ '(sort-by :word (map '.omnifier.' (ns-map '.s:qsym(ns).')))]')
 
       if a:base =~# '^[^/]*/[^/]*$'
-        let ns = matchstr(a:base, '^.*\ze/')
-        let prefix = ns . '/'
-        let ns = get(aliases, ns, ns)
-        let keyword = matchstr(a:base, '.*/\zs.*')
-        let results = foreplay#evalparse(
-              \ '(sort-by :word (map '.omnifier.' (ns-publics '.s:qsym(ns).')))')
-        for r in results
-          let r.word = prefix . r.word
+        " This branch generates completions when there's a qualified var
+        let ns_fuzzy = foreplay#fuzzy(matchstr(a:base, '^.*\ze/'))
+        let name_fuzzy = foreplay#fuzzy(matchstr(a:base, '/\zs.*$'))
+        let results = []
+        for ns in filter(namespaces + keys(aliases), 'v:val =~# ns_fuzzy')
+          let lookup_ns = ns
+          if has_key(aliases, ns) "if alias, must use actual ns for lookup
+            let lookup_ns = get(aliases, ns)
+          endif
+          let results = results + foreplay#evalparse(
+                \ '(->> (ns-publics '.s:qsym(lookup_ns).')' .
+                \ '(filter #(re-matches #"'.name_fuzzy.'" (name (key %))))' .
+                \ '(map (fn [[k v]] [(str "'.ns.'" \/ (name k)) v]))' .
+                \ '(map '.omnifier.')' .
+                \ '(sort-by :word))')
         endfor
       else
-        let keyword = a:base
-        let results = maps + map(sort(keys(aliases) + namespaces), '{"word": v:val."/", "kind": "t", "info": ""}')
+        " This branch handles completions for namespaces, aliases, and vars
+        let fuzzy_base = foreplay#fuzzy(a:base)
+        let results = maps + map(sort(keys(aliases) + namespaces),
+                                \ '{"word": v:val, "kind": "t", "info": ""}')
+        let results = filter(results,
+                                \ 'a:base ==# "" || v:val.word =~# fuzzy_base')
       endif
       if type(results) == type([])
-        return filter(results, 'a:base ==# "" || a:base ==# v:val.word[0 : strlen(a:base)-1]')
+        return results
       else
         return []
       endif
