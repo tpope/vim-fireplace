@@ -22,8 +22,7 @@ Once help tags have been generated, you can view the manual with
 
 ## Features
 
-This list isn't exhaustive; see the `:help` for details.  Any snark resembling
-actual plugins is purely coincidental.
+This list isn't exhaustive; see the `:help` for details.
 
 ### Transparent setup
 
@@ -32,10 +31,7 @@ based on `target/repl-port`, otherwise it's just a `:Connect` away.  You can
 connect to multiple instances of nREPL for different projects, and it will
 use the right one automatically.
 
-You don't need a custom built nailgun client.  You don't need a lein plugin.
-You don't need to run some specialized server in a separate terminal, then
-kill and restart it each time you switch projects because the port is hard
-coded.
+The only external dependency is that you have Ruby installed.
 
 Oh, and if you don't have an nREPL connection, it falls back to using
 `java clojure.main`, using a class path based on your Leiningen or Maven
