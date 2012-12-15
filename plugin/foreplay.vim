@@ -139,8 +139,8 @@ function! s:repl.require(lib) dict abort
   if a:lib !~# '^\%(user\)\=$' && !get(self.requires, a:lib, 0)
     let reload = has_key(self.requires, a:lib) ? ' :reload' : ''
     let self.requires[a:lib] = 0
-    call self.eval('(doto '.s:qsym(a:lib).' (require'.reload.') the-ns)', 'user')
-    let self.requires[a:lib] = 1
+    let result = self.eval('(doto '.s:qsym(a:lib).' (require'.reload.') the-ns)', 'user')
+    let self.requires[a:lib] = !has_key(result, 'ex')
   endif
   return ''
 endfunction
@@ -724,7 +724,7 @@ function! foreplay#findfile(path) abort
           \ '(if-let [ns ((ns-aliases *ns*) '.s:qsym(path).')]' .
           \ '  (str (.replace (.replace (str (ns-name ns)) "-" "_") "." "/") ".clj")' .
           \ '  "'.path.'.clj")')
-    let result = get(split(c.eval(aliascmd, foreplay#ns()), "\n"), 0, '')
+    let result = get(split(c.eval(aliascmd, foreplay#ns()).value, "\n"), 0, '')
   else
     if path !~# '/'
       let path = tr(path, '.-', '/_')
@@ -733,7 +733,7 @@ function! foreplay#findfile(path) abort
       let path .= '.clj'
     endif
 
-    let result = get(split(c.eval(printf(cmd, '"'.escape(path, '"').'"'), foreplay#ns()), "\n"), 0, '')
+    let result = get(split(c.eval(printf(cmd, '"'.escape(path, '"').'"'), foreplay#ns()).value, "\n"), 0, '')
 
   endif
   if result ==# ''
