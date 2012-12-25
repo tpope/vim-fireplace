@@ -872,7 +872,7 @@ function! s:Apropos(pattern) abort
   if empty(matches)
     return ''
   endif
-  let choice = s:inputlist('Lookup docs for:', matches)
+  let choice = s:inputlist('Look up docs for:', matches)
   if choice !=# ''
     return 'echo "\n"|Doc '.choice
   else
