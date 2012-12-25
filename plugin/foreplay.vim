@@ -581,6 +581,8 @@ function! s:setup_eval() abort
   nmap <buffer> cp <Plug>ForeplayPrint
   nmap <buffer> cpp <Plug>ForeplayPrintab
 
+  nmap <buffer> cpf :%Eval<CR>
+
   nmap <buffer> c! <Plug>ForeplayFilter
   nmap <buffer> c!! <Plug>ForeplayFilterab
 

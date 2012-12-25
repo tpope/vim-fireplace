@@ -59,7 +59,7 @@ Standard stuff here.  `:Eval` evaluates a range (`:%Eval` gets the whole
 file), `:Require` requires a namespace with `:reload` (`:Require!` does
 `:reload-all`), either the current buffer or a given argument.  There's a `cp`
 operator that evaluates a given motion (`cpp` for the expression under the
-cursor).
+cursor, `cpf` for the entire buffer).
 
 ### Navigating and Comprehending
 
