@@ -575,6 +575,9 @@ noremap!          <Plug>ForeplayRecall <C-R>=<SID>recall()<CR>
 function! s:setup_eval() abort
   command! -buffer -bang -range=0 -nargs=? -complete=customlist,foreplay#eval_complete Eval :exe s:Eval(<bang>0, <line1>, <line2>, <count>, <q-args>)
 
+  command! -buffer Repl :call foreplay#repl#create("user")
+  command! -buffer ReplHere :call foreplay#repl#create(foreplay#ns())
+
   nmap <buffer> cp <Plug>ForeplayPrint
   nmap <buffer> cpp <Plug>ForeplayPrintab
 
