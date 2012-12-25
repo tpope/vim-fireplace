@@ -826,7 +826,7 @@ function! foreplay#ns() abort
   while lnum < line('$') && getline(lnum) =~# '^\s*\%(;.*\)\=$'
     let lnum += 1
   endwhile
-  let ns = matchstr(getline(lnum), '\C^(in-ns ''\zs\k\+\ze)')
+  let ns = matchstr(getline(lnum), '\C^(\s*\%(in-ns\s*''\|ns\s\+\)\zs\k\+\ze')
   if ns !=# ''
     return ns
   endif
