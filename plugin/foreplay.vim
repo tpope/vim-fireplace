@@ -38,6 +38,18 @@ endfunction
 " }}}1
 " Completion {{{1
 
+let s:jar_contents = {}
+
+function! foreplay#jar_contents(path) abort
+  if !has_key(s:jar_contents, a:path) && executable('zipinfo')
+    let s:jar_contents[a:path] = split(system('zipinfo -1 '.shellescape(a:path)), "\n")
+    if v:shell_error
+      return []
+    endif
+  endif
+  return copy(get(s:jar_contents, a:path, []))
+endfunction
+
 function! foreplay#eval_complete(A, L, P) abort
   let prefix = matchstr(a:A, '\%(.* \|^\)\%(#\=[\[{('']\)*')
   let keyword = a:A[strlen(prefix) : -1]
@@ -47,11 +59,8 @@ endfunction
 function! foreplay#ns_complete(A, L, P) abort
   let matches = []
   for dir in classpath#split(classpath#from_vim(&path))
-    if dir =~# '\.jar$' && executable('zipinfo')
-      let files = split(system('zipinfo -1 '.shellescape(dir).' "*.clj"'), "\n")
-      if v:shell_error
-        let files = []
-      endif
+    if dir =~# '\.jar$'
+      let files = filter(foreplay#jar_contents(dir), 'v:val =~# "\\.clj$"')
     else
       let files = split(glob(dir."/**/*.clj", 1), "\n")
       call map(files, 'v:val[strlen(dir)+1 : -1]')
