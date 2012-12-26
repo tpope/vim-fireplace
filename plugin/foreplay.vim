@@ -333,9 +333,9 @@ function! s:oneoff.eval(expr, ns) dict abort
   let result.value = join(readfile(s:oneoff_pr, 'b'), "\n")
   let result.out   = join(readfile(s:oneoff_out, 'b'), "\n")
   let result.err   = join(readfile(s:oneoff_err, 'b'), "\n")
-  let result.ex    = join(readfile(s:oneoff_err, 'b'), "\n")
-  call filter(result, 'v:val !=# ""')
-  if v:shell_error && result.ex ==# ''
+  let result.ex    = join(readfile(s:oneoff_ex, 'b'), "\n")
+  call filter(result, '!empty(v:val)')
+  if v:shell_error && get(result, 'ex', '') ==# ''
     throw 'Error running Clojure: '.wtf
   else
     return result
