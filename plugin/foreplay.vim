@@ -266,6 +266,7 @@ let s:oneoff = {}
 
 let s:oneoff_pr  = tempname()
 let s:oneoff_ex  = tempname()
+let s:oneoff_stk = tempname()
 let s:oneoff_in  = tempname()
 let s:oneoff_out = tempname()
 let s:oneoff_err = tempname()
@@ -283,6 +284,7 @@ function! s:oneoff.eval(expr, ns) dict abort
   endif
   call writefile([], s:oneoff_pr, 'b')
   call writefile([], s:oneoff_ex, 'b')
+  call writefile([], s:oneoff_stk, 'b')
   call writefile(split('(do '.a:expr.')', "\n"), s:oneoff_in, 'b')
   call writefile([], s:oneoff_out, 'b')
   call writefile([], s:oneoff_err, 'b')
@@ -294,7 +296,8 @@ function! s:oneoff.eval(expr, ns) dict abort
         \   '    (require ''clojure.repl) '.ns.'(spit "'.s:oneoff_pr.'" (pr-str (eval (read-string (slurp "'.s:oneoff_in.'")))))' .
         \   '    (catch Exception e' .
         \   '      (spit *err* (.toString e))' .
-        \   '      (spit "'.s:oneoff_ex.'" (class e))))' .
+        \   '      (spit "'.s:oneoff_ex.'" (class e))' .
+        \   '      (spit "'.s:oneoff_stk.'" (apply str (interpose "\n" (.getStackTrace e))))))' .
         \   '  nil)')
   let wtf = system(command)
   let result = {}
@@ -302,6 +305,7 @@ function! s:oneoff.eval(expr, ns) dict abort
   let result.out   = join(readfile(s:oneoff_out, 'b'), "\n")
   let result.err   = join(readfile(s:oneoff_err, 'b'), "\n")
   let result.ex    = join(readfile(s:oneoff_ex, 'b'), "\n")
+  let result.stacktrace = readfile(s:oneoff_stk)
   call filter(result, '!empty(v:val)')
   if v:shell_error && get(result, 'ex', '') ==# ''
     throw 'Error running Clojure: '.wtf
