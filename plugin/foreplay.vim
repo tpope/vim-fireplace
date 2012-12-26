@@ -775,6 +775,9 @@ function! s:tons(path) abort
 endfunction
 
 function! foreplay#ns() abort
+  if exists('b:repl_namespace')
+    return b:repl_namespace
+  endif
   let lnum = 1
   while lnum < line('$') && getline(lnum) =~# '^\s*\%(;.*\)\=$'
     let lnum += 1
