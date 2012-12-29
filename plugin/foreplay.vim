@@ -563,6 +563,22 @@ function! s:inputeval() abort
   endif
 endfunction
 
+function! s:inputevalloop() abort
+  while 1
+    let input = s:input('')
+    if input ==# ''
+      return ''
+    else
+      try
+        echo "\n".foreplay#eval(input)
+      catch /^Clojure:/
+      catch
+        return 'echoerr '.string(v:exception)
+      endtry
+    endif
+  endwhile
+endfunction
+
 function! s:recall() abort
   try
     cnoremap <expr> ) <SID>inputclose()
@@ -602,6 +618,7 @@ nnoremap <silent> <Plug>ForeplayEdit   :<C-U>set opfunc=<SID>editop<CR>g@
 xnoremap <silent> <Plug>ForeplayEdit   :<C-U>call <SID>editop(visualmode())<CR>
 
 nnoremap          <Plug>ForeplayPrompt :exe <SID>inputeval()<CR>
+nnoremap          <Plug>ForeplayLoop :exe <SID>inputevalloop()<CR>
 
 noremap!          <Plug>ForeplayRecall <C-R>=<SID>recall()<CR>
 
@@ -618,6 +635,7 @@ function! s:setup_eval() abort
   nmap <buffer> cqq <Plug>ForeplayEditab
 
   nmap <buffer> cqp <Plug>ForeplayPrompt
+  nmap <buffer> cqP <Plug>ForeplayLoop
   exe 'nmap <buffer> cqc <Plug>ForeplayPrompt' . &cedit . 'i'
 
   map! <buffer> <C-R>( <Plug>ForeplayRecall
