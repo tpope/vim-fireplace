@@ -863,7 +863,7 @@ endfunction
 
 function! s:K()
   let word = expand('<cword>')
-  let java_candidate = matchstr(word, '^\%(\w\+\.\)*\u\w*\ze\%(\.\|\/\w\+\)\=$')
+  let java_candidate = matchstr(word, '^\%(\w\+\.\)*\u\l\w*\ze\%(\.\|\/\w\+\)\=$')
   if java_candidate !=# ''
     return 'Javadoc '.java_candidate
   else
