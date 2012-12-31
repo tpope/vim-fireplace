@@ -168,7 +168,9 @@ function! s:nrepl_call(payload) dict abort
         \ 'begin;' .
         \ 'TCPSocket.open(%(' . self.host . '), ' . self.port . ') {|s|' .
         \ 's.write(ARGV.first); loop {' .
-        \ 'body = s.readpartial(8192); print body;' .
+        \ 'body = s.readpartial(8192);' .
+        \ 'raise %(not an nREPL server: upgrade to Leiningen 2) if body =~ /=> $/;' .
+        \ 'print body;' .
         \ 'break if body.include?(%(6:statusl4:done)) }};' .
         \ 'rescue; abort $!.to_s;' .
         \ 'end') . ' ' .
@@ -213,6 +215,7 @@ function! s:nrepl_call(payload) dict abort
         s.write(::VIM.evaluate('payload'))
         loop do
           body = s.readpartial(8192)
+          raise "not an nREPL server: upgrade to Leiningen 2" if body =~ /=> $/
           buffer << body
           break if body.include?("6:statusl4:done")
         end
