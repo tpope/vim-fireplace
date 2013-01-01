@@ -104,7 +104,7 @@ function! classpath#detect(...) abort
       if &verbose
         echomsg 'Determining class path with '.cmd.' ...'
       endif
-      let out = system('cd ' . shellescape(root) . ' && ' . cmd)
+      let out = system('cd ' . shellescape(root) . (&shell =~? 'cmd' ? '; ' : ' && ') . cmd)
     catch /^Vim:Interrupt/
       return default
     endtry
