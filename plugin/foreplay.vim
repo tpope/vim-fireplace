@@ -18,7 +18,7 @@ augroup foreplay_file_type
 augroup END
 
 " }}}1
-" Shell escaping {{{1
+" Escaping {{{1
 
 function! foreplay#shellesc(arg) abort
   if a:arg =~ '^[A-Za-z0-9_/.-]\+$'
@@ -33,6 +33,10 @@ function! foreplay#shellesc(arg) abort
       return escaped
     endif
   endif
+endfunction
+
+function! s:str(string)
+  return '"' . escape(a:string, '"\') . '"'
 endfunction
 
 " }}}1
@@ -290,14 +294,14 @@ function! s:oneoff.eval(expr, ns) dict abort
   call writefile([], s:oneoff_err, 'b')
   let command = g:java_cmd.' -cp '.shellescape(self.classpath).' clojure.main -e ' .
         \ foreplay#shellesc(
-        \   '(binding [*out* (java.io.FileWriter. "'.s:oneoff_out.'")' .
-        \   '          *err* (java.io.FileWriter. "'.s:oneoff_err.'")]' .
+        \   '(binding [*out* (java.io.FileWriter. '.s:str(s:oneoff_out).')' .
+        \   '          *err* (java.io.FileWriter. '.s:str(s:oneoff_err).')]' .
         \   '  (try' .
-        \   '    (require ''clojure.repl) '.ns.'(spit "'.s:oneoff_pr.'" (pr-str (eval (read-string (slurp "'.s:oneoff_in.'")))))' .
+        \   '    (require ''clojure.repl) '.ns.'(spit '.s:str(s:oneoff_pr).' (pr-str (eval (read-string (slurp '.s:str(s:oneoff_in).')))))' .
         \   '    (catch Exception e' .
         \   '      (spit *err* (.toString e))' .
-        \   '      (spit "'.s:oneoff_ex.'" (class e))' .
-        \   '      (spit "'.s:oneoff_stk.'" (apply str (interpose "\n" (.getStackTrace e))))))' .
+        \   '      (spit '.s:str(s:oneoff_ex).' (class e))' .
+        \   '      (spit '.s:str(s:oneoff_stk).' (apply str (interpose "\n" (.getStackTrace e))))))' .
         \   '  nil)')
   let wtf = system(command)
   let result = {}
