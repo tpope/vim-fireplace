@@ -920,7 +920,7 @@ function! s:leiningen_connect()
     let s:leiningen_repl_ports[b:leiningen_root] = getftime(portfile)
     try
       call s:register_connection(nrepl#foreplay_connection#open(port), b:leiningen_root)
-    catch /^nREPL: Connection/
+    catch /^nREPL: .*[Cc]onnection/
       call delete(portfile)
     endtry
   endif
