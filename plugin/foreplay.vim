@@ -853,7 +853,7 @@ function! s:Apropos(pattern) abort
   else
     let pattern = '"' . a:pattern . '"'
   endif
-  let matches = foreplay#evalparse('(apropos '.pattern.')')
+  let matches = foreplay#evalparse('(clojure.repl/apropos '.pattern.')')
   if empty(matches)
     return ''
   endif
