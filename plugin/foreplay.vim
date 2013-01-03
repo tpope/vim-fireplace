@@ -819,7 +819,10 @@ function! foreplay#ns() abort
   while lnum < line('$') && getline(lnum) =~# '^\s*\%(;.*\)\=$'
     let lnum += 1
   endwhile
-  let ns = matchstr(getline(lnum), '\C^(\s*\%(in-ns\s*''\|ns\s\+\)\zs[A-Za-z0-9_?*!+/=<>.-]\+\ze')
+  let lines = join(getline(lnum, lnum+10), ' ')
+  let lines = substitute(lines, '"\%(\\.\|[^"]\)*"', '', 'g')
+  let lines = substitute(lines, '\^\={[^{}]*}', '', '')
+  let ns = matchstr(lines, '\C^(\s*\%(in-ns\s*''\|ns\s\+\)\zs[A-Za-z0-9_?*!+/=<>.-]\+\ze')
   if ns !=# ''
     return ns
   endif
