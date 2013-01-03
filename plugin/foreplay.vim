@@ -704,6 +704,10 @@ function! s:Edit(cmd, keyword) abort
   return 'echoerr v:errmsg'
 endfunction
 
+nnoremap <silent> <Plug>ForeplayDjump :<C-U>exe <SID>Edit('edit', expand('<cword>'))<CR>
+nnoremap <silent> <Plug>ForeplayDsplit :<C-U>exe <SID>Edit('split', expand('<cword>'))<CR>
+nnoremap <silent> <Plug>ForeplayDtabjump :<C-U>exe <SID>Edit('tabedit', expand('<cword>'))<CR>
+
 augroup foreplay_source
   autocmd!
   autocmd FileType clojure setlocal includeexpr=tr(v:fname,'.-','/_')
@@ -711,11 +715,11 @@ augroup foreplay_source
   autocmd FileType clojure setlocal define=^\\s*(def\\w*
   autocmd FileType clojure command! -bar -buffer -nargs=1 -complete=customlist,foreplay#eval_complete Djump  :exe s:Edit('edit', <q-args>)
   autocmd FileType clojure command! -bar -buffer -nargs=1 -complete=customlist,foreplay#eval_complete Dsplit :exe s:Edit('split', <q-args>)
-  autocmd FileType clojure nnoremap <silent><buffer> [<C-D>     :<C-U>exe <SID>Edit('edit', expand('<cword>'))<CR>
-  autocmd FileType clojure nnoremap <silent><buffer> ]<C-D>     :<C-U>exe <SID>Edit('edit', expand('<cword>'))<CR>
-  autocmd FileType clojure nnoremap <silent><buffer> <C-W><C-D> :<C-U>exe <SID>Edit('split', expand('<cword>'))<CR>
-  autocmd FileType clojure nnoremap <silent><buffer> <C-W>d     :<C-U>exe <SID>Edit('split', expand('<cword>'))<CR>
-  autocmd FileType clojure nnoremap <silent><buffer> <C-W>gd    :<C-U>exe <SID>Edit('tabedit', expand('<cword>'))<CR>
+  autocmd FileType clojure nmap <buffer> [<C-D>     <Plug>ForeplayDjump
+  autocmd FileType clojure nmap <buffer> ]<C-D>     <Plug>ForeplayDjump
+  autocmd FileType clojure nmap <buffer> <C-W><C-D> <Plug>ForeplayDsplit
+  autocmd FileType clojure nmap <buffer> <C-W>d     <Plug>ForeplayDsplit
+  autocmd FileType clojure nmap <buffer> <C-W>gd    <Plug>ForeplayDtabedit
 augroup END
 
 " }}}1
@@ -875,11 +879,14 @@ function! s:K()
   endif
 endfunction
 
+nnoremap <Plug>ForeplayK :<C-R>=<SID>K()<CR><CR>
+nnoremap <Plug>ForeplaySource :Source <C-R><C-W><CR>
+
 augroup foreplay_doc
   autocmd!
-  autocmd FileType clojure nnoremap <buffer> K  :<C-R>=<SID>K()<CR><CR>
-  autocmd FileType clojure nnoremap <buffer> [d :Source <C-R><C-W><CR>
-  autocmd FileType clojure nnoremap <buffer> ]d :Source <C-R><C-W><CR>
+  autocmd FileType clojure nmap <buffer> K  <Plug>ForeplayK
+  autocmd FileType clojure nmap <buffer> [d <Plug>ForeplaySource
+  autocmd FileType clojure nmap <buffer> ]d <Plug>ForeplaySource
   autocmd FileType clojure command! -buffer -nargs=1 Apropos :exe s:Apropos(<q-args>)
   autocmd FileType clojure command! -buffer -nargs=1 FindDoc :exe s:Lookup('clojure.repl', 'find-doc', printf('#"%s"', <q-args>))
   autocmd FileType clojure command! -buffer -bar -nargs=1 Javadoc :exe s:Lookup('clojure.java.javadoc', 'javadoc', <q-args>)
