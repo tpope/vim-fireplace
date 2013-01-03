@@ -17,6 +17,10 @@ augroup foreplay_file_type
         \ endif
 augroup END
 
+if &viminfo !~# '!'
+  set viminfo+=!
+endif
+
 " }}}1
 " Escaping {{{1
 
