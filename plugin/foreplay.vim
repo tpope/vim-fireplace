@@ -66,7 +66,7 @@ endfunction
 
 function! foreplay#ns_complete(A, L, P) abort
   let matches = []
-  for dir in classpath#split(classpath#from_vim(&path))
+  for dir in foreplay#client().path()
     if dir =~# '\.jar$'
       let files = filter(foreplay#jar_contents(dir), 'v:val =~# "\\.clj$"')
     else
@@ -141,6 +141,10 @@ function! s:qsym(symbol)
   endif
 endfunction
 
+function! s:repl.path() dict abort
+  return self.connection.path()
+endfunction
+
 function! s:repl.eval(expr, ns) dict abort
   try
     let result = self.connection.eval(a:expr, a:ns)
@@ -164,7 +168,7 @@ endfunction
 
 function! s:repl.includes_file(file) dict abort
   let file = substitute(a:file, '\C^zipfile:\(.*\)::', '\1/', '')
-  for path in self.connection.path()
+  for path in self.path()
     if file[0 : len(path)-1] ==? path
       return 1
     endif
@@ -271,6 +275,10 @@ if !exists('g:java_cmd')
 endif
 
 let s:oneoff = {}
+
+function! s:oneoff.path() dict abort
+  return classpath#split(classpath#from_vim(self.classpath))
+endfunction
 
 let s:oneoff_pr  = tempname()
 let s:oneoff_ex  = tempname()
