@@ -536,7 +536,8 @@ function! s:actually_input(...)
 endfunction
 
 function! s:input(default) abort
-  if !exists('g:FOREPLAY_HISTORY')
+  if !exists('g:FOREPLAY_HISTORY') || type(g:FOREPLAY_HISTORY) != type([])
+    unlet! g:FOREPLAY_HISTORY
     let g:FOREPLAY_HISTORY = []
   endif
   try
@@ -595,7 +596,7 @@ function! s:recall() abort
   endtry
 endfunction
 
-function! s:histswap(list)
+function! s:histswap(list) abort
   let old = []
   for i in range(1, histnr('@') * (histnr('@') > 0))
     call extend(old, [histget('@', i)])
