@@ -408,6 +408,14 @@ function! foreplay#eval(expr) abort
   throw err
 endfunction
 
+function! foreplay#evalprint(expr) abort
+  try
+    echo foreplay#eval(a:expr)
+  catch /^Clojure:/
+  endtry
+  return ''
+endfunction
+
 function! foreplay#evalparse(expr) abort
   let response = s:eval(
         \ '(symbol ((fn *vimify [x]' .
@@ -485,23 +493,16 @@ function! s:printop(type) abort
 endfunction
 
 function! s:print_last() abort
-  try
-    echo foreplay#eval(s:todo)
-  catch /^Clojure:/
-  endtry
+  call foreplay#evalprint(s:todo)
   return ''
 endfunction
 
 function! s:editop(type) abort
   call feedkeys(&cedit . "\<Home>", 'n')
   let input = s:input(substitute(substitute(s:opfunc(a:type), "\s*;[^\n]*", '', 'g'), '\n\+\s*', ' ', 'g'))
-  try
-    if input !=# ''
-      echo foreplay#eval(input)
-    endif
-  catch /^Clojure:/
-    return ''
-  endtry
+  if input !=# ''
+    call foreplay#evalprint(input)
+  endif
 endfunction
 
 function! s:Eval(bang, line1, line2, count, args) abort
@@ -524,9 +525,9 @@ function! s:Eval(bang, line1, line2, count, args) abort
       exe line1.','.line2.'delete _'
     endif
   endif
-  try
-    let result = foreplay#eval(expr)
-    if a:bang
+  if a:bang
+    try
+      let result = foreplay#eval(expr)
       if a:args !=# ''
         call append(a:line1, result)
         exe a:line1
@@ -534,11 +535,11 @@ function! s:Eval(bang, line1, line2, count, args) abort
         call append(a:line1-1, result)
         exe a:line1-1
       endif
-    else
-      echo result
-    endif
-  catch /^Clojure:/
-  endtry
+    catch /^Clojure:/
+    endtry
+  else
+    call foreplay#evalprint(expr)
+  endif
   return ''
 endfunction
 
@@ -584,14 +585,7 @@ function! s:inputeval() abort
   if input ==# ''
     return ''
   else
-    try
-      echo foreplay#eval(input)
-      return ''
-    catch /^Clojure:/
-      return ''
-    catch
-      return 'echoerr '.string(v:exception)
-    endtry
+    call foreplay#evalprint(input)
   endif
 endfunction
 
