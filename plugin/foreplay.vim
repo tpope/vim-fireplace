@@ -145,9 +145,9 @@ function! s:repl.path() dict abort
   return self.connection.path()
 endfunction
 
-function! s:repl.eval(expr, ns) dict abort
+function! s:repl.eval(expr, options) dict abort
   try
-    let result = self.connection.eval(a:expr, a:ns)
+    let result = self.connection.eval(a:expr, a:options)
   catch /^\w\+: Connection/
     call filter(s:repl_paths, 'v:val isnot self')
     call filter(s:repls, 'v:val isnot self')
@@ -160,7 +160,7 @@ function! s:repl.require(lib) dict abort
   if a:lib !~# '^\%(user\)\=$' && !get(self.requires, a:lib, 0)
     let reload = has_key(self.requires, a:lib) ? ' :reload' : ''
     let self.requires[a:lib] = 0
-    let result = self.eval('(doto '.s:qsym(a:lib).' (require'.reload.') the-ns)', 'user')
+    let result = self.eval('(doto '.s:qsym(a:lib).' (require'.reload.') the-ns)', {'ns': 'user', 'session': 0})
     let self.requires[a:lib] = !has_key(result, 'ex')
   endif
   return ''
@@ -287,14 +287,14 @@ let s:oneoff_in  = tempname()
 let s:oneoff_out = tempname()
 let s:oneoff_err = tempname()
 
-function! s:oneoff.eval(expr, ns) dict abort
-  if &verbose
+function! s:oneoff.eval(expr, options) dict abort
+  if &verbose && get(options, 'session', 1)
     echohl WarningMSG
     echomsg "No REPL found. Running java clojure.main ..."
     echohl None
   endif
-  if a:ns !=# '' && a:ns !=# 'user'
-    let ns = '(require '.s:qsym(a:ns).') (in-ns '.s:qsym(a:ns).') '
+  if a:options.ns !=# '' && a:options.ns !=# 'user'
+    let ns = '(require '.s:qsym(options).') (in-ns '.s:qsym(options).') '
   else
     let ns = ''
   endif
@@ -370,36 +370,46 @@ function! foreplay#local_client(...)
   return extend({'classpath': cp}, s:oneoff)
 endfunction
 
-function! foreplay#eval(expr, ...) abort
-  let c = s:client()
-
-  if !a:0 && foreplay#ns() !~# '^\%(user\)$'
-    call c.require(foreplay#ns())
-  endif
-
-  let result = c.eval(a:expr, a:0 ? a:1 : foreplay#ns())
-
-  if get(result, 'err', '') !=# ''
+function! s:output_response(response) abort
+  if get(a:response, 'err', '') !=# ''
     echohl ErrorMSG
-    echo substitute(result.err, '\n$', '', '')
+    echo substitute(a:response.err, '\n$', '', '')
     echohl NONE
   endif
-  if get(result, 'out', '') !=# ''
-    echo substitute(result.out, '\n$', '', '')
+  if get(a:response, 'out', '') !=# ''
+    echo substitute(a:response.out, '\n$', '', '')
   endif
+endfunction
 
-  if get(result, 'ex', '') !=# ''
-    let err = 'Clojure: '.result.ex
-  elseif has_key(result, 'value')
-    return result.value
+function! s:eval(expr, ...) abort
+  let options = a:0 ? copy(a:1) : {}
+  let client = get(options, 'client', s:client())
+  if !has_key(options, 'ns')
+    if foreplay#ns() !~# '^\%(user\)$'
+      call client.require(foreplay#ns())
+    endif
+    let options.ns = foreplay#ns()
+  endif
+  return client.eval(a:expr, options)
+endfunction
+
+function! foreplay#eval(expr) abort
+  let response = s:eval(a:expr, {'session': 1})
+
+  call s:output_response(response)
+
+  if get(response, 'ex', '') !=# ''
+    let err = 'Clojure: '.response.ex
+  elseif has_key(response, 'value')
+    return response.value
   else
-    let err = 'foreplay.vim: Something went wrong: '.string(result)
+    let err = 'foreplay.vim: Something went wrong: '.string(response)
   endif
   throw err
 endfunction
 
 function! foreplay#evalparse(expr) abort
-  let body = foreplay#eval(
+  let response = s:eval(
         \ '(symbol ((fn *vimify [x]' .
         \ '  (cond' .
         \ '    (map? x)     (str "{" (apply str (interpose ", " (map (fn [[k v]] (str (*vimify k) ": " (*vimify v))) x))) "}")' .
@@ -407,12 +417,17 @@ function! foreplay#evalparse(expr) abort
         \ '    (number? x)  (pr-str x)' .
         \ '    (keyword? x) (pr-str (name x))' .
         \ '    :else        (pr-str (str x)))) '.a:expr.'))',
-        \ a:0 ? a:1 : foreplay#ns())
-  if body ==# ''
-    return ''
+        \ {'session': 0})
+  call s:output_response(response)
+
+  if get(response, 'ex', '') !=# ''
+    let err = 'Clojure: '.response.ex
+  elseif has_key(response, 'value')
+    return empty(response.value) ? '' : eval(response.value)
   else
-    return eval(body)
+    let err = 'foreplay.vim: Something went wrong: '.string(response)
   endif
+  throw err
 endfunction
 
 " }}}1
@@ -453,7 +468,7 @@ function! s:filterop(type) abort
   let reg_save = @@
   try
     let expr = s:opfunc(a:type)
-    let @@ = matchstr(expr, '^\n\+').foreplay#eval(expr, foreplay#ns()).matchstr(expr, '\n\+$')
+    let @@ = matchstr(expr, '^\n\+').foreplay#eval(expr).matchstr(expr, '\n\+$')
     if @@ !~# '^\n*$'
       normal! gvp
     endif
@@ -684,8 +699,7 @@ augroup END
 " Go to source {{{1
 
 function! foreplay#source(symbol) abort
-  let c = foreplay#local_client()
-  call c.require(foreplay#ns())
+  let options = {'client': foreplay#local_client(), 'ns': foreplay#ns(), 'session': 0}
   let cmd =
         \ "  (when-let [v (resolve " . s:qsym(a:symbol) .')]' .
         \ '    (when-let [filepath (:file (meta v))]' .
@@ -694,7 +708,7 @@ function! foreplay#source(symbol) abort
         \ '            (if (= "jar" (.getProtocol url))' .
         \ '              (str "zip" (.replaceFirst (.getFile url) "!/" "::"))' .
         \ '              (.getFile url)))))))'
-  let result = get(split(c.eval(cmd, foreplay#ns()).value, "\n"), 0, '')
+  let result = get(split(s:eval(cmd, options).value, "\n"), 0, '')
   return result ==# 'nil' ? '' : result
 endfunction
 
@@ -739,8 +753,7 @@ augroup END
 " Go to file {{{1
 
 function! foreplay#findfile(path) abort
-  let c = foreplay#local_client()
-  call c.require(foreplay#ns())
+  let options = {'client': foreplay#local_client(), 'ns': foreplay#ns(), 'session': 0}
 
   let cmd =
         \ '(symbol' .
@@ -758,7 +771,7 @@ function! foreplay#findfile(path) abort
           \ '(if-let [ns ((ns-aliases *ns*) '.s:qsym(path).')]' .
           \ '  (str (.replace (.replace (str (ns-name ns)) "-" "_") "." "/") ".clj")' .
           \ '  "'.path.'.clj")')
-    let result = get(split(c.eval(aliascmd, foreplay#ns()).value, "\n"), 0, '')
+    let result = get(split(s:eval(aliascmd, options).value, "\n"), 0, '')
   else
     if path !~# '/'
       let path = tr(path, '.-', '/_')
@@ -767,7 +780,7 @@ function! foreplay#findfile(path) abort
       let path .= '.clj'
     endif
 
-    let result = get(split(c.eval(printf(cmd, '"'.escape(path, '"').'"'), foreplay#ns()).value, "\n"), 0, '')
+    let result = get(split(s:eval(printf(cmd, '"'.escape(path, '"').'"'), options).value, "\n"), 0, '')
 
   endif
   if result ==# ''

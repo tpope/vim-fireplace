@@ -144,13 +144,20 @@ endfunction
 
 function! s:nrepl_eval(expr, ...) dict abort
   let payload = {"op": "eval", "code": a:expr}
-  if a:0
-    let payload.ns = a:1
+  let options = a:0 ? a:1 : {}
+  if has_key(options, 'ns')
+    let payload.ns = options.ns
   elseif has_key(self, 'ns')
     let payload.ns = self.ns
   endif
-  if has_key(self, 'session')
-    let payload.session = self.session
+  if get(options, 'session', 1)
+    if has_key(self, 'session')
+      let payload.session = self.session
+    elseif &verbose
+      echohl WarningMSG
+      echo "nREPL: server has bug preventing session support"
+      echohl None
+    endif
   endif
   let response = self.process(payload)
   if has_key(response, 'ns') && !a:0
