@@ -195,10 +195,7 @@ let s:nrepl = {
       \ 'path': s:function('s:nrepl_path'),
       \ 'process': s:function('s:nrepl_process')}
 
-if !has('ruby')
-  finish
-endif
-
+if has('ruby')
 ruby <<
 require 'timeout'
 require 'socket'
@@ -238,5 +235,64 @@ function! s:nrepl_call(payload) dict abort
   endif
   throw 'nREPL: '.err
 endfunction
+
+finish
+endif
+
+if has('python')
+python << EOF
+import vim
+import socket
+import string
+import re
+
+def foreplay_string_encode(input):
+  str_list = []
+  for c in input:
+    if (000 <= ord(c) and ord(c) <= 037) or c == '"' or c == "\\":
+      str_list.append("\\{0:03o}".format(ord(c)))
+    else:
+      str_list.append(c)
+  return '"' + ''.join(str_list) + '"'
+
+def foreplay_let(var, value):
+  return vim.command('let ' + var + " = " + foreplay_string_encode(value))
+
+def foreplay_repl_interact():
+  buffer = ''
+  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  s.settimeout(16.0)
+  try:
+    host = vim.eval('self.host')
+    port = int(vim.eval('self.port'))
+    s.connect((host, port))
+    s.sendall(vim.eval('payload'))
+    while True:
+      body = s.recv(8192)
+      if re.search("=> $", body) != None:
+        raise Exception("not an nREPL server: upgrade to Leiningen 2")
+      buffer += body
+      if string.find(body, '6:statusl4:done') != -1:
+        break
+    foreplay_let('out', buffer)
+  except Exception, e:
+    foreplay_let('err', str(e))
+  finally:
+    s.close()
+EOF
+
+function! s:nrepl_call(payload) dict abort
+  let payload = nrepl#foreplay_connection#bencode(a:payload)
+  python << EOF
+foreplay_repl_interact()
+EOF
+  if !exists('err')
+    return nrepl#foreplay_connection#bdecode('l'.out.'e')
+  endif
+  throw 'nREPL: '.err
+endfunction
+
+finish
+endif
 
 " vim:set et sw=2:
