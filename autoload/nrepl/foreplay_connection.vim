@@ -1,4 +1,4 @@
-" nrepl/foreplay_connection.vim
+" autoload/nrepl/foreplay_connection.vim
 " Maintainer:   Tim Pope <http://tpo.pe/>
 
 if exists("g:autoloaded_nrepl_foreplay_connection") || &cp
