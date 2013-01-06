@@ -582,11 +582,10 @@ endfunction
 function! s:inputeval() abort
   let input = s:input('')
   redraw
-  if input ==# ''
-    return ''
-  else
+  if input !=# ''
     call foreplay#evalprint(input)
   endif
+  return ''
 endfunction
 
 function! s:recall() abort
