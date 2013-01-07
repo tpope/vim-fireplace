@@ -16,21 +16,6 @@ augroup END
 " }}}1
 " Escaping {{{1
 
-function! foreplay#shellesc(arg) abort
-  if a:arg =~ '^[A-Za-z0-9_/.-]\+$'
-    return a:arg
-  elseif &shell =~# 'cmd'
-    return '"'.substitute(substitute(a:arg, '"', '""', 'g'), '%', '"%"', 'g').'"'
-  else
-    let escaped = shellescape(a:arg)
-    if &shell =~# 'sh' && &shell !~# 'csh'
-      return substitute(escaped, '\\\n', '\n', 'g')
-    else
-      return escaped
-    endif
-  endif
-endfunction
-
 function! s:str(string)
   return '"' . escape(a:string, '"\') . '"'
 endfunction
@@ -297,7 +282,7 @@ function! s:oneoff.eval(expr, options) dict abort
   call writefile([], s:oneoff_out, 'b')
   call writefile([], s:oneoff_err, 'b')
   let command = g:java_cmd.' -cp '.shellescape(self.classpath).' clojure.main -e ' .
-        \ foreplay#shellesc(
+        \ shellescape(
         \   '(binding [*out* (java.io.FileWriter. '.s:str(s:oneoff_out).')' .
         \   '          *err* (java.io.FileWriter. '.s:str(s:oneoff_err).')]' .
         \   '  (try' .
