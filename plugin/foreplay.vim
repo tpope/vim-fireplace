@@ -370,62 +370,8 @@ function! s:eval(expr, ...) abort
   return client.eval(a:expr, options)
 endfunction
 
-function! s:temp_response(response) abort
-  let output = []
-  if get(a:response, 'out', '') !=# ''
-    let output = map(split(a:response.out, "\n"), '";".v:val')
-  endif
-  if has_key(a:response, 'value')
-    let output += [a:response.value]
-  endif
-  let temp = tempname().'.clj'
-  call writefile(output, temp)
-  return temp
-endfunction
-
-if !exists('s:history')
-  let s:history = []
-endif
-
-if !exists('s:qffiles')
-  let s:qffiles = {}
-endif
-
-function! s:qfentry(entry) abort
-  if !has_key(a:entry, 'tempfile')
-    let a:entry.tempfile = s:temp_response(a:entry.response)
-  endif
-  let s:qffiles[a:entry.tempfile] = a:entry
-  return {'filename': a:entry.tempfile, 'text': a:entry.code}
-endfunction
-
-function! s:qfhistory() abort
-  let list = []
-  for entry in s:history
-    if !has_key(entry, 'tempfile')
-      let entry.tempfile = s:temp_response(entry.response)
-    endif
-    call extend(list, [s:qfentry(entry)])
-  endfor
-  return list
-endfunction
-
-function! s:previewwindow()
-  for nr in range(1, winnr('$'))
-    if getwinvar(nr, '&previewwindow')
-      return nr
-    endif
-  endfor
-endfunction
-
 function! foreplay#eval(expr) abort
   let response = s:eval(a:expr, {'session': 1})
-
-  call extend(s:history, [{'buffer': bufnr(''), 'code': a:expr, 'ns': foreplay#ns(), 'response': response}])
-  let pwin = s:previewwindow()
-  if pwin && has_key(s:qffiles, bufname(winbufnr(pwin)))
-    call setloclist(pwin, [s:qfentry(s:history[-1])], 'a')
-  endif
 
   call s:output_response(response)
 
@@ -440,25 +386,10 @@ function! foreplay#eval(expr) abort
 endfunction
 
 function! foreplay#evalprint(expr) abort
-  let pwin = s:previewwindow()
-  if s:previewwindow()
-    try
-      silent call foreplay#eval(a:expr)
-    catch /^Clojure:/
-    endtry
-    let nr = winnr()
-    wincmd p
-    wincmd P
-    call setloclist(pwin, s:qfhistory())
-    llast
-    wincmd p
-    exe nr.'wincmd w'
-  else
-    try
-      echo foreplay#eval(a:expr)
-    catch /^Clojure:/
-    endtry
-  endif
+  try
+    echo foreplay#eval(a:expr)
+  catch /^Clojure:/
+  endtry
   return ''
 endfunction
 
