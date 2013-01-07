@@ -14,10 +14,10 @@ Upon loading a Clojure buffer, the 'path' option is automatically set to your
 class path.  The class path is found by `lein classpath`, `mvn
 dependency:build-classpath`, or failing both of those, $CLASSPATH.
 
-Finding the class path can be slow.  To cache it across multiple invocations
-of Vim, try
+This behavior is going away soon.  Install classpath.vim if you'd like to keep
+it.
 
-    set viminfo+=!
+        https://github.com/tpope/vim-classpath
 
 LEININGEN                                       *foreplay-leiningen*
 
@@ -37,8 +37,8 @@ CONNECTING TO A REPL                            *foreplay-connect*
                         REPL server.
 
 The REPL is used for the commands below. If no REPL is found for the current
-buffer, java (or $JAVA_CMD) is invoked directly (using 'path' as the class
-path), which can be quite slow depending on your setup.
+buffer and classpath.vim is installed, java (or $JAVA_CMD) is invoked
+directly, which can be quite slow depending on your setup.
 
 The only adapter shipped with foreplay.vim is for nREPL.  You need Ruby
 installed and either |if_ruby| or the ruby command in your PATH.
