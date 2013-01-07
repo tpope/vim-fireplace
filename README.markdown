@@ -8,6 +8,7 @@ Clojure.
 
 Foreplay.vim doesn't provide indenting or syntax highlighting, so you'll want
 [a set of Clojure runtime files](https://github.com/guns/vim-clojure-static).
+You might also want [classpath.vim][] to run code when no REPL is available.
 
 If you don't have a preferred installation method, I recommend
 installing [pathogen.vim](https://github.com/tpope/vim-pathogen), and
@@ -15,6 +16,7 @@ then simply copy and paste:
 
     cd ~/.vim/bundle
     git clone git://github.com/tpope/vim-foreplay.git
+    git clone git://github.com/tpope/vim-classpath.git
     git clone git://github.com/guns/vim-clojure-static.git
 
 Once help tags have been generated, you can view the manual with
@@ -33,10 +35,13 @@ use the right one automatically.
 
 The only external dependency is that you have Ruby installed.
 
-Oh, and if you don't have an nREPL connection, it falls back to using
-`java clojure.main`, using a class path based on your Leiningen or Maven
-config.  It's a bit slow, but a two second delay its vastly preferable to
-being forced out of my flow for a single command, in my book.
+Oh, and if you don't have an nREPL connection, installing [classpath.vim][]
+lets it fall back to using `java clojure.main`, using a class path based on
+your Leiningen or Maven config.  It's a bit slow, but a two second delay its
+vastly preferable to being forced out of my flow for a single command, in my
+book.
+
+[classpath.vim]: https://github.com/tpope/vim-classpath
 
 ### Not quite a REPL
 
