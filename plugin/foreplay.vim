@@ -267,7 +267,7 @@ function! s:oneoff.eval(expr, options) dict abort
     echohl None
   endif
   if a:options.ns !=# '' && a:options.ns !=# 'user'
-    let ns = '(require '.s:qsym(options).') (in-ns '.s:qsym(options).') '
+    let ns = '(require '.s:qsym(a:options.ns).') (in-ns '.s:qsym(a:options.ns).') '
   else
     let ns = ''
   endif
