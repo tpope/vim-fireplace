@@ -247,10 +247,6 @@ augroup END
 " }}}1
 " Java runner {{{1
 
-if !exists('g:java_cmd')
-  let g:java_cmd = exists('$JAVA_CMD') ? $JAVA_CMD : 'java'
-endif
-
 let s:oneoff = {}
 
 function! s:oneoff.path() dict abort
@@ -281,7 +277,8 @@ function! s:oneoff.eval(expr, options) dict abort
   call writefile(split('(do '.a:expr.')', "\n"), s:oneoff_in, 'b')
   call writefile([], s:oneoff_out, 'b')
   call writefile([], s:oneoff_err, 'b')
-  let command = g:java_cmd.' -cp '.shellescape(self.classpath).' clojure.main -e ' .
+  let java_cmd = exists('$JAVA_CMD') ? $JAVA_CMD : 'java'
+  let command = java_cmd.' -cp '.shellescape(self.classpath).' clojure.main -e ' .
         \ shellescape(
         \   '(binding [*out* (java.io.FileWriter. '.s:str(s:oneoff_out).')' .
         \   '          *err* (java.io.FileWriter. '.s:str(s:oneoff_err).')]' .
