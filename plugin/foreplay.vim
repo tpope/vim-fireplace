@@ -11,33 +11,10 @@ let g:loaded_foreplay = 1
 augroup foreplay_file_type
   autocmd!
   autocmd BufNewFile,BufReadPost *.clj setfiletype clojure
-  autocmd FileType clojure
-        \ if expand('%:p') !~# '^zipfile:' |
-        \   let &l:path = classpath#detect() |
-        \ endif
 augroup END
-
-if &viminfo !~# '!'
-  set viminfo+=!
-endif
 
 " }}}1
 " Escaping {{{1
-
-function! foreplay#shellesc(arg) abort
-  if a:arg =~ '^[A-Za-z0-9_/.-]\+$'
-    return a:arg
-  elseif &shell =~# 'cmd'
-    return '"'.substitute(substitute(a:arg, '"', '""', 'g'), '%', '"%"', 'g').'"'
-  else
-    let escaped = shellescape(a:arg)
-    if &shell =~# 'sh' && &shell !~# 'csh'
-      return substitute(escaped, '\\\n', '\n', 'g')
-    else
-      return escaped
-    endif
-  endif
-endfunction
 
 function! s:str(string)
   return '"' . escape(a:string, '"\') . '"'
@@ -305,7 +282,7 @@ function! s:oneoff.eval(expr, options) dict abort
   call writefile([], s:oneoff_out, 'b')
   call writefile([], s:oneoff_err, 'b')
   let command = g:java_cmd.' -cp '.shellescape(self.classpath).' clojure.main -e ' .
-        \ foreplay#shellesc(
+        \ shellescape(
         \   '(binding [*out* (java.io.FileWriter. '.s:str(s:oneoff_out).')' .
         \   '          *err* (java.io.FileWriter. '.s:str(s:oneoff_err).')]' .
         \   '  (try' .
@@ -366,8 +343,11 @@ function! foreplay#local_client(...)
       return repl
     endif
   endfor
-  let cp = classpath#from_vim(getbufvar(buf, '&path'))
-  return extend({'classpath': cp}, s:oneoff)
+  if exists('*classpath#from_vim')
+    let cp = classpath#from_vim(getbufvar(buf, '&path'))
+    return extend({'classpath': cp}, s:oneoff)
+  endif
+  throw ':Connect to a REPL or install classpath.vim to evaluate code'
 endfunction
 
 function! s:output_response(response) abort
@@ -393,8 +373,62 @@ function! s:eval(expr, ...) abort
   return client.eval(a:expr, options)
 endfunction
 
+function! s:temp_response(response) abort
+  let output = []
+  if get(a:response, 'out', '') !=# ''
+    let output = map(split(a:response.out, "\n"), '";".v:val')
+  endif
+  if has_key(a:response, 'value')
+    let output += [a:response.value]
+  endif
+  let temp = tempname().'.clj'
+  call writefile(output, temp)
+  return temp
+endfunction
+
+if !exists('s:history')
+  let s:history = []
+endif
+
+if !exists('s:qffiles')
+  let s:qffiles = {}
+endif
+
+function! s:qfentry(entry) abort
+  if !has_key(a:entry, 'tempfile')
+    let a:entry.tempfile = s:temp_response(a:entry.response)
+  endif
+  let s:qffiles[a:entry.tempfile] = a:entry
+  return {'filename': a:entry.tempfile, 'text': a:entry.code}
+endfunction
+
+function! s:qfhistory() abort
+  let list = []
+  for entry in s:history
+    if !has_key(entry, 'tempfile')
+      let entry.tempfile = s:temp_response(entry.response)
+    endif
+    call extend(list, [s:qfentry(entry)])
+  endfor
+  return list
+endfunction
+
+function! s:previewwindow()
+  for nr in range(1, winnr('$'))
+    if getwinvar(nr, '&previewwindow')
+      return nr
+    endif
+  endfor
+endfunction
+
 function! foreplay#eval(expr) abort
   let response = s:eval(a:expr, {'session': 1})
+
+  call extend(s:history, [{'buffer': bufnr(''), 'code': a:expr, 'ns': foreplay#ns(), 'response': response}])
+  let pwin = s:previewwindow()
+  if pwin && has_key(s:qffiles, bufname(winbufnr(pwin)))
+    call setloclist(pwin, [s:qfentry(s:history[-1])], 'a')
+  endif
 
   call s:output_response(response)
 
@@ -409,10 +443,25 @@ function! foreplay#eval(expr) abort
 endfunction
 
 function! foreplay#evalprint(expr) abort
-  try
-    echo foreplay#eval(a:expr)
-  catch /^Clojure:/
-  endtry
+  let pwin = s:previewwindow()
+  if s:previewwindow()
+    try
+      silent call foreplay#eval(a:expr)
+    catch /^Clojure:/
+    endtry
+    let nr = winnr()
+    wincmd p
+    wincmd P
+    call setloclist(pwin, s:qfhistory())
+    llast
+    wincmd p
+    exe nr.'wincmd w'
+  else
+    try
+      echo foreplay#eval(a:expr)
+    catch /^Clojure:/
+    endtry
+  endif
   return ''
 endfunction
 
@@ -817,11 +866,13 @@ function! s:buffer_path(...) abort
     return ''
   endif
   let path = substitute(fnamemodify(bufname(buffer), ':p'), '\C^zipfile:\(.*\)::', '\1/', '')
-  for dir in classpath#split(classpath#from_vim(getbufvar(buffer, '&path')))
-    if dir !=# '' && path[0 : strlen(dir)-1] ==# dir
-      return path[strlen(dir)+1:-1]
-    endif
-  endfor
+  if exists('*classpath#from_vim')
+    for dir in classpath#split(classpath#from_vim(getbufvar(buffer, '&path')))
+      if dir !=# '' && path[0 : strlen(dir)-1] ==# dir
+        return path[strlen(dir)+1:-1]
+      endif
+    endfor
+  endif
   return ''
 endfunction
 

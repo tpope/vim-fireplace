@@ -1,4 +1,4 @@
-" nrepl/foreplay_connection.vim
+" autoload/nrepl/foreplay_connection.vim
 " Maintainer:   Tim Pope <http://tpo.pe/>
 
 if exists("g:autoloaded_nrepl_foreplay_connection") || &cp
@@ -241,6 +241,7 @@ endif
 
 if has('python')
 python << EOF
+import vim
 import socket
 import string
 import re

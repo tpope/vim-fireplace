@@ -1,4 +1,4 @@
-" classpath.vim - Manipulate the Java class path
+" autoload/classpath.vim
 " Maintainer:   Tim Pope <http://tpo.pe>
 
 if exists("g:autoloaded_classpath")
