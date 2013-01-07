@@ -233,7 +233,7 @@ function! s:nrepl_call(payload) dict abort
   if !exists('err')
     return nrepl#foreplay_connection#bdecode('l'.out.'e')
   endif
-  throw 'nREPL: '.err
+  throw 'nREPL Connection Error: '.err
 endfunction
 
 finish
@@ -289,7 +289,7 @@ EOF
   if !exists('err')
     return nrepl#foreplay_connection#bdecode('l'.out.'e')
   endif
-  throw 'nREPL: '.err
+  throw 'nREPL Connection Error: '.err
 endfunction
 
 finish
