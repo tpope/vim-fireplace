@@ -129,6 +129,8 @@ function! s:nrepl_process(payload) dict abort
         if index(combined[key], response[key]) < 0
           call extend(combined[key], [response[key]])
         endif
+      elseif key ==# 'out' && response.out =~# '^.*(.*:\d\+)\t.*)$'
+        let combined.stacktrace = split(response.out, "\t")
       elseif type(response[key]) == type('')
         let combined[key] = get(combined, key, '') . response[key]
       else
@@ -143,7 +145,8 @@ function! s:nrepl_process(payload) dict abort
 endfunction
 
 function! s:nrepl_eval(expr, ...) dict abort
-  let payload = {"op": "eval", "code": a:expr}
+  let payload = {"op": "eval"}
+  let payload.code = '(try (eval ''(do '.a:expr.')) (catch Exception e (print (apply str (interpose "\t" (map str (.getStackTrace e))))) (throw e)))'
   let options = a:0 ? a:1 : {}
   if has_key(options, 'ns')
     let payload.ns = options.ns
@@ -233,7 +236,7 @@ function! s:nrepl_call(payload) dict abort
   if !exists('err')
     return nrepl#foreplay_connection#bdecode('l'.out.'e')
   endif
-  throw 'nREPL: '.err
+  throw 'nREPL Connection Error: '.err
 endfunction
 
 finish
@@ -289,7 +292,7 @@ EOF
   if !exists('err')
     return nrepl#foreplay_connection#bdecode('l'.out.'e')
   endif
-  throw 'nREPL: '.err
+  throw 'nREPL Connection Error: '.err
 endfunction
 
 finish
