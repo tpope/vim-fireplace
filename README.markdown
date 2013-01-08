@@ -66,6 +66,9 @@ file), `:Require` requires a namespace with `:reload` (`:Require!` does
 operator that evaluates a given motion (`cpp` for the expression under the
 cursor).
 
+Any failed evaluation loads the stack trace into the location list, which
+can be easily accessed with `:lopen`.
+
 ### Navigating and Comprehending
 
 I'm new to Clojure, so stuff that helps me understand code is a top priority.

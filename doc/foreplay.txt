@@ -97,7 +97,8 @@ EVALUATING CODE                                 *foreplay-eval*
 
 All code is evaluated in the namespace of the current file, requiring it if
 necessary.  If the current file sits outside the class path (project.clj, for
-example), the user namespace is used instead.
+example), the user namespace is used instead.  If an exception occurs, the
+stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
 
                                                 *foreplay-:Require*
 :Require [ns]           Require :reload the given/current namespace.

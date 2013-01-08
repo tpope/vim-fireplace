@@ -347,6 +347,54 @@ function! foreplay#local_client(...)
   throw ':Connect to a REPL or install classpath.vim to evaluate code'
 endfunction
 
+function! foreplay#findresource(resource) abort
+  if a:resource ==# ''
+    return ''
+  endif
+  try
+    let path = foreplay#local_client().path()
+  catch /^:Connect/
+    return ''
+  endtry
+  let file = findfile(a:resource, escape(join(path, ','), ' '))
+  if !empty(file)
+    return file
+  endif
+  for jar in path
+    if fnamemodify(jar, ':e') ==# 'jar' && index(foreplay#jar_contents(jar), a:resource) >= 0
+      return 'zipfile:' . jar . '::' . a:resource
+    endif
+  endfor
+  return ''
+endfunction
+
+function! foreplay#quickfix_for(stacktrace) abort
+  let qflist = []
+  for line in a:stacktrace
+    let match = matchlist(line, '\(.*\)(\(.*\):\(\d\+\))')
+    let entry = {'text': line}
+    let [_, class, file, lnum; __] = match
+    let entry.lnum = lnum
+    let truncated = substitute(class, '\.[A-Za-z0-9_]\+\%($.*\)$', '', '')
+    if file == 'NO_SOURCE_FILE'
+      let entry.resource = ''
+    else
+      let entry.resource = tr(truncated, '.', '/').'/'.file
+    endif
+    let qflist += [entry]
+  endfor
+  let paths = map(copy(qflist), 'foreplay#findresource(v:val.resource)')
+  let i = 0
+  for i in range(len(qflist))
+    if !empty(paths[i])
+      let qflist[i].filename = paths[i]
+    else
+      call remove(qflist[i], 'lnum')
+    endif
+  endfor
+  return qflist
+endfunction
+
 function! s:output_response(response) abort
   if get(a:response, 'err', '') !=# ''
     echohl ErrorMSG
@@ -374,6 +422,10 @@ function! foreplay#eval(expr) abort
   let response = s:eval(a:expr, {'session': 1})
 
   call s:output_response(response)
+
+  if !empty(get(response, 'stacktrace', []))
+    call setloclist(0, foreplay#quickfix_for(response.stacktrace))
+  endif
 
   if get(response, 'ex', '') !=# ''
     let err = 'Clojure: '.response.ex
