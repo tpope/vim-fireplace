@@ -276,15 +276,7 @@ def foreplay_repl_interact():
     s.setblocking(0)
     while True:
       while True:
-        ch = vim.eval("getchar(0)")
-        #mod = 0
-        #if ch != 0:
-          #mod = vim.eval("getcharmod()")
-        # CTRL-C can't be intercepted, and will immediately return to Vim normal mode
-        #if mod == "4" and ch == "99":
-          #raise Exception("user abort requested")
-        if ch == "27": # decimal 27 == Esc
-          raise Exception("user abort requested")
+        vim.eval("getchar(1)")
         ready_to_read, ready_to_write, in_error = select.select([s], [], [], 0.1)
         if len(ready_to_read) > 0:
           break;
@@ -298,15 +290,25 @@ def foreplay_repl_interact():
   except Exception, e:
     traceback.print_exc()
     foreplay_let('err', str(e))
+  except vim.error:
+    try:
+      # last foreplay_let triggers KeyboardInterrupt, even in except clause
+      foreplay_let('err', 'user abort or payload eval error')
+    except KeyboardInterrupt:
+      pass
   finally:
     s.close()
 EOF
 
 function! s:nrepl_call(payload) dict abort
   let payload = nrepl#foreplay_connection#bencode(a:payload)
-  python << EOF
+  try
+    python << EOF
 foreplay_repl_interact()
 EOF
+  catch /^Vim:Interrupt$/
+    throw 'nREPL Connection Error: user abort'
+  endtry
   if !exists('err')
     return nrepl#foreplay_connection#bdecode('l'.out.'e')
   endif
