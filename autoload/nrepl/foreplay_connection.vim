@@ -271,6 +271,7 @@ def foreplay_repl_interact():
   s.settimeout(8)
   try:
     s.connect((host, port))
+    s.setblocking(1)
     s.sendall(vim.eval('payload'))
     s.setblocking(0)
     while True:
