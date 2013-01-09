@@ -248,6 +248,8 @@ import vim
 import socket
 import string
 import re
+import select
+import traceback
 
 def foreplay_string_encode(input):
   str_list = []
@@ -263,14 +265,28 @@ def foreplay_let(var, value):
 
 def foreplay_repl_interact():
   buffer = ''
+  host = vim.eval('self.host')
+  port = int(vim.eval('self.port'))
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  s.settimeout(16.0)
+  s.settimeout(8)
   try:
-    host = vim.eval('self.host')
-    port = int(vim.eval('self.port'))
     s.connect((host, port))
     s.sendall(vim.eval('payload'))
+    s.setblocking(0)
     while True:
+      while True:
+        ch = vim.eval("getchar(0)")
+        #mod = 0
+        #if ch != 0:
+          #mod = vim.eval("getcharmod()")
+        # CTRL-C can't be intercepted, and will immediately return to Vim normal mode
+        #if mod == "4" and ch == "99":
+          #raise Exception("user abort requested")
+        if ch == "27": # decimal 27 == Esc
+          raise Exception("user abort requested")
+        ready_to_read, ready_to_write, in_error = select.select([s], [], [], 0.1)
+        if len(ready_to_read) > 0:
+          break;
       body = s.recv(8192)
       if re.search("=> $", body) != None:
         raise Exception("not an nREPL server: upgrade to Leiningen 2")
@@ -279,6 +295,7 @@ def foreplay_repl_interact():
         break
     foreplay_let('out', buffer)
   except Exception, e:
+    traceback.print_exc()
     foreplay_let('err', str(e))
   finally:
     s.close()
