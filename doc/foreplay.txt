@@ -41,10 +41,8 @@ buffer and classpath.vim is installed, java (or $JAVA_CMD) is invoked
 directly, which can be quite slow depending on your setup.
 
 The only adapter shipped with foreplay.vim is for nREPL.  You need Ruby
-installed and either |if_ruby| or the ruby command in your PATH.
-Alternatively, if |if_ruby| is not available, it will attempt to use
-|if_pyth|. If neither exists, however, it will still attempt to use the ruby
-command in your PATH.
+installed and either |if_pyth| or the ruby command in your PATH.
+(This curious combination is an accident of history.)
 
 DOCUMENTATION                                   *foreplay-documentation*
 
