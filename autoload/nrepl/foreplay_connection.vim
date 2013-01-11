@@ -204,6 +204,7 @@ endif
 
 python << EOF
 import vim
+import select
 import socket
 import string
 import re
@@ -223,13 +224,16 @@ def foreplay_let(var, value):
 def foreplay_repl_interact():
   buffer = ''
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  s.settimeout(16.0)
+  host = vim.eval('self.host')
+  port = int(vim.eval('self.port'))
+  s.settimeout(8)
   try:
-    host = vim.eval('self.host')
-    port = int(vim.eval('self.port'))
     s.connect((host, port))
+    s.setblocking(1)
     s.sendall(vim.eval('payload'))
     while True:
+      while len(select.select([s], [], [], 0.1)[0]) == 0:
+        vim.eval('getchar(1)')
       body = s.recv(8192)
       if re.search("=> $", body) != None:
         raise Exception("not an nREPL server: upgrade to Leiningen 2")
