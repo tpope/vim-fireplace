@@ -146,7 +146,7 @@ endfunction
 
 function! s:nrepl_eval(expr, ...) dict abort
   let payload = {"op": "eval"}
-  let payload.code = '(try (eval ''(do '.a:expr."\n".')) (catch Exception e (print (apply str (interpose "\t" (map str (.getStackTrace e))))) (throw e)))'
+  let payload.code = '(try (eval ''(do '.a:expr."\n".')) (catch Exception e (print (apply str "\t" (interpose "\n\t" (map str (.getStackTrace e))))) (throw e)))'
   let options = a:0 ? a:1 : {}
   if has_key(options, 'ns')
     let payload.ns = options.ns
