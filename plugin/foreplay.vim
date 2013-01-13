@@ -802,11 +802,12 @@ function! foreplay#findfile(path) abort
       let path .= '.clj'
     endif
 
-    let result = get(split(s:eval(printf(cmd, '"'.escape(path, '"').'"'), options).value, "\n"), 0, '')
+    let response = s:eval(printf(cmd, '"'.escape(path, '"').'"'), options)
+    let result = get(split(get(response, 'value', ''), "\n"), 0, '')
 
   endif
   if result ==# ''
-    return findfile(path, &l:path)
+    return foreplay#findresource(path)
   else
     return result
   endif
