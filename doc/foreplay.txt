@@ -161,6 +161,12 @@ cqc                     Bring up a |command-line-window| for code to
 cq{motion}              Bring up a |command-line-window| with text indicated
                         by {motion} prepopulated.
 
+                                                *foreplay-:Last*
+:Last                   Open the result of the last evaluation in the preview
+                        window.  Use :2Last to get the next-to-last result,
+                        and so on.  Once the window is open, cycle to older
+                        and newer entries with |:lprevious| and |:lnext|.
+
 And insert mode:
 
                                                 *foreplay-i_CTRL-R_(*
