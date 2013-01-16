@@ -283,14 +283,14 @@ function! s:oneoff.eval(expr, options) dict abort
   let java_cmd = exists('$JAVA_CMD') ? $JAVA_CMD : 'java'
   let command = java_cmd.' -cp '.shellescape(self.classpath).' clojure.main -e ' .
         \ shellescape(
-        \   '(binding [*out* (java.io.FileWriter. '.s:str(s:oneoff_out).')' .
-        \   '          *err* (java.io.FileWriter. '.s:str(s:oneoff_err).')]' .
+        \   '(clojure.core/binding [*out* (java.io.FileWriter. '.s:str(s:oneoff_out).')' .
+        \   '                       *err* (java.io.FileWriter. '.s:str(s:oneoff_err).')]' .
         \   '  (try' .
-        \   '    (require ''clojure.repl) '.ns.'(spit '.s:str(s:oneoff_pr).' (pr-str (eval (read-string (slurp '.s:str(s:oneoff_in).')))))' .
+        \   '    (clojure.core/require ''clojure.repl) '.ns.'(clojure.core/spit '.s:str(s:oneoff_pr).' (clojure.core/pr-str (clojure.core/eval (clojure.core/read-string (clojure.core/slurp '.s:str(s:oneoff_in).')))))' .
         \   '    (catch Exception e' .
-        \   '      (spit *err* (.toString e))' .
-        \   '      (spit '.s:str(s:oneoff_ex).' (class e))' .
-        \   '      (spit '.s:str(s:oneoff_stk).' (apply str (interpose "\n" (.getStackTrace e))))))' .
+        \   '      (clojure.core/spit *err* (.toString e))' .
+        \   '      (clojure.core/spit '.s:str(s:oneoff_ex).' (clojure.core/class e))' .
+        \   '      (clojure.core/spit '.s:str(s:oneoff_stk).' (clojure.core/apply clojure.core/str (clojure.core/interpose "\n" (.getStackTrace e))))))' .
         \   '  nil)')
   let wtf = system(command)
   let result = {}
@@ -886,7 +886,7 @@ endfunction
 function! s:Lookup(ns, macro, arg) abort
   " doc is in clojure.core in older Clojure versions
   try
-    call foreplay#eval("(require '".a:ns.") (eval (list (if (ns-resolve 'clojure.core '".a:macro.") 'clojure.core/".a:macro." '".a:ns.'/'.a:macro.") '".a:arg.'))')
+    call foreplay#eval("(require '".a:ns.") (clojure.core/eval (list (if (ns-resolve 'clojure.core '".a:macro.") 'clojure.core/".a:macro." '".a:ns.'/'.a:macro.") '".a:arg.'))')
   catch /^Clojure:/
   catch /.*/
     echohl ErrorMSG

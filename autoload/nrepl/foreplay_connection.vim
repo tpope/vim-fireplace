@@ -146,7 +146,10 @@ endfunction
 
 function! s:nrepl_eval(expr, ...) dict abort
   let payload = {"op": "eval"}
-  let payload.code = '(try (eval ''(do '.a:expr."\n".')) (catch Exception e (print (apply str (interleave (repeat "\b") (map str (.getStackTrace e))))) (throw e)))'
+  let payload.code = '(try (clojure.core/eval ''(do '.a:expr."\n".'))' .
+        \ ' (catch Exception e' .
+        \ '   (clojure.core/print (clojure.core/apply clojure.core/str (clojure.core/interleave (clojure.core/repeat "\b") (clojure.core/map clojure.core/str (.getStackTrace e)))))' .
+        \ '   (throw e)))'
   let options = a:0 ? a:1 : {}
   if has_key(options, 'ns')
     let payload.ns = options.ns
