@@ -374,17 +374,20 @@ endfunction
 function! foreplay#quickfix_for(stacktrace) abort
   let qflist = []
   for line in a:stacktrace
-    let match = matchlist(line, '\(.*\)(\(.*\):\(\d\+\))')
     let entry = {'text': line}
-    let [_, class, file, lnum; __] = match
-    let entry.lnum = lnum
-    let truncated = substitute(class, '\.[A-Za-z0-9_]\+\%($.*\)$', '', '')
-    if file == 'NO_SOURCE_FILE'
-      let entry.resource = ''
-    else
-      let entry.resource = tr(truncated, '.', '/').'/'.file
+    let match = matchlist(line, '\(.*\)(\(.*\))')
+    if !empty(match)
+      let [_, class, file; __] = match
+      if file =~# '^NO_SOURCE_FILE:' || file !~# ':'
+        let entry.resource = ''
+        let entry.lnum = 0
+      else
+        let truncated = substitute(class, '\.[A-Za-z0-9_]\+\%($.*\)$', '', '')
+        let entry.resource = tr(truncated, '.', '/').'/'.split(file, ':')[0]
+        let entry.lnum = split(file, ':')[-1]
+      endif
+      let qflist += [entry]
     endif
-    let qflist += [entry]
   endfor
   let paths = map(copy(qflist), 'foreplay#findresource(v:val.resource)')
   let i = 0
