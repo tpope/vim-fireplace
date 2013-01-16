@@ -1,5 +1,5 @@
 " foreplay.vim - Clojure REPL tease
-" Maintainer:   Tim Pope <http://tpo.pe>
+" Maintainer:   Tim Pope <http://tpo.pe/>
 
 if exists("g:loaded_foreplay") || v:version < 700 || &cp
   finish
