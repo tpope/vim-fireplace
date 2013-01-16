@@ -253,7 +253,7 @@ augroup END
 let s:oneoff = {}
 
 function! s:oneoff.path() dict abort
-  return classpath#split(classpath#from_vim(self.classpath))
+  return classpath#split(self.classpath)
 endfunction
 
 let s:oneoff_pr  = tempname()
