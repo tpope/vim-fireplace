@@ -26,7 +26,10 @@ endfunction
 let s:jar_contents = {}
 
 function! foreplay#jar_contents(path) abort
-  if !has_key(s:jar_contents, a:path) && executable('zipinfo')
+  if !exists('s:zipinfo')
+    let s:zipinfo = executable('zipinfo')
+  endif
+  if !has_key(s:jar_contents, a:path) && s:zipinfo
     let s:jar_contents[a:path] = split(system('zipinfo -1 '.shellescape(a:path)), "\n")
     if v:shell_error
       return []
