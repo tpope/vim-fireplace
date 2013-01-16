@@ -401,11 +401,11 @@ endfunction
 function! s:output_response(response) abort
   if get(a:response, 'err', '') !=# ''
     echohl ErrorMSG
-    echo substitute(a:response.err, '\n$', '', '')
+    echo substitute(a:response.err, '\r\|\n$', '', 'g')
     echohl NONE
   endif
   if get(a:response, 'out', '') !=# ''
-    echo substitute(a:response.out, '\n$', '', '')
+    echo substitute(a:response.out, '\r\|\n$', '', 'g')
   endif
 endfunction
 
