@@ -774,7 +774,7 @@ augroup foreplay_source
   autocmd FileType clojure nmap <buffer> ]<C-D>     <Plug>ForeplayDjump
   autocmd FileType clojure nmap <buffer> <C-W><C-D> <Plug>ForeplayDsplit
   autocmd FileType clojure nmap <buffer> <C-W>d     <Plug>ForeplayDsplit
-  autocmd FileType clojure nmap <buffer> <C-W>gd    <Plug>ForeplayDtabedit
+  autocmd FileType clojure nmap <buffer> <C-W>gd    <Plug>ForeplayDtabjump
 augroup END
 
 " }}}1
