@@ -451,7 +451,8 @@ function! foreplay#evalprint(expr) abort
   return ''
 endfunction
 
-function! foreplay#evalparse(expr) abort
+function! foreplay#evalparse(expr, ...) abort
+  let options = extend({'session': 0}, a:0 ? a:1 : {})
   let response = s:eval(
         \ '(symbol ((fn *vimify [x]' .
         \ '  (cond' .
@@ -460,7 +461,7 @@ function! foreplay#evalparse(expr) abort
         \ '    (number? x)  (pr-str x)' .
         \ '    (keyword? x) (pr-str (name x))' .
         \ '    :else        (pr-str (str x)))) '.a:expr.'))',
-        \ {'session': 0})
+        \ options)
   call s:output_response(response)
 
   if get(response, 'ex', '') !=# ''
@@ -727,17 +728,21 @@ augroup END
 " Go to source {{{1
 
 function! foreplay#source(symbol) abort
-  let options = {'client': foreplay#local_client(), 'ns': foreplay#ns(), 'session': 0}
+  let options = {'client': foreplay#local_client()}
   let cmd =
-        \ "  (when-let [v (resolve " . s:qsym(a:symbol) .')]' .
-        \ '    (when-let [filepath (:file (meta v))]' .
-        \ '      (when-let [url (.getResource (clojure.lang.RT/baseLoader) filepath)]' .
-        \ '        (symbol (str (str "+" (:line (meta v))) " "' .
-        \ '            (if (= "jar" (.getProtocol url))' .
-        \ '              (str "zip" (.replaceFirst (.getFile url) "!/" "::"))' .
-        \ '              (.getFile url)))))))'
-  let result = get(split(s:eval(cmd, options).value, "\n"), 0, '')
-  return result ==# 'nil' ? '' : result
+        \ '(when-let [v (resolve ' . s:qsym(a:symbol) .')]' .
+        \ '  (when-let [filepath (:file (meta v))]' .
+        \ '    (when-let [url (.getResource (clojure.lang.RT/baseLoader) filepath)]' .
+        \ '      [(if (= "jar" (.getProtocol url))' .
+        \ '         (str "zip" (.replaceFirst (.getFile url) "!/" "::"))' .
+        \ '         (.getFile url))' .
+        \ '       (:line (meta v))])))'
+  let result = foreplay#evalparse(cmd, options)
+  if type(result) == type([])
+    return '+' . result[1] . ' ' . fnameescape(result[0])
+  else
+    return ''
+  endif
 endfunction
 
 function! s:Edit(cmd, keyword) abort
