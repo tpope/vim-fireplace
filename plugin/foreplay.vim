@@ -732,7 +732,7 @@ function! s:decode_url(url) abort
   let url = substitute(url, '^\%(jar:\)\=file:\zs/\ze\w:/', '', '')
   let url = substitute(url, '^file:', '', '')
   let url = substitute(url, '^jar:\(.*\)!/', 'zip\1::', '')
-  let url = substitute(url, '%\(\x\x\)', '\=eval(''"\x''.submatch(1).''"'')', '')
+  let url = substitute(url, '%\(\x\x\)', '\=eval(''"\x''.submatch(1).''"'')', 'g')
   return url
 endfunction
 
