@@ -727,19 +727,26 @@ augroup END
 " }}}1
 " Go to source {{{1
 
+function! s:decode_url(url) abort
+  let url = a:url
+  let url = substitute(url, '^\%(jar:\)\=file:\zs/\ze\w:/', '', '')
+  let url = substitute(url, '^file:', '', '')
+  let url = substitute(url, '^jar:\(.*\)!/', 'zip\1::', '')
+  let url = substitute(url, '%\(\x\x\)', '\=eval(''"\x''.submatch(1).''"'')', '')
+  return url
+endfunction
+
 function! foreplay#source(symbol) abort
   let options = {'client': foreplay#local_client()}
   let cmd =
         \ '(when-let [v (resolve ' . s:qsym(a:symbol) .')]' .
         \ '  (when-let [filepath (:file (meta v))]' .
         \ '    (when-let [url (.getResource (clojure.lang.RT/baseLoader) filepath)]' .
-        \ '      [(if (= "jar" (.getProtocol url))' .
-        \ '         (str "zip" (.replaceFirst (.getFile url) "!/" "::"))' .
-        \ '         (.getFile url))' .
+        \ '      [(str url)' .
         \ '       (:line (meta v))])))'
   let result = foreplay#evalparse(cmd, options)
   if type(result) == type([])
-    return '+' . result[1] . ' ' . fnameescape(result[0])
+    return '+' . result[1] . ' ' . fnameescape(s:decode_url(result[0]))
   else
     return ''
   endif
@@ -792,9 +799,7 @@ function! foreplay#findfile(path) abort
         \ '(symbol' .
         \ '  (or' .
         \ '    (when-let [url (.getResource (clojure.lang.RT/baseLoader) %s)]' .
-        \ '    (if (= "jar" (.getProtocol url))' .
-        \ '      (str "zip" (.replaceFirst (.getFile url) "!/" "::"))' .
-        \ '      (.getFile url)))' .
+        \ '      (str url))' .
         \ '    ""))'
 
   let path = a:path
@@ -814,7 +819,7 @@ function! foreplay#findfile(path) abort
     endif
 
     let response = s:eval(printf(cmd, '"'.escape(path, '"').'"'), options)
-    let result = get(split(get(response, 'value', ''), "\n"), 0, '')
+    let result = s:decode_url(get(split(get(response, 'value', ''), "\n"), 0, ''))
 
   endif
   if result ==# ''
