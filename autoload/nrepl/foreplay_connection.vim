@@ -69,7 +69,7 @@ function! s:shellesc(arg) abort
   if a:arg =~ '^[A-Za-z0-9_/.-]\+$'
     return a:arg
   elseif &shell =~# 'cmd'
-    return '"'.substitute(substitute(a:arg, '"', '""', 'g'), '%', '"%"', 'g').'"'
+    return '"'.substitute(substitute(a:arg, '"', '""""', 'g'), '%', '"%"', 'g').'"'
   else
     let escaped = shellescape(a:arg)
     if &shell =~# 'sh' && &shell !~# 'csh'
