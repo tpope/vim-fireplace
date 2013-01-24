@@ -128,7 +128,7 @@ endfunction
 function! s:repl.eval(expr, options) dict abort
   try
     let result = self.connection.eval(a:expr, a:options)
-  catch /^\w\+: Connection/
+  catch /^\w\+ Connection Error:/
     call filter(s:repl_paths, 'v:val isnot self')
     call filter(s:repls, 'v:val isnot self')
     throw v:exception
