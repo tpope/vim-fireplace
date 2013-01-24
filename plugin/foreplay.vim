@@ -427,11 +427,13 @@ endfunction
 function! foreplay#eval(expr) abort
   let response = s:eval(a:expr, {'session': 1})
 
-  call s:output_response(response)
-
   if !empty(get(response, 'stacktrace', []))
     call setloclist(0, foreplay#quickfix_for(response.stacktrace))
+    lopen
+    wincmd p
   endif
+
+  call s:output_response(response)
 
   if get(response, 'ex', '') !=# ''
     let err = 'Clojure: '.response.ex
