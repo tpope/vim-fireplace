@@ -967,6 +967,40 @@ augroup foreplay_doc
 augroup END
 
 " }}}1
+" Alternate {{{1
+
+augroup foreplay_alternate
+  autocmd!
+  autocmd FileType clojure command! -buffer -bar -bang A :exe s:Alternate('edit<bang>')
+  autocmd FileType clojure command! -buffer -bar AS :exe s:Alternate('split')
+  autocmd FileType clojure command! -buffer -bar AV :exe s:Alternate('vsplit')
+  autocmd FileType clojure command! -buffer -bar AT :exe s:Alternate('tabedit')
+augroup END
+
+function! s:alternates() abort
+  let ns = foreplay#ns()
+  if ns =~# '-test$'
+    let alt = [ns[0:-6]]
+  elseif ns =~# '\.test\.'
+    let alt = [substitute(ns, '\.test\.', '.', '')]
+  else
+    let alt = [ns . '-test', substitute(ns, '\.', '.test.', '')]
+  endif
+  return map(alt, 'tr(v:val, ".-", "/_") . ".clj"')
+endfunction
+
+function! s:Alternate(cmd) abort
+  let alternates = s:alternates()
+  for file in alternates
+    let path = foreplay#findresource(file)
+    if !empty(path)
+      return a:cmd . ' ' . fnameescape(path)
+    endif
+  endfor
+  return 'echoerr '.string("Couldn't find " . alternates[0] . "in class path")
+endfunction
+
+" }}}1
 " Leiningen {{{1
 
 function! s:hunt(start, anchor) abort

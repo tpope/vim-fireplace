@@ -91,6 +91,21 @@ gf                      Go to the file for the namespace under the cursor.
 :Dsplit {symbol}        Jump to the definition for the given symbol in a
                         split.
 
+                                                *foreplay-:A*
+:A                      In a test file, edit the implementation, and vice
+                        versa.  Basically adds or removes -test from the end
+                        of the current namespace and searches for it in the
+                        class path.
+
+                                                *foreplay-:AS*
+:AS                     Like :A, but in a split.
+
+                                                *foreplay-:AV*
+:AV                     Like :A, but in a vertical split.
+
+                                                *foreplay-:AT*
+:AT                     Like :A, but in a tab.
+
 EVALUATING CODE                                 *foreplay-eval*
 
 All code is evaluated in the namespace of the current file, requiring it if
