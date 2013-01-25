@@ -739,7 +739,7 @@ function! s:decode_url(url) abort
 endfunction
 
 function! foreplay#source(symbol) abort
-  let options = {'client': foreplay#local_client()}
+  let options = {'client': foreplay#local_client(), 'session': 0}
   let cmd =
         \ '(when-let [v (resolve ' . s:qsym(a:symbol) .')]' .
         \ '  (when-let [filepath (:file (meta v))]' .
@@ -795,7 +795,7 @@ augroup END
 " Go to file {{{1
 
 function! foreplay#findfile(path) abort
-  let options = {'client': foreplay#local_client(), 'ns': foreplay#ns(), 'session': 0}
+  let options = {'client': foreplay#local_client(), 'session': 0}
 
   let cmd =
         \ '(symbol' .
