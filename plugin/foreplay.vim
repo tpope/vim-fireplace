@@ -821,9 +821,9 @@ function! foreplay#findfile(path) abort
     endif
 
     let response = s:eval(printf(cmd, '"'.escape(path, '"').'"'), options)
-    let result = s:decode_url(get(split(get(response, 'value', ''), "\n"), 0, ''))
-
+    let result = get(split(get(response, 'value', ''), "\n"), 0, '')
   endif
+  let result = s:decode_url(result)
   if result ==# ''
     return foreplay#findresource(path)
   else
