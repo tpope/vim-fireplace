@@ -64,31 +64,11 @@ function! foreplay#omnicomplete(findstart, base) abort
     return col('.') - strlen(matchstr(line, '\k\+$')) - 1
   else
     try
-      let omnifier = '(fn [[k v]] (let [m (meta v)]' .
-            \ ' {:word k :menu (pr-str (:arglists m (symbol ""))) :info (str "  " (:doc m)) :kind (if (:arglists m) "f" "v")}))'
-
       let ns = foreplay#ns()
-
-      let [aliases, namespaces, maps] = foreplay#evalparse(
-            \ '[(ns-aliases '.s:qsym(ns).') (all-ns) '.
-            \ '(sort-by :word (map '.omnifier.' (ns-map '.s:qsym(ns).')))]')
-
-      if a:base =~# '^[^/]*/[^/]*$'
-        let ns = matchstr(a:base, '^.*\ze/')
-        let prefix = ns . '/'
-        let ns = get(aliases, ns, ns)
-        let keyword = matchstr(a:base, '.*/\zs.*')
-        let results = foreplay#evalparse(
-              \ '(sort-by :word (map '.omnifier.' (ns-publics '.s:qsym(ns).')))')
-        for r in results
-          let r.word = prefix . r.word
-        endfor
-      else
-        let keyword = a:base
-        let results = maps + map(sort(keys(aliases) + namespaces), '{"word": v:val."/", "kind": "t", "info": ""}')
-      endif
+      let results = foreplay#evalparse('(map redl.core/->vim-omnicomplete'.
+                              \' (redl.core/completions '.s:qsym(ns).' "'.a:base.'"))')
       if type(results) == type([])
-        return filter(results, 'a:base ==# "" || a:base ==# v:val.word[0 : strlen(a:base)-1]')
+        return results
       else
         return []
       endif
@@ -671,8 +651,13 @@ noremap!          <Plug>ForeplayRecall <C-R>=<SID>recall()<CR>
 function! s:setup_eval() abort
   command! -buffer -bang -range=0 -nargs=? -complete=customlist,foreplay#eval_complete Eval :exe s:Eval(<bang>0, <line1>, <line2>, <count>, <q-args>)
 
+  command! -buffer Repl :call foreplay#repl#create("user")
+  command! -buffer ReplHere :call foreplay#repl#create(foreplay#ns())
+
   nmap <buffer> cp <Plug>ForeplayPrint
   nmap <buffer> cpp <Plug>ForeplayPrintab
+
+  nmap <buffer> cpf :%Eval<CR>
 
   nmap <buffer> c! <Plug>ForeplayFilter
   nmap <buffer> c!! <Plug>ForeplayFilterab
@@ -880,6 +865,9 @@ function! s:tons(path) abort
 endfunction
 
 function! foreplay#ns() abort
+  if exists('b:repl_namespace')
+    return b:repl_namespace
+  endif
   let lnum = 1
   while lnum < line('$') && getline(lnum) =~# '^\s*\%(;.*\)\=$'
     let lnum += 1
