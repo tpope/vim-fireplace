@@ -74,7 +74,7 @@ can be easily accessed with `:lopen`.
 
 I'm new to Clojure, so stuff that helps me understand code is a top priority.
 
-* `:Source`, `:Doc`, `:FindDoc`, and `:Apropros`, which map to the underlying
+* `:Source`, `:Doc`, `:FindDoc`, and `:Apropos`, which map to the underlying
   `clojure.repl` macro (with tab complete, of course).
 
 * `K` is mapped to look up the symbol under the cursor with `doc`.
