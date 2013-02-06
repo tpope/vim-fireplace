@@ -54,6 +54,7 @@ DOCUMENTATION                                   *foreplay-documentation*
 
                                                 *foreplay-K*
 K                       Look up docs for keyword under cursor.
+                        Can be set using let g:ForeplayKKey = '<Leader>k'
 
                                                 *foreplay-:FindDoc*
 :FindDoc {arg}          Wrapper around (clojure.repl/find-doc ...).

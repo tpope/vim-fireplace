@@ -1053,8 +1053,10 @@ nnoremap <Plug>ForeplayK :<C-R>=<SID>K()<CR><CR>
 nnoremap <Plug>ForeplaySource :Source <C-R><C-W><CR>
 
 augroup foreplay_doc
+  let ForeplayKKey = get(g:, 'ForeplayKKey', 'K')
+
   autocmd!
-  autocmd FileType clojure nmap <buffer> K  <Plug>ForeplayK
+  autocmd FileType clojure execute "nmap <buffer> ".ForeplayKKey." <Plug>ForeplayK"
   autocmd FileType clojure nmap <buffer> [d <Plug>ForeplaySource
   autocmd FileType clojure nmap <buffer> ]d <Plug>ForeplaySource
   autocmd FileType clojure command! -buffer -nargs=1 Apropos :exe s:Apropos(<q-args>)
