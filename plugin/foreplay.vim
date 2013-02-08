@@ -510,12 +510,16 @@ function! foreplay#eval(expr) abort
   throw err
 endfunction
 
-function! foreplay#evalprint(expr) abort
+function! foreplay#eval_prn(expr) abort
   try
     echo foreplay#eval(a:expr)
   catch /^Clojure:/
   endtry
   return ''
+endfunction
+
+function! foreplay#evalprint(expr) abort
+  return foreplay#eval_prn(a:expr)
 endfunction
 
 function! foreplay#evalparse(expr, ...) abort
@@ -596,7 +600,7 @@ function! s:printop(type) abort
 endfunction
 
 function! s:print_last() abort
-  call foreplay#evalprint(s:todo)
+  call foreplay#eval_prn(s:todo)
   return ''
 endfunction
 
@@ -604,7 +608,7 @@ function! s:editop(type) abort
   call feedkeys(&cedit . "\<Home>", 'n')
   let input = s:input(substitute(substitute(s:opfunc(a:type), "\s*;[^\n]*", '', 'g'), '\n\+\s*', ' ', 'g'))
   if input !=# ''
-    call foreplay#evalprint(input)
+    call foreplay#eval_prn(input)
   endif
 endfunction
 
@@ -641,7 +645,7 @@ function! s:Eval(bang, line1, line2, count, args) abort
     catch /^Clojure:/
     endtry
   else
-    call foreplay#evalprint(expr)
+    call foreplay#eval_prn(expr)
   endif
   return ''
 endfunction
@@ -686,7 +690,7 @@ function! s:inputeval() abort
   let input = s:input('')
   redraw
   if input !=# ''
-    call foreplay#evalprint(input)
+    call foreplay#eval_prn(input)
   endif
   return ''
 endfunction
