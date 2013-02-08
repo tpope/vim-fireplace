@@ -476,7 +476,7 @@ function! s:qfhistory() abort
   return list
 endfunction
 
-function! foreplay#eval_pr_str(expr) abort
+function! foreplay#session_eval(expr) abort
   let response = s:eval(a:expr, {'session': 1})
 
   if !empty(get(response, 'value', ''))
@@ -511,19 +511,19 @@ function! foreplay#eval_pr_str(expr) abort
 endfunction
 
 function! foreplay#eval(expr) abort
-  return foreplay#eval_pr_str(a:expr)
+  return foreplay#session_eval(a:expr)
 endfunction
 
-function! foreplay#eval_prn(expr) abort
+function! foreplay#echo_session_eval(expr) abort
   try
-    echo foreplay#eval_pr_str(a:expr)
+    echo foreplay#session_eval(a:expr)
   catch /^Clojure:/
   endtry
   return ''
 endfunction
 
 function! foreplay#evalprint(expr) abort
-  return foreplay#eval_prn(a:expr)
+  return foreplay#echo_session_eval(a:expr)
 endfunction
 
 let g:foreplay#reader =
@@ -590,7 +590,7 @@ function! s:filterop(type) abort
   let reg_save = @@
   try
     let expr = s:opfunc(a:type)
-    let @@ = matchstr(expr, '^\n\+').foreplay#eval_pr_str(expr).matchstr(expr, '\n\+$')
+    let @@ = matchstr(expr, '^\n\+').foreplay#session_eval(expr).matchstr(expr, '\n\+$')
     if @@ !~# '^\n*$'
       normal! gvp
     endif
@@ -607,7 +607,7 @@ function! s:printop(type) abort
 endfunction
 
 function! s:print_last() abort
-  call foreplay#eval_prn(s:todo)
+  call foreplay#echo_session_eval(s:todo)
   return ''
 endfunction
 
@@ -615,7 +615,7 @@ function! s:editop(type) abort
   call feedkeys(&cedit . "\<Home>", 'n')
   let input = s:input(substitute(substitute(s:opfunc(a:type), "\s*;[^\n]*", '', 'g'), '\n\+\s*', ' ', 'g'))
   if input !=# ''
-    call foreplay#eval_prn(input)
+    call foreplay#echo_session_eval(input)
   endif
 endfunction
 
@@ -641,7 +641,7 @@ function! s:Eval(bang, line1, line2, count, args) abort
   endif
   if a:bang
     try
-      let result = foreplay#eval_pr_str(expr)
+      let result = foreplay#session_eval(expr)
       if a:args !=# ''
         call append(a:line1, result)
         exe a:line1
@@ -652,7 +652,7 @@ function! s:Eval(bang, line1, line2, count, args) abort
     catch /^Clojure:/
     endtry
   else
-    call foreplay#eval_prn(expr)
+    call foreplay#echo_session_eval(expr)
   endif
   return ''
 endfunction
@@ -697,7 +697,7 @@ function! s:inputeval() abort
   let input = s:input('')
   redraw
   if input !=# ''
-    call foreplay#eval_prn(input)
+    call foreplay#echo_session_eval(input)
   endif
   return ''
 endfunction
@@ -709,7 +709,7 @@ function! s:recall() abort
     if input =~# '^(\=$'
       return ''
     else
-      return foreplay#eval_pr_str(input)
+      return foreplay#session_eval(input)
     endif
   catch /^Clojure:/
     return ''
@@ -814,7 +814,7 @@ function! s:Require(bang, ns)
   let cmd = ('(require '.s:qsym(a:ns ==# '' ? foreplay#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
   echo cmd
   try
-    call foreplay#eval_pr_str(cmd)
+    call foreplay#session_eval(cmd)
     return ''
   catch /^Clojure:.*/
     return ''
@@ -1007,7 +1007,7 @@ endfunction
 function! s:Lookup(ns, macro, arg) abort
   " doc is in clojure.core in older Clojure versions
   try
-    call foreplay#eval_pr_str("(require '".a:ns.") (clojure.core/eval (list (if (ns-resolve 'clojure.core '".a:macro.") 'clojure.core/".a:macro." '".a:ns.'/'.a:macro.") '".a:arg.'))')
+    call foreplay#session_eval("(require '".a:ns.") (clojure.core/eval (list (if (ns-resolve 'clojure.core '".a:macro.") 'clojure.core/".a:macro." '".a:ns.'/'.a:macro.") '".a:arg.'))')
   catch /^Clojure:/
   catch /.*/
     echohl ErrorMSG
