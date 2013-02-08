@@ -526,17 +526,20 @@ function! foreplay#evalprint(expr) abort
   return foreplay#eval_prn(a:expr)
 endfunction
 
+let g:foreplay#reader =
+      \ '(symbol ((fn *vimify [x]' .
+      \  ' (cond' .
+      \    ' (map? x)     (str "{" (apply str (interpose ", " (map (fn [[k v]] (str (*vimify k) ": " (*vimify v))) x))) "}")' .
+      \    ' (coll? x)    (str "[" (apply str (interpose ", " (map *vimify x))) "]")' .
+      \    ' (true? x)    "1"' .
+      \    ' (false? x)   "0"' .
+      \    ' (number? x)  (pr-str x)' .
+      \    ' (keyword? x) (pr-str (name x))' .
+      \    ' :else        (pr-str (str x)))) %s))'
+
 function! foreplay#evalparse(expr, ...) abort
   let options = extend({'session': 0}, a:0 ? a:1 : {})
-  let response = s:eval(
-        \ '(symbol ((fn *vimify [x]' .
-        \ '  (cond' .
-        \ '    (map? x)     (str "{" (apply str (interpose ", " (map (fn [[k v]] (str (*vimify k) ": " (*vimify v))) x))) "}")' .
-        \ '    (coll? x)    (str "[" (apply str (interpose ", " (map *vimify x))) "]")' .
-        \ '    (number? x)  (pr-str x)' .
-        \ '    (keyword? x) (pr-str (name x))' .
-        \ '    :else        (pr-str (str x)))) '.a:expr.'))',
-        \ options)
+  let response = s:eval(printf(g:foreplay#reader, a:expr), options)
   call s:output_response(response)
 
   if get(response, 'ex', '') !=# ''
