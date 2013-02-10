@@ -1112,14 +1112,14 @@ endfunction
 " }}}1
 " Leiningen {{{1
 
-function! s:hunt(start, anchor) abort
+function! s:hunt(start, anchor, pattern) abort
   let root = simplify(fnamemodify(a:start, ':p:s?[\/]$??'))
   if !isdirectory(fnamemodify(root, ':h'))
     return ''
   endif
   let previous = ""
   while root !=# previous
-    if filereadable(root . '/' . a:anchor) && isdirectory(root . '/src')
+    if filereadable(root . '/' . a:anchor) && join(readfile(root . '/' . a:anchor, '', 50)) =~# a:pattern
       return root
     endif
     let previous = root
@@ -1151,7 +1151,7 @@ endfunction
 function! s:leiningen_init() abort
 
   if !exists('b:leiningen_root')
-    let root = s:hunt(expand('%:p'), 'project.clj')
+    let root = s:hunt(expand('%:p'), 'project.clj', '(\s*defproject')
     if root !=# ''
       let b:leiningen_root = root
     endif
