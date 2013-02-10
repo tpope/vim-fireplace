@@ -20,6 +20,18 @@ function! s:str(string)
   return '"' . escape(a:string, '"\') . '"'
 endfunction
 
+function! s:qsym(symbol)
+  if a:symbol =~# '^[[:alnum:]?*!+/=<>.:-]\+$'
+    return "'".a:symbol
+  else
+    return '(symbol '.s:str(a:symbol).')'
+  endif
+endfunction
+
+function! s:to_ns(path) abort
+  return tr(substitute(a:path, '\.\w\+$', '', ''), '\/_', '..-')
+endfunction
+
 " }}}1
 " Completion {{{1
 
@@ -55,7 +67,7 @@ function! foreplay#ns_complete(A, L, P) abort
     endif
     let matches += files
   endfor
-  return filter(map(matches, 's:tons(v:val)'), 'a:A ==# "" || a:A ==# v:val[0 : strlen(a:A)-1]')
+  return filter(map(matches, 's:to_ns(v:val)'), 'a:A ==# "" || a:A ==# v:val[0 : strlen(a:A)-1]')
 endfunction
 
 function! foreplay#omnicomplete(findstart, base) abort
@@ -112,14 +124,6 @@ if !exists('s:repls')
   let s:repls = []
   let s:repl_paths = {}
 endif
-
-function! s:qsym(symbol)
-  if a:symbol =~# '^[[:alnum:]?*!+/=<>.:-]\+$'
-    return "'".a:symbol
-  else
-    return '(symbol "'.escape(a:symbol, '"').'")'
-  endif
-endfunction
 
 function! s:repl.path() dict abort
   return self.connection.path()
@@ -926,7 +930,7 @@ function! foreplay#findfile(path) abort
       let path .= '.clj'
     endif
 
-    let response = s:eval(printf(cmd, '"'.escape(path, '"').'"'), options)
+    let response = s:eval(printf(cmd, s:str(path)), options)
     let result = get(split(get(response, 'value', ''), "\n"), 0, '')
   endif
   let result = s:decode_url(result)
@@ -981,10 +985,6 @@ function! s:buffer_path(...) abort
   return ''
 endfunction
 
-function! s:tons(path) abort
-  return tr(substitute(a:path, '\.\w\+$', '', ''), '\/_', '..-')
-endfunction
-
 function! foreplay#ns() abort
   let lnum = 1
   while lnum < line('$') && getline(lnum) =~# '^\s*\%(;.*\)\=$'
@@ -1001,7 +1001,7 @@ function! foreplay#ns() abort
     return s:qffiles[expand('%:p')].ns
   endif
   let path = s:buffer_path()
-  return s:tons(path ==# '' ? 'user' : path)
+  return s:to_ns(path ==# '' ? 'user' : path)
 endfunction
 
 function! s:Lookup(ns, macro, arg) abort
