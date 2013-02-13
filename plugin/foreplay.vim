@@ -1106,7 +1106,7 @@ function! s:Alternate(cmd) abort
       return a:cmd . ' ' . fnameescape(path)
     endif
   endfor
-  return 'echoerr '.string("Couldn't find " . alternates[0] . "in class path")
+  return 'echoerr '.string("Couldn't find " . alternates[0] . " in class path")
 endfunction
 
 " }}}1
