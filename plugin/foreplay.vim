@@ -1092,8 +1092,10 @@ function! s:alternates() abort
     let alt = [ns[0:-6]]
   elseif ns =~# '\.test\.'
     let alt = [substitute(ns, '\.test\.', '.', '')]
+  elseif ns =~# '-spec$'
+    let alt = [ns[0:-6], ns . '-test']
   else
-    let alt = [ns . '-test', substitute(ns, '\.', '.test.', '')]
+    let alt = [ns . '-test', substitute(ns, '\.', '.test.', ''), ns . '-spec']
   endif
   return map(alt, 'tr(v:val, ".-", "/_") . ".clj"')
 endfunction
