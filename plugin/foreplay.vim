@@ -815,7 +815,7 @@ augroup END
 " :Require {{{1
 
 function! s:Require(bang, ns)
-  let cmd = ('(require '.s:qsym(a:ns ==# '' ? foreplay#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
+  let cmd = ('(clojure.core/require '.s:qsym(a:ns ==# '' ? foreplay#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
   echo cmd
   try
     call foreplay#session_eval(cmd)
@@ -1007,7 +1007,7 @@ endfunction
 function! s:Lookup(ns, macro, arg) abort
   " doc is in clojure.core in older Clojure versions
   try
-    call foreplay#session_eval("(require '".a:ns.") (clojure.core/eval (list (if (ns-resolve 'clojure.core '".a:macro.") 'clojure.core/".a:macro." '".a:ns.'/'.a:macro.") '".a:arg.'))')
+    call foreplay#session_eval("(clojure.core/require '".a:ns.") (clojure.core/eval (clojure.core/list (if (ns-resolve 'clojure.core '".a:macro.") 'clojure.core/".a:macro." '".a:ns.'/'.a:macro.") '".a:arg.'))')
   catch /^Clojure:/
   catch /.*/
     echohl ErrorMSG
