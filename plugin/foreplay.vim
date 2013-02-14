@@ -170,7 +170,7 @@ endfunction
 " }}}1
 " :Connect {{{1
 
-command! -bar -complete=customlist,s:connect_complete -nargs=? ForeplayConnect :exe s:Connect(<q-args>)
+command! -bar -complete=customlist,s:connect_complete -nargs=* ForeplayConnect :exe s:Connect(<f-args>)
 
 function! foreplay#input_host_port()
   let arg = input('Host> ', 'localhost')
@@ -209,7 +209,7 @@ function! s:connect_complete(A, L, P)
   return options
 endfunction
 
-function! s:Connect(arg)
+function! s:Connect(arg, ...)
   if a:arg =~# '^\w\+://'
     let [proto, arg] = split(a:arg, '://')
   elseif a:arg !=# ''
@@ -239,16 +239,16 @@ function! s:Connect(arg)
   let client = s:register_connection(connection)
   echo 'Connected to '.proto.'://'.arg
   let path = fnamemodify(exists('b:java_root') ? b:java_root : fnamemodify(expand('%'), ':p:s?.*\zs[\/]src[\/].*??'), ':~')
-  let root = input('Scope connection to: ', path, 'dir')
-  if root !=# ''
-    let s:repl_paths[fnamemodify(root, ':p:s?[\/]$??')] = client
+  let root = a:0 ? expand(a:1) : input('Scope connection to: ', path, 'dir')
+  if root !=# '' && root !=# '-'
+    let s:repl_paths[fnamemodify(root, ':p:s?.\zs[\/]$??')] = client
   endif
   return ''
 endfunction
 
 augroup foreplay_connect
   autocmd!
-  autocmd FileType clojure command! -bar -complete=customlist,s:connect_complete -nargs=? Connect :ForeplayConnect <args>
+  autocmd FileType clojure command! -bar -complete=customlist,s:connect_complete -nargs=* Connect :ForeplayConnect <args>
 augroup END
 
 " }}}1

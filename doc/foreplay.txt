@@ -30,8 +30,9 @@ file is found, an nREPL connection will be established automatically.
 CONNECTING TO A REPL                            *foreplay-connect*
 
                                                 *foreplay-:Connect*
-:Connect {proto}://{host}:{port}
-                        Connect to a REPL server.
+:Connect {proto}://{host}:{port} {path}
+                        Connect to a REPL server.  The path is the root of the
+                        project that the REPL applies to.
 
 :Connect                Interactively prompt for the options to connect to a
                         REPL server.
