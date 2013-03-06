@@ -146,6 +146,9 @@ function! s:repl.require(lib) dict abort
     let self.requires[a:lib] = 0
     let result = self.eval('(doto '.s:qsym(a:lib).' (require'.reload.') the-ns)', {'ns': 'user', 'session': 0})
     let self.requires[a:lib] = !has_key(result, 'ex')
+    if has_key(result, 'ex')
+      return result.err
+    endif
   endif
   return ''
 endfunction
@@ -433,7 +436,13 @@ function! s:eval(expr, ...) abort
   let client = get(options, 'client', s:client())
   if !has_key(options, 'ns')
     if foreplay#ns() !~# '^\%(user\)$'
-      call client.require(foreplay#ns())
+      let error = client.require(foreplay#ns())
+      if !empty(error)
+        echohl ErrorMSG
+        echo error
+        echohl NONE
+        throw "Clojure: couldn't require " . foreplay#ns()
+      endif
     endif
     let options.ns = foreplay#ns()
   endif
