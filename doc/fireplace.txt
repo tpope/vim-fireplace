@@ -1,4 +1,4 @@
-*foreplay.txt*  Clojure REPL tease
+*fireplace.txt*  Clojure REPL tease
 
 Author:  Tim Pope <http://tpo.pe/>
 License: Same terms as Vim itself (see |license|)
@@ -7,12 +7,12 @@ This plugin is only available if 'compatible' is not set.
 
 You need Clojure runtime files to use this plugin.  Try vim-clojure-static.
 
-CONNECTING TO A REPL                            *foreplay-connect*
+CONNECTING TO A REPL                            *fireplace-connect*
 
 Connecting to lein repl happens automatically.  If you have a different setup,
 you can connect by hand.
 
-                                                *foreplay-:Connect*
+                                                *fireplace-:Connect*
 :Connect {proto}://{host}:{port} {path}
                         Connect to a REPL server.  The path is the root of the
                         project that the REPL applies to.
@@ -24,93 +24,93 @@ The REPL is used for the commands below. If no REPL is found for the current
 buffer and classpath.vim is installed, java (or $JAVA_CMD) is invoked
 directly, which can be quite slow depending on your setup.
 
-The only adapter shipped with foreplay.vim is for nREPL.  You need either
+The only adapter shipped with fireplace.vim is for nREPL.  You need either
 |if_pyth| or the ruby command in your PATH.  (This curious combination is an
 accident of history.)
 
-LEININGEN                                       *foreplay-leiningen*
+LEININGEN                                       *fireplace-leiningen*
 
 In addition to automatic repl connection, Clojure buffers in a Leiningen
 project will automatically have their 'makeprg' set to lein.  This has the
 nominal value of letting you call, for example, |:make| deps rather than
 :!lein deps.
 
-DOCUMENTATION                                   *foreplay-documentation*
+DOCUMENTATION                                   *fireplace-documentation*
 
-                                                *foreplay-:Doc*
+                                                *fireplace-:Doc*
 :Doc {symbol}           Show the docs for the given symbol.
 
-                                                *foreplay-:Javadoc*
+                                                *fireplace-:Javadoc*
 :Javadoc {class}        Open the java docs for the given class in a browser.
 
-                                                *foreplay-K*
+                                                *fireplace-K*
 K                       Look up docs for keyword under cursor.
 
-                                                *foreplay-:FindDoc*
+                                                *fireplace-:FindDoc*
 :FindDoc {arg}          Wrapper around (clojure.repl/find-doc ...).
 
-                                                *foreplay-:Apropos*
+                                                *fireplace-:Apropos*
 :Apropos {arg}          Wrapper around (clojure.repl/apropos ...).
 
-                                                *foreplay-:Source*
+                                                *fireplace-:Source*
 :Source {symbol}        Show the source for the given symbol.
 
-                                                *foreplay-[d*
+                                                *fireplace-[d*
 [d                      Show source for keyword under cursor.
 ]d
 
-NAVIGATING                                      *foreplay-navigating*
+NAVIGATING                                      *fireplace-navigating*
 
 These commands will never use a remote REPL, only a local one, as file paths
 on a remote server wouldn't be very useful locally.
 
-                                                *foreplay-[_CTRL-D*
+                                                *fireplace-[_CTRL-D*
 [<C-D>                  Jump to the source of the keyword under the cursor.
 ]<C-D>
 
-                                                *foreplay-CTRL-W_CTRL-D*
+                                                *fireplace-CTRL-W_CTRL-D*
 <C-W><C-D>              Jump to the source of the keyword under the cursor in
 <C-W>d                  a split.
 
-                                                *foreplay-gf*
+                                                *fireplace-gf*
 gf                      Go to the file for the namespace under the cursor.
 
-                                                *foreplay-:Djump*
+                                                *fireplace-:Djump*
 :Djump {symbol}         Jump to the definition for the given symbol.
 
-                                                *foreplay-:Dsplit*
+                                                *fireplace-:Dsplit*
 :Dsplit {symbol}        Jump to the definition for the given symbol in a
                         split.
 
-                                                *foreplay-:A*
+                                                *fireplace-:A*
 :A                      In a test file, edit the implementation, and vice
                         versa.  Basically adds or removes -test from the end
                         of the current namespace and searches for it in the
                         class path.
 
-                                                *foreplay-:AS*
+                                                *fireplace-:AS*
 :AS                     Like :A, but in a split.
 
-                                                *foreplay-:AV*
+                                                *fireplace-:AV*
 :AV                     Like :A, but in a vertical split.
 
-                                                *foreplay-:AT*
+                                                *fireplace-:AT*
 :AT                     Like :A, but in a tab.
 
-EVALUATING CODE                                 *foreplay-eval*
+EVALUATING CODE                                 *fireplace-eval*
 
 All code is evaluated in the namespace of the current file, requiring it if
 necessary.  If the current file sits outside the class path (project.clj, for
 example), the user namespace is used instead.  If an exception occurs, the
 stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
 
-                                                *foreplay-:Require*
+                                                *fireplace-:Require*
 :Require [ns]           Require :reload the given/current namespace.
 
-                                                *foreplay-:Require!*
+                                                *fireplace-:Require!*
 :Require! [ns]          Require :reload-all the given/current namespace.
 
-                                                *foreplay-:Eval*
+                                                *fireplace-:Eval*
 :Eval                   Eval/print the outermost expression for the current
                         line.
 
@@ -118,41 +118,41 @@ stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
 
 :Eval {expr}            Eval/print the given expression.
 
-                                                *foreplay-:Eval!*
+                                                *fireplace-:Eval!*
 :[range]Eval!           Eval the given range or outermost expression and
                         replace it with its result.
 
 :[range]Eval! {expr}    Eval the given expression and insert it after
                         the given range or current line.
 
-                                                *foreplay-cp*
+                                                *fireplace-cp*
 cp{motion}              Eval/print the code indicated by {motion}.
 
 cpp                     Eval/print the inner-most expr at the cursor.
 
-                                                *foreplay-cpr*
+                                                *fireplace-cpr*
 cpr                     Eval a require :reload form.
 
-                                                *foreplay-cpR*
+                                                *fireplace-cpR*
 cpR                     Eval a require :reload-all form.
 
-                                                *foreplay-c!*
+                                                *fireplace-c!*
 c!{motion}              Eval/replace the code indicated by {motion}.
 
 c!!                     Eval/replace the inner-most expr at the cusror.
 
-                                                *foreplay-cqp*
+                                                *fireplace-cqp*
 cqp                     Bring up a prompt for code to eval/print.
 
-                                                *foreplay-cqc*
+                                                *fireplace-cqc*
 cqc                     Bring up a |command-line-window| for code to
                         eval/print.  Equivalent to cqp<C-F>i.
 
-                                                *foreplay-cq*
+                                                *fireplace-cq*
 cq{motion}              Bring up a |command-line-window| with text indicated
                         by {motion} prepopulated.
 
-                                                *foreplay-:Last*
+                                                *fireplace-:Last*
 :Last                   Open the result of the last evaluation in the preview
                         window.  Use :2Last to get the next-to-last result,
                         and so on.  Once the window is open, cycle to older
@@ -160,16 +160,16 @@ cq{motion}              Bring up a |command-line-window| with text indicated
 
 And insert mode:
 
-                                                *foreplay-i_CTRL-R_(*
+                                                *fireplace-i_CTRL-R_(*
 <C-R>(                  Evaluate the given expression and insert the result.
 
 There's omnicomplete on |CTRL-X_CTRL-O|, which works in Clojure buffers and
 in the |command-line-window|, and tab complete at the cqp prompt.
 
-ABOUT                                           *foreplay-about*
+ABOUT                                           *fireplace-about*
 
 Grab the latest version or report a bug on GitHub:
 
-http://github.com/tpope/vim-foreplay
+http://github.com/tpope/vim-fireplace
 
  vim:tw=78:et:ft=help:norl:

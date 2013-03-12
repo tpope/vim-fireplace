@@ -1,12 +1,15 @@
-# foreplay.vim
+# fireplace.vim
 
-There's a REPL in foreplay, but you probably wouldn't have noticed if I hadn't
-told you.  Such is the way with foreplay.vim.  By the way, this plugin is for
+There's a REPL in fireplace, but you probably wouldn't have noticed if I hadn't
+told you.  Such is the way with fireplace.vim.  By the way, this plugin is for
 Clojure.
+
+Fireplace.vim used to be called foreplay.vim, but it was renamed so Java
+developers wouldn't have to speak in hushed tones.
 
 ## Installation
 
-Foreplay.vim doesn't provide indenting or syntax highlighting, so you'll want
+Fireplace.vim doesn't provide indenting or syntax highlighting, so you'll want
 [a set of Clojure runtime files](https://github.com/guns/vim-clojure-static).
 You might also want [classpath.vim][] to run code when no REPL is available.
 
@@ -15,12 +18,12 @@ installing [pathogen.vim](https://github.com/tpope/vim-pathogen), and
 then simply copy and paste:
 
     cd ~/.vim/bundle
-    git clone git://github.com/tpope/vim-foreplay.git
+    git clone git://github.com/tpope/vim-fireplace.git
     git clone git://github.com/tpope/vim-classpath.git
     git clone git://github.com/guns/vim-clojure-static.git
 
 Once help tags have been generated, you can view the manual with
-`:help foreplay`.
+`:help fireplace`.
 
 ## Features
 
@@ -28,7 +31,7 @@ This list isn't exhaustive; see the `:help` for details.
 
 ### Transparent setup
 
-Foreplay.vim talks to nREPL.  With Leiningen, it connects automatically based
+Fireplace.vim talks to nREPL.  With Leiningen, it connects automatically based
 on `target/repl-port`, otherwise it's just a `:Connect` away.  You can connect
 to multiple instances of nREPL for different projects, and it will use the
 right one automatically.
@@ -51,7 +54,7 @@ absolutely flawlessly, never breaking just because you did something innocuous
 like backspace through part of the prompt?  No?  Such a shame, you really
 would have liked it.
 
-I've taken a different approach in foreplay.vim.  `cq`  (Think "Clojure
+I've taken a different approach in fireplace.vim.  `cq`  (Think "Clojure
 Quasi-REPL") is the prefix for a set of commands that bring up a *command-line
 window* — the same thing you get when you hit `q:` — but set up for Clojure
 code.
@@ -115,13 +118,13 @@ I'm a stickler for [commit messages][], so if you send me a pull
 request with so much as superfluous period in the subject line, I will
 reject it, then TP your house.
 
-[GitHub issues]: http://github.com/tpope/vim-foreplay/issues
+[GitHub issues]: http://github.com/tpope/vim-fireplace/issues
 [commit messages]: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
 
 ## Self-Promotion
 
-Like foreplay.vim? Follow the repository on
-[GitHub](https://github.com/tpope/vim-foreplay). And if
+Like fireplace.vim? Follow the repository on
+[GitHub](https://github.com/tpope/vim-fireplace). And if
 you're feeling especially charitable, follow [tpope](http://tpo.pe/) on
 [Twitter](http://twitter.com/tpope) and
 [GitHub](https://github.com/tpope).

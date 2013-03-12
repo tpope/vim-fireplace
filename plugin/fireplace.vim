@@ -1,14 +1,14 @@
-" foreplay.vim - Clojure REPL tease
+" fireplace.vim - Clojure REPL tease
 " Maintainer:   Tim Pope <http://tpo.pe/>
 
-if exists("g:loaded_foreplay") || v:version < 700 || &cp
+if exists("g:loaded_fireplace") || v:version < 700 || &cp
   finish
 endif
-let g:loaded_foreplay = 1
+let g:loaded_fireplace = 1
 
 " File type {{{1
 
-augroup foreplay_file_type
+augroup fireplace_file_type
   autocmd!
   autocmd BufNewFile,BufReadPost *.clj setfiletype clojure
 augroup END
@@ -37,7 +37,7 @@ endfunction
 
 let s:jar_contents = {}
 
-function! foreplay#jar_contents(path) abort
+function! fireplace#jar_contents(path) abort
   if !exists('s:zipinfo')
     let s:zipinfo = executable('zipinfo')
   endif
@@ -50,17 +50,17 @@ function! foreplay#jar_contents(path) abort
   return copy(get(s:jar_contents, a:path, []))
 endfunction
 
-function! foreplay#eval_complete(A, L, P) abort
+function! fireplace#eval_complete(A, L, P) abort
   let prefix = matchstr(a:A, '\%(.* \|^\)\%(#\=[\[{('']\)*')
   let keyword = a:A[strlen(prefix) : -1]
-  return sort(map(foreplay#omnicomplete(0, keyword), 'prefix . v:val.word'))
+  return sort(map(fireplace#omnicomplete(0, keyword), 'prefix . v:val.word'))
 endfunction
 
-function! foreplay#ns_complete(A, L, P) abort
+function! fireplace#ns_complete(A, L, P) abort
   let matches = []
-  for dir in foreplay#client().path()
+  for dir in fireplace#client().path()
     if dir =~# '\.jar$'
-      let files = filter(foreplay#jar_contents(dir), 'v:val =~# "\\.clj$"')
+      let files = filter(fireplace#jar_contents(dir), 'v:val =~# "\\.clj$"')
     else
       let files = split(glob(dir."/**/*.clj", 1), "\n")
       call map(files, 'v:val[strlen(dir)+1 : -1]')
@@ -70,7 +70,7 @@ function! foreplay#ns_complete(A, L, P) abort
   return filter(map(matches, 's:to_ns(v:val)'), 'a:A ==# "" || a:A ==# v:val[0 : strlen(a:A)-1]')
 endfunction
 
-function! foreplay#omnicomplete(findstart, base) abort
+function! fireplace#omnicomplete(findstart, base) abort
   if a:findstart
     let line = getline('.')[0 : col('.')-2]
     return col('.') - strlen(matchstr(line, '\k\+$')) - 1
@@ -79,9 +79,9 @@ function! foreplay#omnicomplete(findstart, base) abort
       let omnifier = '(fn [[k v]] (let [m (meta v)]' .
             \ ' {:word k :menu (pr-str (:arglists m (symbol ""))) :info (str "  " (:doc m)) :kind (if (:arglists m) "f" "v")}))'
 
-      let ns = foreplay#ns()
+      let ns = fireplace#ns()
 
-      let [aliases, namespaces, maps] = foreplay#evalparse(
+      let [aliases, namespaces, maps] = fireplace#evalparse(
             \ '[(ns-aliases '.s:qsym(ns).') (all-ns) '.
             \ '(sort-by :word (map '.omnifier.' (ns-map '.s:qsym(ns).')))]')
 
@@ -90,7 +90,7 @@ function! foreplay#omnicomplete(findstart, base) abort
         let prefix = ns . '/'
         let ns = get(aliases, ns, ns)
         let keyword = matchstr(a:base, '.*/\zs.*')
-        let results = foreplay#evalparse(
+        let results = fireplace#evalparse(
               \ '(sort-by :word (map '.omnifier.' (ns-publics '.s:qsym(ns).')))')
         for r in results
           let r.word = prefix . r.word
@@ -110,9 +110,9 @@ function! foreplay#omnicomplete(findstart, base) abort
   endif
 endfunction
 
-augroup foreplay_completion
+augroup fireplace_completion
   autocmd!
-  autocmd FileType clojure setlocal omnifunc=foreplay#omnicomplete
+  autocmd FileType clojure setlocal omnifunc=fireplace#omnicomplete
 augroup END
 
 " }}}1
@@ -173,9 +173,9 @@ endfunction
 " }}}1
 " :Connect {{{1
 
-command! -bar -complete=customlist,s:connect_complete -nargs=* ForeplayConnect :exe s:Connect(<f-args>)
+command! -bar -complete=customlist,s:connect_complete -nargs=* FireplaceConnect :exe s:Connect(<f-args>)
 
-function! foreplay#input_host_port()
+function! fireplace#input_host_port()
   let arg = input('Host> ', 'localhost')
   if arg ==# ''
     return ''
@@ -190,7 +190,7 @@ function! foreplay#input_host_port()
 endfunction
 
 function! s:protos()
-  return map(split(globpath(&runtimepath, 'autoload/*/foreplay_connection.vim'), "\n"), 'fnamemodify(v:val, ":h:t")')
+  return map(split(globpath(&runtimepath, 'autoload/*/fireplace_connection.vim'), "\n"), 'fnamemodify(v:val, ":h:t")')
 endfunction
 
 function! s:connect_complete(A, L, P)
@@ -200,7 +200,7 @@ function! s:connect_complete(A, L, P)
   else
     let rest = matchstr(a:A, '://\zs.*')
     try
-      let options = {proto}#foreplay_connection#complete(rest)
+      let options = {proto}#fireplace_connection#complete(rest)
     catch /^Vim(let):E117/
       let options = ['localhost:']
     endtry
@@ -229,10 +229,10 @@ function! s:Connect(arg, ...)
     redraw!
     echo ':Connect'
     echo 'Protocol> '.proto
-    let arg = {proto}#foreplay_connection#prompt()
+    let arg = {proto}#fireplace_connection#prompt()
   endif
   try
-    let connection = {proto}#foreplay_connection#open(arg)
+    let connection = {proto}#fireplace_connection#open(arg)
   catch /.*/
     return 'echoerr '.string(v:exception)
   endtry
@@ -249,9 +249,9 @@ function! s:Connect(arg, ...)
   return ''
 endfunction
 
-augroup foreplay_connect
+augroup fireplace_connect
   autocmd!
-  autocmd FileType clojure command! -bar -complete=customlist,s:connect_complete -nargs=* Connect :ForeplayConnect <args>
+  autocmd FileType clojure command! -bar -complete=customlist,s:connect_complete -nargs=* Connect :FireplaceConnect <args>
 augroup END
 
 " }}}1
@@ -322,7 +322,7 @@ endfunction
 " Client {{{1
 
 function! s:client() abort
-  silent doautocmd User ForeplayPreConnect
+  silent doautocmd User FireplacePreConnect
   if exists('s:input')
     let buf = s:input
   elseif has_key(s:qffiles, expand('%:p'))
@@ -339,16 +339,16 @@ function! s:client() abort
     let previous = root
     let root = fnamemodify(root, ':h')
   endwhile
-  return foreplay#local_client(1)
+  return fireplace#local_client(1)
 endfunction
 
-function! foreplay#client() abort
+function! fireplace#client() abort
   return s:client()
 endfunction
 
-function! foreplay#local_client(...)
+function! fireplace#local_client(...)
   if !a:0
-    silent doautocmd User ForeplayPreConnect
+    silent doautocmd User FireplacePreConnect
   endif
   if exists('s:input')
     let buf = s:input
@@ -369,12 +369,12 @@ function! foreplay#local_client(...)
   throw ':Connect to a REPL or install classpath.vim to evaluate code'
 endfunction
 
-function! foreplay#findresource(resource) abort
+function! fireplace#findresource(resource) abort
   if a:resource ==# ''
     return ''
   endif
   try
-    let path = foreplay#local_client().path()
+    let path = fireplace#local_client().path()
   catch /^:Connect/
     return ''
   endtry
@@ -383,14 +383,14 @@ function! foreplay#findresource(resource) abort
     return file
   endif
   for jar in path
-    if fnamemodify(jar, ':e') ==# 'jar' && index(foreplay#jar_contents(jar), a:resource) >= 0
+    if fnamemodify(jar, ':e') ==# 'jar' && index(fireplace#jar_contents(jar), a:resource) >= 0
       return 'zipfile:' . jar . '::' . a:resource
     endif
   endfor
   return ''
 endfunction
 
-function! foreplay#quickfix_for(stacktrace) abort
+function! fireplace#quickfix_for(stacktrace) abort
   let qflist = []
   for line in a:stacktrace
     let entry = {'text': line}
@@ -408,7 +408,7 @@ function! foreplay#quickfix_for(stacktrace) abort
       let qflist += [entry]
     endif
   endfor
-  let paths = map(copy(qflist), 'foreplay#findresource(v:val.resource)')
+  let paths = map(copy(qflist), 'fireplace#findresource(v:val.resource)')
   let i = 0
   for i in range(len(qflist))
     if !empty(paths[i])
@@ -435,16 +435,16 @@ function! s:eval(expr, ...) abort
   let options = a:0 ? copy(a:1) : {}
   let client = get(options, 'client', s:client())
   if !has_key(options, 'ns')
-    if foreplay#ns() !~# '^\%(user\)$'
-      let error = client.require(foreplay#ns())
+    if fireplace#ns() !~# '^\%(user\)$'
+      let error = client.require(fireplace#ns())
       if !empty(error)
         echohl ErrorMSG
         echo error
         echohl NONE
-        throw "Clojure: couldn't require " . foreplay#ns()
+        throw "Clojure: couldn't require " . fireplace#ns()
       endif
     endif
-    let options.ns = foreplay#ns()
+    let options.ns = fireplace#ns()
   endif
   return client.eval(a:expr, options)
 endfunction
@@ -489,11 +489,11 @@ function! s:qfhistory() abort
   return list
 endfunction
 
-function! foreplay#session_eval(expr) abort
+function! fireplace#session_eval(expr) abort
   let response = s:eval(a:expr, {'session': 1})
 
   if !empty(get(response, 'value', ''))
-    call insert(s:history, {'buffer': bufnr(''), 'code': a:expr, 'ns': foreplay#ns(), 'response': response})
+    call insert(s:history, {'buffer': bufnr(''), 'code': a:expr, 'ns': fireplace#ns(), 'response': response})
   endif
   if len(s:history) > &history
     call remove(s:history, &history, -1)
@@ -505,7 +505,7 @@ function! foreplay#session_eval(expr) abort
       let nr = winbufnr(s:qffiles[expand('%:p')].buffer)
     endif
     if nr != -1
-      call setloclist(nr, foreplay#quickfix_for(response.stacktrace))
+      call setloclist(nr, fireplace#quickfix_for(response.stacktrace))
       lopen
       wincmd p
     endif
@@ -518,28 +518,28 @@ function! foreplay#session_eval(expr) abort
   elseif has_key(response, 'value')
     return response.value
   else
-    let err = 'foreplay.vim: Something went wrong: '.string(response)
+    let err = 'fireplace.vim: Something went wrong: '.string(response)
   endif
   throw err
 endfunction
 
-function! foreplay#eval(expr) abort
-  return foreplay#session_eval(a:expr)
+function! fireplace#eval(expr) abort
+  return fireplace#session_eval(a:expr)
 endfunction
 
-function! foreplay#echo_session_eval(expr) abort
+function! fireplace#echo_session_eval(expr) abort
   try
-    echo foreplay#session_eval(a:expr)
+    echo fireplace#session_eval(a:expr)
   catch /^Clojure:/
   endtry
   return ''
 endfunction
 
-function! foreplay#evalprint(expr) abort
-  return foreplay#echo_session_eval(a:expr)
+function! fireplace#evalprint(expr) abort
+  return fireplace#echo_session_eval(a:expr)
 endfunction
 
-let g:foreplay#reader =
+let g:fireplace#reader =
       \ '(symbol ((fn *vimify [x]' .
       \  ' (cond' .
       \    ' (map? x)     (str "{" (apply str (interpose ", " (map (fn [[k v]] (str (*vimify k) ": " (*vimify v))) x))) "}")' .
@@ -550,9 +550,9 @@ let g:foreplay#reader =
       \    ' (keyword? x) (pr-str (name x))' .
       \    ' :else        (pr-str (str x)))) %s))'
 
-function! foreplay#evalparse(expr, ...) abort
+function! fireplace#evalparse(expr, ...) abort
   let options = extend({'session': 0}, a:0 ? a:1 : {})
-  let response = s:eval(printf(g:foreplay#reader, a:expr), options)
+  let response = s:eval(printf(g:fireplace#reader, a:expr), options)
   call s:output_response(response)
 
   if get(response, 'ex', '') !=# ''
@@ -560,7 +560,7 @@ function! foreplay#evalparse(expr, ...) abort
   elseif has_key(response, 'value')
     return empty(response.value) ? '' : eval(response.value)
   else
-    let err = 'foreplay.vim: Something went wrong: '.string(response)
+    let err = 'fireplace.vim: Something went wrong: '.string(response)
   endif
   throw err
 endfunction
@@ -568,7 +568,7 @@ endfunction
 " }}}1
 " Eval {{{1
 
-let foreplay#skip = 'synIDattr(synID(line("."),col("."),1),"name") =~? "comment\\|string\\|char"'
+let fireplace#skip = 'synIDattr(synID(line("."),col("."),1),"name") =~? "comment\\|string\\|char"'
 
 function! s:opfunc(type) abort
   let sel_save = &selection
@@ -585,7 +585,7 @@ function! s:opfunc(type) abort
     elseif a:type ==# 'block'
       silent exe "normal! `[\<C-V>`]y"
     elseif a:type ==# 'outer'
-      call searchpair('(','',')', 'Wbcr', g:foreplay#skip)
+      call searchpair('(','',')', 'Wbcr', g:fireplace#skip)
       silent exe "normal! vaby"
     else
       silent exe "normal! `[v`]y"
@@ -603,7 +603,7 @@ function! s:filterop(type) abort
   let reg_save = @@
   try
     let expr = s:opfunc(a:type)
-    let @@ = matchstr(expr, '^\n\+').foreplay#session_eval(expr).matchstr(expr, '\n\+$')
+    let @@ = matchstr(expr, '^\n\+').fireplace#session_eval(expr).matchstr(expr, '\n\+$')
     if @@ !~# '^\n*$'
       normal! gvp
     endif
@@ -616,11 +616,11 @@ endfunction
 
 function! s:printop(type) abort
   let s:todo = s:opfunc(a:type)
-  call feedkeys("\<Plug>ForeplayPrintLast")
+  call feedkeys("\<Plug>FireplacePrintLast")
 endfunction
 
 function! s:print_last() abort
-  call foreplay#echo_session_eval(s:todo)
+  call fireplace#echo_session_eval(s:todo)
   return ''
 endfunction
 
@@ -628,7 +628,7 @@ function! s:editop(type) abort
   call feedkeys(&cedit . "\<Home>", 'n')
   let input = s:input(substitute(substitute(s:opfunc(a:type), "\s*;[^\n]*", '', 'g'), '\n\+\s*', ' ', 'g'))
   if input !=# ''
-    call foreplay#echo_session_eval(input)
+    call fireplace#echo_session_eval(input)
   endif
 endfunction
 
@@ -638,8 +638,8 @@ function! s:Eval(bang, line1, line2, count, args) abort
   else
     if a:count ==# 0
       normal! ^
-      let line1 = searchpair('(','',')', 'bcrn', g:foreplay#skip)
-      let line2 = searchpair('(','',')', 'rn', g:foreplay#skip)
+      let line1 = searchpair('(','',')', 'bcrn', g:fireplace#skip)
+      let line2 = searchpair('(','',')', 'rn', g:fireplace#skip)
     else
       let line1 = a:line1
       let line2 = a:line2
@@ -654,7 +654,7 @@ function! s:Eval(bang, line1, line2, count, args) abort
   endif
   if a:bang
     try
-      let result = foreplay#session_eval(expr)
+      let result = fireplace#session_eval(expr)
       if a:args !=# ''
         call append(a:line1, result)
         exe a:line1
@@ -665,7 +665,7 @@ function! s:Eval(bang, line1, line2, count, args) abort
     catch /^Clojure:/
     endtry
   else
-    call foreplay#echo_session_eval(expr)
+    call fireplace#echo_session_eval(expr)
   endif
   return ''
 endfunction
@@ -679,18 +679,18 @@ function! s:actually_input(...)
 endfunction
 
 function! s:input(default) abort
-  if !exists('g:FOREPLAY_HISTORY') || type(g:FOREPLAY_HISTORY) != type([])
-    unlet! g:FOREPLAY_HISTORY
-    let g:FOREPLAY_HISTORY = []
+  if !exists('g:FIREPLACE_HISTORY') || type(g:FIREPLACE_HISTORY) != type([])
+    unlet! g:FIREPLACE_HISTORY
+    let g:FIREPLACE_HISTORY = []
   endif
   try
     let s:input = bufnr('%')
-    let s:oldhist = s:histswap(g:FOREPLAY_HISTORY)
-    return s:actually_input(foreplay#ns().'=> ', a:default, 'customlist,foreplay#eval_complete')
+    let s:oldhist = s:histswap(g:FIREPLACE_HISTORY)
+    return s:actually_input(fireplace#ns().'=> ', a:default, 'customlist,fireplace#eval_complete')
   finally
     unlet! s:input
     if exists('s:oldhist')
-      let g:FOREPLAY_HISTORY = s:histswap(s:oldhist)
+      let g:FIREPLACE_HISTORY = s:histswap(s:oldhist)
     endif
   endtry
 endfunction
@@ -710,7 +710,7 @@ function! s:inputeval() abort
   let input = s:input('')
   redraw
   if input !=# ''
-    call foreplay#echo_session_eval(input)
+    call fireplace#echo_session_eval(input)
   endif
   return ''
 endfunction
@@ -722,7 +722,7 @@ function! s:recall() abort
     if input =~# '^(\=$'
       return ''
     else
-      return foreplay#session_eval(input)
+      return fireplace#session_eval(input)
     endif
   catch /^Clojure:/
     return ''
@@ -743,19 +743,19 @@ function! s:histswap(list) abort
   return old
 endfunction
 
-nnoremap <silent> <Plug>ForeplayPrintLast :exe <SID>print_last()<CR>
-nnoremap <silent> <Plug>ForeplayPrint  :<C-U>set opfunc=<SID>printop<CR>g@
-xnoremap <silent> <Plug>ForeplayPrint  :<C-U>call <SID>printop(visualmode())<CR>
+nnoremap <silent> <Plug>FireplacePrintLast :exe <SID>print_last()<CR>
+nnoremap <silent> <Plug>FireplacePrint  :<C-U>set opfunc=<SID>printop<CR>g@
+xnoremap <silent> <Plug>FireplacePrint  :<C-U>call <SID>printop(visualmode())<CR>
 
-nnoremap <silent> <Plug>ForeplayFilter :<C-U>set opfunc=<SID>filterop<CR>g@
-xnoremap <silent> <Plug>ForeplayFilter :<C-U>call <SID>filterop(visualmode())<CR>
+nnoremap <silent> <Plug>FireplaceFilter :<C-U>set opfunc=<SID>filterop<CR>g@
+xnoremap <silent> <Plug>FireplaceFilter :<C-U>call <SID>filterop(visualmode())<CR>
 
-nnoremap <silent> <Plug>ForeplayEdit   :<C-U>set opfunc=<SID>editop<CR>g@
-xnoremap <silent> <Plug>ForeplayEdit   :<C-U>call <SID>editop(visualmode())<CR>
+nnoremap <silent> <Plug>FireplaceEdit   :<C-U>set opfunc=<SID>editop<CR>g@
+xnoremap <silent> <Plug>FireplaceEdit   :<C-U>call <SID>editop(visualmode())<CR>
 
-nnoremap          <Plug>ForeplayPrompt :exe <SID>inputeval()<CR>
+nnoremap          <Plug>FireplacePrompt :exe <SID>inputeval()<CR>
 
-noremap!          <Plug>ForeplayRecall <C-R>=<SID>recall()<CR>
+noremap!          <Plug>FireplaceRecall <C-R>=<SID>recall()<CR>
 
 function! s:Last(bang, count) abort
   if len(s:history) < a:count
@@ -779,22 +779,22 @@ function! s:Last(bang, count) abort
 endfunction
 
 function! s:setup_eval() abort
-  command! -buffer -bang -range=0 -nargs=? -complete=customlist,foreplay#eval_complete Eval :exe s:Eval(<bang>0, <line1>, <line2>, <count>, <q-args>)
+  command! -buffer -bang -range=0 -nargs=? -complete=customlist,fireplace#eval_complete Eval :exe s:Eval(<bang>0, <line1>, <line2>, <count>, <q-args>)
   command! -buffer -bang -bar -count=1 Last exe s:Last(<bang>0, <count>)
 
-  nmap <buffer> cp <Plug>ForeplayPrint
-  nmap <buffer> cpp <Plug>ForeplayPrintab
+  nmap <buffer> cp <Plug>FireplacePrint
+  nmap <buffer> cpp <Plug>FireplacePrintab
 
-  nmap <buffer> c! <Plug>ForeplayFilter
-  nmap <buffer> c!! <Plug>ForeplayFilterab
+  nmap <buffer> c! <Plug>FireplaceFilter
+  nmap <buffer> c!! <Plug>FireplaceFilterab
 
-  nmap <buffer> cq <Plug>ForeplayEdit
-  nmap <buffer> cqq <Plug>ForeplayEditab
+  nmap <buffer> cq <Plug>FireplaceEdit
+  nmap <buffer> cqq <Plug>FireplaceEditab
 
-  nmap <buffer> cqp <Plug>ForeplayPrompt
-  exe 'nmap <buffer> cqc <Plug>ForeplayPrompt' . &cedit . 'i'
+  nmap <buffer> cqp <Plug>FireplacePrompt
+  exe 'nmap <buffer> cqc <Plug>FireplacePrompt' . &cedit . 'i'
 
-  map! <buffer> <C-R>( <Plug>ForeplayRecall
+  map! <buffer> <C-R>( <Plug>FireplaceRecall
 endfunction
 
 function! s:setup_historical()
@@ -810,7 +810,7 @@ function! s:cmdwinleave()
   setlocal filetype< omnifunc<
 endfunction
 
-augroup foreplay_eval
+augroup fireplace_eval
   autocmd!
   autocmd FileType clojure call s:setup_eval()
   autocmd BufReadPost * if has_key(s:qffiles, expand('<afile>:p')) |
@@ -824,10 +824,10 @@ augroup END
 " :Require {{{1
 
 function! s:Require(bang, ns)
-  let cmd = ('(clojure.core/require '.s:qsym(a:ns ==# '' ? foreplay#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
+  let cmd = ('(clojure.core/require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
   echo cmd
   try
-    call foreplay#session_eval(cmd)
+    call fireplace#session_eval(cmd)
     return ''
   catch /^Clojure:.*/
     return ''
@@ -835,12 +835,12 @@ function! s:Require(bang, ns)
 endfunction
 
 function! s:setup_require()
-  command! -buffer -bar -bang -complete=customlist,foreplay#ns_complete -nargs=? Require :exe s:Require(<bang>0, <q-args>)
+  command! -buffer -bar -bang -complete=customlist,fireplace#ns_complete -nargs=? Require :exe s:Require(<bang>0, <q-args>)
   nnoremap <silent><buffer> cpr :Require<CR>
   nnoremap <silent><buffer> cpR :Require!<CR>
 endfunction
 
-augroup foreplay_require
+augroup fireplace_require
   autocmd!
   autocmd FileType clojure call s:setup_require()
 augroup END
@@ -857,15 +857,15 @@ function! s:decode_url(url) abort
   return url
 endfunction
 
-function! foreplay#source(symbol) abort
-  let options = {'client': foreplay#local_client(), 'session': 0}
+function! fireplace#source(symbol) abort
+  let options = {'client': fireplace#local_client(), 'session': 0}
   let cmd =
         \ '(when-let [v (resolve ' . s:qsym(a:symbol) .')]' .
         \ '  (when-let [filepath (:file (meta v))]' .
         \ '    (when-let [url (.getResource (clojure.lang.RT/baseLoader) filepath)]' .
         \ '      [(str url)' .
         \ '       (:line (meta v))])))'
-  let result = foreplay#evalparse(cmd, options)
+  let result = fireplace#evalparse(cmd, options)
   if type(result) == type([])
     return '+' . result[1] . ' ' . fnameescape(s:decode_url(result[0]))
   else
@@ -875,11 +875,11 @@ endfunction
 
 function! s:Edit(cmd, keyword) abort
   if a:keyword =~# '^\k\+/$'
-    let location = foreplay#findfile(a:keyword[0: -2])
+    let location = fireplace#findfile(a:keyword[0: -2])
   elseif a:keyword =~# '^\k\+\.[^/.]\+$'
-    let location = foreplay#findfile(a:keyword)
+    let location = fireplace#findfile(a:keyword)
   else
-    let location = foreplay#source(a:keyword)
+    let location = fireplace#source(a:keyword)
   endif
   if location !=# ''
     if matchstr(location, '^+\d\+ \zs.*') ==# expand('%:p') && a:cmd ==# 'edit'
@@ -892,29 +892,29 @@ function! s:Edit(cmd, keyword) abort
   return 'echoerr v:errmsg'
 endfunction
 
-nnoremap <silent> <Plug>ForeplayDjump :<C-U>exe <SID>Edit('edit', expand('<cword>'))<CR>
-nnoremap <silent> <Plug>ForeplayDsplit :<C-U>exe <SID>Edit('split', expand('<cword>'))<CR>
-nnoremap <silent> <Plug>ForeplayDtabjump :<C-U>exe <SID>Edit('tabedit', expand('<cword>'))<CR>
+nnoremap <silent> <Plug>FireplaceDjump :<C-U>exe <SID>Edit('edit', expand('<cword>'))<CR>
+nnoremap <silent> <Plug>FireplaceDsplit :<C-U>exe <SID>Edit('split', expand('<cword>'))<CR>
+nnoremap <silent> <Plug>FireplaceDtabjump :<C-U>exe <SID>Edit('tabedit', expand('<cword>'))<CR>
 
-augroup foreplay_source
+augroup fireplace_source
   autocmd!
   autocmd FileType clojure setlocal includeexpr=tr(v:fname,'.-','/_')
   autocmd FileType clojure setlocal suffixesadd=.clj,.java
   autocmd FileType clojure setlocal define=^\\s*(def\\w*
-  autocmd FileType clojure command! -bar -buffer -nargs=1 -complete=customlist,foreplay#eval_complete Djump  :exe s:Edit('edit', <q-args>)
-  autocmd FileType clojure command! -bar -buffer -nargs=1 -complete=customlist,foreplay#eval_complete Dsplit :exe s:Edit('split', <q-args>)
-  autocmd FileType clojure nmap <buffer> [<C-D>     <Plug>ForeplayDjump
-  autocmd FileType clojure nmap <buffer> ]<C-D>     <Plug>ForeplayDjump
-  autocmd FileType clojure nmap <buffer> <C-W><C-D> <Plug>ForeplayDsplit
-  autocmd FileType clojure nmap <buffer> <C-W>d     <Plug>ForeplayDsplit
-  autocmd FileType clojure nmap <buffer> <C-W>gd    <Plug>ForeplayDtabjump
+  autocmd FileType clojure command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Djump  :exe s:Edit('edit', <q-args>)
+  autocmd FileType clojure command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Dsplit :exe s:Edit('split', <q-args>)
+  autocmd FileType clojure nmap <buffer> [<C-D>     <Plug>FireplaceDjump
+  autocmd FileType clojure nmap <buffer> ]<C-D>     <Plug>FireplaceDjump
+  autocmd FileType clojure nmap <buffer> <C-W><C-D> <Plug>FireplaceDsplit
+  autocmd FileType clojure nmap <buffer> <C-W>d     <Plug>FireplaceDsplit
+  autocmd FileType clojure nmap <buffer> <C-W>gd    <Plug>FireplaceDtabjump
 augroup END
 
 " }}}1
 " Go to file {{{1
 
-function! foreplay#findfile(path) abort
-  let options = {'client': foreplay#local_client(), 'session': 0}
+function! fireplace#findfile(path) abort
+  let options = {'client': fireplace#local_client(), 'session': 0}
 
   let cmd =
         \ '(symbol' .
@@ -944,7 +944,7 @@ function! foreplay#findfile(path) abort
   endif
   let result = s:decode_url(result)
   if result ==# ''
-    return foreplay#findresource(path)
+    return fireplace#findresource(path)
   else
     return result
   endif
@@ -956,7 +956,7 @@ function! s:GF(cmd, file) abort
   else
     let file = a:file
   endif
-  let file = foreplay#findfile(file)
+  let file = fireplace#findfile(file)
   if file ==# ''
     let v:errmsg = "Couldn't find file for ".a:file
     return 'echoerr v:errmsg'
@@ -967,7 +967,7 @@ function! s:GF(cmd, file) abort
         \ '| let &l:path = ' . string(&l:path)
 endfunction
 
-augroup foreplay_go_to_file
+augroup fireplace_go_to_file
   autocmd!
   autocmd FileType clojure nnoremap <silent><buffer> gf         :<C-U>exe <SID>GF('edit', expand('<cfile>'))<CR>
   autocmd FileType clojure nnoremap <silent><buffer> <C-W>f     :<C-U>exe <SID>GF('split', expand('<cfile>'))<CR>
@@ -994,7 +994,7 @@ function! s:buffer_path(...) abort
   return ''
 endfunction
 
-function! foreplay#ns() abort
+function! fireplace#ns() abort
   let lnum = 1
   while lnum < line('$') && getline(lnum) =~# '^\s*\%(;.*\)\=$'
     let lnum += 1
@@ -1016,7 +1016,7 @@ endfunction
 function! s:Lookup(ns, macro, arg) abort
   " doc is in clojure.core in older Clojure versions
   try
-    call foreplay#session_eval("(clojure.core/require '".a:ns.") (clojure.core/eval (clojure.core/list (if (ns-resolve 'clojure.core '".a:macro.") 'clojure.core/".a:macro." '".a:ns.'/'.a:macro.") '".a:arg.'))')
+    call fireplace#session_eval("(clojure.core/require '".a:ns.") (clojure.core/eval (clojure.core/list (if (ns-resolve 'clojure.core '".a:macro.") 'clojure.core/".a:macro." '".a:ns.'/'.a:macro.") '".a:arg.'))')
   catch /^Clojure:/
   catch /.*/
     echohl ErrorMSG
@@ -1047,7 +1047,7 @@ function! s:Apropos(pattern) abort
   else
     let pattern = '"' . a:pattern . '"'
   endif
-  let matches = foreplay#evalparse('(clojure.repl/apropos '.pattern.')')
+  let matches = fireplace#evalparse('(clojure.repl/apropos '.pattern.')')
   if empty(matches)
     return ''
   endif
@@ -1069,25 +1069,25 @@ function! s:K()
   endif
 endfunction
 
-nnoremap <Plug>ForeplayK :<C-R>=<SID>K()<CR><CR>
-nnoremap <Plug>ForeplaySource :Source <C-R><C-W><CR>
+nnoremap <Plug>FireplaceK :<C-R>=<SID>K()<CR><CR>
+nnoremap <Plug>FireplaceSource :Source <C-R><C-W><CR>
 
-augroup foreplay_doc
+augroup fireplace_doc
   autocmd!
-  autocmd FileType clojure nmap <buffer> K  <Plug>ForeplayK
-  autocmd FileType clojure nmap <buffer> [d <Plug>ForeplaySource
-  autocmd FileType clojure nmap <buffer> ]d <Plug>ForeplaySource
+  autocmd FileType clojure nmap <buffer> K  <Plug>FireplaceK
+  autocmd FileType clojure nmap <buffer> [d <Plug>FireplaceSource
+  autocmd FileType clojure nmap <buffer> ]d <Plug>FireplaceSource
   autocmd FileType clojure command! -buffer -nargs=1 Apropos :exe s:Apropos(<q-args>)
   autocmd FileType clojure command! -buffer -nargs=1 FindDoc :exe s:Lookup('clojure.repl', 'find-doc', printf('#"%s"', <q-args>))
   autocmd FileType clojure command! -buffer -bar -nargs=1 Javadoc :exe s:Lookup('clojure.java.javadoc', 'javadoc', <q-args>)
-  autocmd FileType clojure command! -buffer -bar -nargs=1 -complete=customlist,foreplay#eval_complete Doc     :exe s:Lookup('clojure.repl', 'doc', <q-args>)
-  autocmd FileType clojure command! -buffer -bar -nargs=1 -complete=customlist,foreplay#eval_complete Source  :exe s:Lookup('clojure.repl', 'source', <q-args>)
+  autocmd FileType clojure command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Doc     :exe s:Lookup('clojure.repl', 'doc', <q-args>)
+  autocmd FileType clojure command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Source  :exe s:Lookup('clojure.repl', 'source', <q-args>)
 augroup END
 
 " }}}1
 " Alternate {{{1
 
-augroup foreplay_alternate
+augroup fireplace_alternate
   autocmd!
   autocmd FileType clojure command! -buffer -bar -bang A :exe s:Alternate('edit<bang>')
   autocmd FileType clojure command! -buffer -bar AS :exe s:Alternate('split')
@@ -1096,7 +1096,7 @@ augroup foreplay_alternate
 augroup END
 
 function! s:alternates() abort
-  let ns = foreplay#ns()
+  let ns = fireplace#ns()
   if ns =~# '-test$'
     let alt = [ns[0:-6]]
   elseif ns =~# '\.test\.'
@@ -1112,7 +1112,7 @@ endfunction
 function! s:Alternate(cmd) abort
   let alternates = s:alternates()
   for file in alternates
-    let path = foreplay#findresource(file)
+    let path = fireplace#findresource(file)
     if !empty(path)
       return a:cmd . ' ' . fnameescape(path)
     endif
@@ -1152,7 +1152,7 @@ function! s:leiningen_connect()
     let port = matchstr(readfile(portfile, 'b', 1)[0], '\d\+')
     let s:leiningen_repl_ports[b:leiningen_root] = getftime(portfile)
     try
-      call s:register_connection(nrepl#foreplay_connection#open(port), b:leiningen_root)
+      call s:register_connection(nrepl#fireplace_connection#open(port), b:leiningen_root)
     catch /^nREPL Connection Error:/
       call delete(portfile)
     endtry
@@ -1178,9 +1178,9 @@ function! s:leiningen_init() abort
   call s:leiningen_connect()
 endfunction
 
-augroup foreplay_leiningen
+augroup fireplace_leiningen
   autocmd!
-  autocmd User ForeplayPreConnect call s:leiningen_connect()
+  autocmd User FireplacePreConnect call s:leiningen_connect()
   autocmd FileType clojure call s:leiningen_init()
 augroup END
 

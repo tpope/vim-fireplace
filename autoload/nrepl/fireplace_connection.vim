@@ -1,10 +1,10 @@
-" autoload/nrepl/foreplay_connection.vim
+" autoload/nrepl/fireplace_connection.vim
 " Maintainer:   Tim Pope <http://tpo.pe/>
 
-if exists("g:autoloaded_nrepl_foreplay_connection") || &cp
+if exists("g:autoloaded_nrepl_fireplace_connection") || &cp
   finish
 endif
-let g:autoloaded_nrepl_foreplay_connection = 1
+let g:autoloaded_nrepl_fireplace_connection = 1
 
 function! s:function(name) abort
   return function(substitute(a:name,'^s:',matchstr(expand('<sfile>'), '<SNR>\d\+_'),''))
@@ -12,21 +12,21 @@ endfunction
 
 " Bencode {{{1
 
-function! nrepl#foreplay_connection#bencode(value) abort
+function! nrepl#fireplace_connection#bencode(value) abort
   if type(a:value) == type(0)
     return 'i'.a:value.'e'
   elseif type(a:value) == type('')
     return strlen(a:value).':'.a:value
   elseif type(a:value) == type([])
-    return 'l'.join(map(a:value,'nrepl#foreplay_connection#bencode(v:val)'),'').'e'
+    return 'l'.join(map(a:value,'nrepl#fireplace_connection#bencode(v:val)'),'').'e'
   elseif type(a:value) == type({})
-    return 'd'.join(values(map(a:value,'nrepl#foreplay_connection#bencode(v:key).nrepl#foreplay_connection#bencode(v:val)')),'').'e'
+    return 'd'.join(values(map(a:value,'nrepl#fireplace_connection#bencode(v:key).nrepl#fireplace_connection#bencode(v:val)')),'').'e'
   else
     throw "Can't bencode ".string(a:value)
   endif
 endfunction
 
-function! nrepl#foreplay_connection#bdecode(value) abort
+function! nrepl#fireplace_connection#bdecode(value) abort
   return s:bdecode({'pos': 0, 'value': a:value})
 endfunction
 
@@ -80,11 +80,11 @@ function! s:shellesc(arg) abort
   endif
 endfunction
 
-function! nrepl#foreplay_connection#prompt() abort
-  return foreplay#input_host_port()
+function! nrepl#fireplace_connection#prompt() abort
+  return fireplace#input_host_port()
 endfunction
 
-function! nrepl#foreplay_connection#open(arg) abort
+function! nrepl#fireplace_connection#open(arg) abort
   if a:arg =~# '^\d\+$'
     let host = 'localhost'
     let port = a:arg
@@ -187,10 +187,10 @@ function! s:nrepl_call(payload) dict abort
         \ 'break if body.include?(%(6:statusl4:done)) }};' .
         \ 'rescue; abort $!.to_s;' .
         \ 'end') . ' ' .
-        \ s:shellesc(nrepl#foreplay_connection#bencode(a:payload))
+        \ s:shellesc(nrepl#fireplace_connection#bencode(a:payload))
   let out = system(in)
   if !v:shell_error
-    return nrepl#foreplay_connection#bdecode('l'.out.'e')
+    return nrepl#fireplace_connection#bdecode('l'.out.'e')
   endif
   throw 'nREPL: '.split(out, "\n")[0]
 endfunction
@@ -212,7 +212,7 @@ import socket
 import string
 import re
 
-def foreplay_string_encode(input):
+def fireplace_string_encode(input):
   str_list = []
   for c in input:
     if (000 <= ord(c) and ord(c) <= 037) or c == '"' or c == "\\":
@@ -221,10 +221,10 @@ def foreplay_string_encode(input):
       str_list.append(c)
   return '"' + ''.join(str_list) + '"'
 
-def foreplay_let(var, value):
-  return vim.command('let ' + var + " = " + foreplay_string_encode(value))
+def fireplace_let(var, value):
+  return vim.command('let ' + var + " = " + fireplace_string_encode(value))
 
-def foreplay_repl_interact():
+def fireplace_repl_interact():
   buffer = ''
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   host = vim.eval('self.host')
@@ -243,20 +243,20 @@ def foreplay_repl_interact():
       buffer += body
       if string.find(body, '6:statusl4:done') != -1:
         break
-    foreplay_let('out', buffer)
+    fireplace_let('out', buffer)
   except Exception, e:
-    foreplay_let('err', str(e))
+    fireplace_let('err', str(e))
   finally:
     s.close()
 EOF
 
 function! s:nrepl_call(payload) dict abort
-  let payload = nrepl#foreplay_connection#bencode(a:payload)
+  let payload = nrepl#fireplace_connection#bencode(a:payload)
   python << EOF
-foreplay_repl_interact()
+fireplace_repl_interact()
 EOF
   if !exists('err')
-    return nrepl#foreplay_connection#bdecode('l'.out.'e')
+    return nrepl#fireplace_connection#bdecode('l'.out.'e')
   endif
   throw 'nREPL Connection Error: '.err
 endfunction
