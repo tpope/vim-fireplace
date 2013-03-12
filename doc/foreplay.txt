@@ -5,8 +5,7 @@ License: Same terms as Vim itself (see |license|)
 
 This plugin is only available if 'compatible' is not set.
 
-You need Clojure runtime files to use this plugin.  Try VimClojure.  You don't
-need the interactive stuff.
+You need Clojure runtime files to use this plugin.  Try vim-clojure-static.
 
 CLASSPATH                                       *foreplay-classpath*
 
