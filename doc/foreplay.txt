@@ -7,17 +7,6 @@ This plugin is only available if 'compatible' is not set.
 
 You need Clojure runtime files to use this plugin.  Try vim-clojure-static.
 
-CLASSPATH                                       *foreplay-classpath*
-
-Upon loading a Clojure buffer, the 'path' option is automatically set to your
-class path.  The class path is found by `lein classpath`, `mvn
-dependency:build-classpath`, or failing both of those, $CLASSPATH.
-
-This behavior is going away soon.  Install classpath.vim if you'd like to keep
-it.
-
-        https://github.com/tpope/vim-classpath
-
 CONNECTING TO A REPL                            *foreplay-connect*
 
 Connecting to lein repl happens automatically.  If you have a different setup,

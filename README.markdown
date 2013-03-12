@@ -97,22 +97,10 @@ Because why not?  It works in the quasi-REPL too.
 
 > Why does it take so long for Vim to startup?
 
-The short answer is because the JVM is slow.
+See the [classpath.vim FAQ][].  You can uninstall classpath.vim if you only
+care about nREPL support.
 
-The first time you load a Clojure file from any given project, foreplay.vim
-sets about trying to determine your class path, leveraging either
-`lein classpath` or `mvn dependency:build-classpath`.  This takes a couple of
-seconds or so in the best case scenario, and potentially much longer if it
-decides to hit the network.  (I don't understand why "tell me the class path"
-requires hitting the network, but what do I know?)
-
-Because the class path is oh-so-expensive to retrieve, foreplay.vim caches it
-in `g:CLASSPATH_CACHE`.  By default, this disappears when you exit Vim, but
-you can save it across sessions in `.viminfo` with this handy option:
-
-    set viminfo+=!
-
-The cache is expired when the timestamp on `project.clj` or `pom.xml` changes.
+[classpath.vim FAQ]: https://github.com/tpope/vim-classpath#FAQ
 
 ## Contributing
 
