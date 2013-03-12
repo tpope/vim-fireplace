@@ -7,7 +7,7 @@ endif
 
 runtime! autoload/zip.vim
 
-" Copied and pasted verbatime from autoload/zip.vim.
+" Copied and pasted verbatim from autoload/zip.vim.
 
 fun! zip#Read(fname,mode)
 "  call Dfunc("zip#Read(fname<".a:fname.">,mode=".a:mode.")")
