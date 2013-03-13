@@ -35,9 +35,9 @@ The REPL is used for the commands below. If no REPL is found for the current
 buffer and classpath.vim is installed, java (or $JAVA_CMD) is invoked
 directly, which can be quite slow depending on your setup.
 
-The only adapter shipped with foreplay.vim is for nREPL.  You need Ruby
-installed and either |if_pyth| or the ruby command in your PATH.
-(This curious combination is an accident of history.)
+The only adapter shipped with foreplay.vim is for nREPL.  You need either
+|if_pyth| or the ruby command in your PATH.  (This curious combination is an
+accident of history.)
 
 LEININGEN                                       *foreplay-leiningen*
 
