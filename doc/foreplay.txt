@@ -18,15 +18,10 @@ it.
 
         https://github.com/tpope/vim-classpath
 
-LEININGEN                                       *foreplay-leiningen*
-
-Leiningen support is currently bare bones.  If a Leiningen project is found,
-'makeprg' will be set to "lein".
-
-Leiningen 2.x writes to target/repl-port when `lein repl` is invoked.  If this
-file is found, an nREPL connection will be established automatically.
-
 CONNECTING TO A REPL                            *foreplay-connect*
+
+Connecting to lein repl happens automatically.  If you have a different setup,
+you can connect by hand.
 
                                                 *foreplay-:Connect*
 :Connect {proto}://{host}:{port} {path}
@@ -43,6 +38,13 @@ directly, which can be quite slow depending on your setup.
 The only adapter shipped with foreplay.vim is for nREPL.  You need Ruby
 installed and either |if_pyth| or the ruby command in your PATH.
 (This curious combination is an accident of history.)
+
+LEININGEN                                       *foreplay-leiningen*
+
+In addition to automatic repl connection, Clojure buffers in a Leiningen
+project will automatically have their 'makeprg' set to lein.  This has the
+nominal value of letting you call, for example, |:make| deps rather than
+:!lein deps.
 
 DOCUMENTATION                                   *foreplay-documentation*
 
