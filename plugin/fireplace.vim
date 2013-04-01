@@ -798,7 +798,7 @@ function! s:setup_eval() abort
 endfunction
 
 function! s:setup_historical()
-  set readonly nomodifiable
+  setlocal readonly nomodifiable
   nnoremap <buffer><silent>q :bdelete<CR>
 endfunction
 
