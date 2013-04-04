@@ -837,7 +837,6 @@ endfunction
 function! s:setup_require()
   command! -buffer -bar -bang -complete=customlist,fireplace#ns_complete -nargs=? Require :exe s:Require(<bang>0, <q-args>)
   nnoremap <silent><buffer> cpr :Require<CR>
-  nnoremap <silent><buffer> cpR :Require!<CR>
 endfunction
 
 augroup fireplace_require

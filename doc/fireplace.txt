@@ -133,9 +133,6 @@ cpp                     Eval/print the inner-most expr at the cursor.
                                                 *fireplace-cpr*
 cpr                     Eval a require :reload form.
 
-                                                *fireplace-cpR*
-cpR                     Eval a require :reload-all form.
-
                                                 *fireplace-c!*
 c!{motion}              Eval/replace the code indicated by {motion}.
 
