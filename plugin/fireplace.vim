@@ -1007,10 +1007,12 @@ function! fireplace#ns() abort
   while lnum < line('$') && getline(lnum) =~# '^\s*\%(;.*\)\=$'
     let lnum += 1
   endwhile
+  let keyword_group = '[A-Za-z0-9_?*!+/=<>.-]'
   let lines = join(getline(lnum, lnum+50), ' ')
   let lines = substitute(lines, '"\%(\\.\|[^"]\)*"\|\\.', '', 'g')
   let lines = substitute(lines, '\^\={[^{}]*}', '', '')
-  let ns = matchstr(lines, '\C^(\s*\%(in-ns\s*''\|ns\s\+\)\zs[A-Za-z0-9_?*!+/=<>.-]\+\ze')
+  let lines = substitute(lines, '\^:'.keyword_group.'\+', '', 'g')
+  let ns = matchstr(lines, '\C^(\s*\%(in-ns\s*''\|ns\s\+\)\zs'.keyword_group.'\+\ze')
   if ns !=# ''
     return ns
   endif
