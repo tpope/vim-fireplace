@@ -41,7 +41,7 @@ compiled in, or `ruby` in your path. (Don't ask.)
 
 Oh, and if you don't have an nREPL connection, installing [classpath.vim][]
 lets it fall back to using `java clojure.main`, using a class path based on
-your Leiningen or Maven config.  It's a bit slow, but a two second delay its
+your Leiningen or Maven config.  It's a bit slow, but a two-second delay is
 vastly preferable to being forced out of my flow for a single command, in my
 book.
 
