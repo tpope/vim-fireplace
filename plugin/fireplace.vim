@@ -475,7 +475,7 @@ function! s:qfentry(entry) abort
     let a:entry.tempfile = s:temp_response(a:entry.response)
   endif
   let s:qffiles[a:entry.tempfile] = a:entry
-  return {'filename': a:entry.tempfile, 'text': a:entry.code}
+  return {'filename': a:entry.tempfile, 'text': a:entry.code, 'type': 'E'}
 endfunction
 
 function! s:qfhistory() abort
@@ -486,6 +486,7 @@ function! s:qfhistory() abort
     endif
     call extend(list, [s:qfentry(entry)])
   endfor
+  let g:list = list
   return list
 endfunction
 
@@ -813,7 +814,7 @@ endfunction
 augroup fireplace_eval
   autocmd!
   autocmd FileType clojure call s:setup_eval()
-  autocmd BufReadPost * if has_key(s:qffiles, expand('<afile>:p')) |
+  autocmd BufReadPost * if has_key(s:qffiles, expand('<amatch>:p')) |
         \   call s:setup_historical() |
         \ endif
   autocmd CmdWinEnter @ if exists('s:input') | call s:cmdwinenter() | endif
@@ -873,13 +874,17 @@ function! fireplace#source(symbol) abort
 endfunction
 
 function! s:Edit(cmd, keyword) abort
-  if a:keyword =~# '^\k\+/$'
-    let location = fireplace#findfile(a:keyword[0: -2])
-  elseif a:keyword =~# '^\k\+\.[^/.]\+$'
-    let location = fireplace#findfile(a:keyword)
-  else
-    let location = fireplace#source(a:keyword)
-  endif
+  try
+    if a:keyword =~# '^\k\+/$'
+      let location = fireplace#findfile(a:keyword[0: -2])
+    elseif a:keyword =~# '^\k\+\.[^/.]\+$'
+      let location = fireplace#findfile(a:keyword)
+    else
+      let location = fireplace#source(a:keyword)
+    endif
+  catch /^Clojure:/
+    return ''
+  endtry
   if location !=# ''
     if matchstr(location, '^+\d\+ \zs.*') ==# expand('%:p') && a:cmd ==# 'edit'
       return matchstr(location, '\d\+')
@@ -955,7 +960,11 @@ function! s:GF(cmd, file) abort
   else
     let file = a:file
   endif
-  let file = fireplace#findfile(file)
+  try
+    let file = fireplace#findfile(file)
+  catch /^Clojure:/
+    return ''
+  endtry
   if file ==# ''
     let v:errmsg = "Couldn't find file for ".a:file
     return 'echoerr v:errmsg'
