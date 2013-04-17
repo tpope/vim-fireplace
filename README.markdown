@@ -96,7 +96,7 @@ Where possible, I favor enhancing built-ins over inventing a bunch of
 
 Because why not?  It works in the quasi-REPL too.
 
-### FAQ
+## FAQ
 
 > Why does it take so long for Vim to startup?
 
