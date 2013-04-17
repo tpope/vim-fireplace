@@ -216,7 +216,7 @@ def fireplace_string_encode(input):
   str_list = []
   for c in input:
     if (000 <= ord(c) and ord(c) <= 037) or c == '"' or c == "\\":
-      str_list.append("\\{0:03o}".format(ord(c)))
+      str_list.append("\\{0:03o}" % ord(c))
     else:
       str_list.append(c)
   return '"' + ''.join(str_list) + '"'
@@ -231,21 +231,22 @@ def fireplace_repl_interact():
   port = int(vim.eval('self.port'))
   s.settimeout(8)
   try:
-    s.connect((host, port))
-    s.setblocking(1)
-    s.sendall(vim.eval('payload'))
-    while True:
-      while len(select.select([s], [], [], 0.1)[0]) == 0:
-        vim.eval('getchar(1)')
-      body = s.recv(8192)
-      if re.search("=> $", body) != None:
-        raise Exception("not an nREPL server: upgrade to Leiningen 2")
-      buffer += body
-      if string.find(body, '6:statusl4:done') != -1:
-        break
-    fireplace_let('out', buffer)
-  except Exception, e:
-    fireplace_let('err', str(e))
+    try:
+      s.connect((host, port))
+      s.setblocking(1)
+      s.sendall(vim.eval('payload'))
+      while True:
+        while len(select.select([s], [], [], 0.1)[0]) == 0:
+          vim.eval('getchar(1)')
+        body = s.recv(8192)
+        if re.search("=> $", body) != None:
+          raise Exception("not an nREPL server: upgrade to Leiningen 2")
+        buffer += body
+        if string.find(body, '6:statusl4:done') != -1:
+          break
+      fireplace_let('out', buffer)
+    except Exception, e:
+      fireplace_let('err', str(e))
   finally:
     s.close()
 EOF
