@@ -1164,7 +1164,6 @@ function! s:leiningen_connect()
     try
       call s:register_connection(nrepl#fireplace_connection#open(port), b:leiningen_root)
     catch /^nREPL Connection Error:/
-      call delete(portfile)
     endtry
   endif
 endfunction
