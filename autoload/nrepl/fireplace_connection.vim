@@ -216,7 +216,7 @@ def fireplace_string_encode(input):
   str_list = []
   for c in input:
     if (000 <= ord(c) and ord(c) <= 037) or c == '"' or c == "\\":
-      str_list.append("\\{0:03o}" % ord(c))
+      str_list.append("\\{0:03o}".format(ord(c)))
     else:
       str_list.append(c)
   return '"' + ''.join(str_list) + '"'
