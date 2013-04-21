@@ -1078,8 +1078,7 @@ function! s:K()
 endfunction
 
 function! s:Expand(fn) abort
-  silent exe 'normal! "myab'
-  let form = @m
+  let form = s:opfunc('outer')
   let expansion = fireplace#session_eval('(clojure.core/'.a:fn.' (quote '.form.'))')
   return 'echo "\n"'.shellescape(expansion)
 endfunction
