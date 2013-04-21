@@ -60,6 +60,12 @@ K                       Look up docs for keyword under cursor.
 [d                      Show source for keyword under cursor.
 ]d
 
+                                                *fireplace-[me*
+[me                     macroexpand the form under the cursor.
+
+                                                *fireplace-]me*
+]me                     macroexpand-1 the form under the cursor.
+
 NAVIGATING                                      *fireplace-navigating*
 
 These commands will never use a remote REPL, only a local one, as file paths
