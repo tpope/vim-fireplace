@@ -538,6 +538,10 @@ function! fireplace#evalprint(expr) abort
   return fireplace#echo_session_eval(a:expr)
 endfunction
 
+function! fireplace#macroexpand(fn, form) abort
+  return fireplace#evalprint('(clojure.core/'.a:fn.' (quote '.a:form.'))')
+endfunction
+
 let g:fireplace#reader =
       \ '(symbol ((fn *vimify [x]' .
       \  ' (cond' .
@@ -611,6 +615,14 @@ function! s:filterop(type) abort
   finally
     let @@ = reg_save
   endtry
+endfunction
+
+function! s:macroexpandop(type) abort
+  call fireplace#macroexpand("macroexpand", s:opfunc(a:type))
+endfunction
+
+function! s:macroexpand1op(type) abort
+  call fireplace#macroexpand("macroexpand-1", s:opfunc(a:type))
 endfunction
 
 function! s:printop(type) abort
@@ -749,6 +761,11 @@ xnoremap <silent> <Plug>FireplacePrint  :<C-U>call <SID>printop(visualmode())<CR
 nnoremap <silent> <Plug>FireplaceFilter :<C-U>set opfunc=<SID>filterop<CR>g@
 xnoremap <silent> <Plug>FireplaceFilter :<C-U>call <SID>filterop(visualmode())<CR>
 
+nnoremap <silent> <Plug>FireplaceMacroExpand  :<C-U>set opfunc=<SID>macroexpandop<CR>g@
+xnoremap <silent> <Plug>FireplaceMacroExpand  :<C-U>call <SID>macroexpandop(visualmode())<CR>
+nnoremap <silent> <Plug>FireplaceMacroExpand1 :<C-U>set opfunc=<SID>macroexpand1op<CR>g@
+xnoremap <silent> <Plug>FireplaceMacroExpand1 :<C-U>call <SID>macroexpand1op(visualmode())<CR>
+
 nnoremap <silent> <Plug>FireplaceEdit   :<C-U>set opfunc=<SID>editop<CR>g@
 xnoremap <silent> <Plug>FireplaceEdit   :<C-U>call <SID>editop(visualmode())<CR>
 
@@ -786,6 +803,11 @@ function! s:setup_eval() abort
 
   nmap <buffer> c! <Plug>FireplaceFilter
   nmap <buffer> c!! <Plug>FireplaceFilterab
+
+  nmap <buffer> cm <Plug>FireplaceMacroExpand
+  nmap <buffer> cmm <Plug>FireplaceMacroExpandab
+  nmap <buffer> c1m <Plug>FireplaceMacroExpand1
+  nmap <buffer> c1mm <Plug>FireplaceMacroExpand1ab
 
   nmap <buffer> cq <Plug>FireplaceEdit
   nmap <buffer> cqq <Plug>FireplaceEditab
