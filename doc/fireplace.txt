@@ -139,6 +139,18 @@ c!{motion}              Eval/replace the code indicated by {motion}.
 
 c!!                     Eval/replace the inner-most expr at the cursor.
 
+                                                *fireplace-cm*
+cm{motion}              Fully macroexpand the code indicated by {motion}.
+
+                                                *fireplace-cmm*
+cmm                     Fully macroexpand the inner-most expr at the cursor.
+
+                                                *fireplace-c1m*
+c1m{motion}             Macroexpand the code indicated by {motion} once.
+
+                                                *fireplace-c1mm*
+c1mm                    Macroexpand the inner-most expr at the cursor once.
+
                                                 *fireplace-cqp*
 cqp                     Bring up a prompt for code to eval/print.
 
