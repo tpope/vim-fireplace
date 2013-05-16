@@ -146,7 +146,12 @@ endfunction
 
 function! s:nrepl_eval(expr, ...) dict abort
   let payload = {"op": "eval"}
-  let payload.code = '(try (clojure.core/eval ''(do '.a:expr."\n".'))' .
+  if g:fireplace_pprint
+    let payload.code = '(try (clojure.pprint/pprint (clojure.core/eval ''(do '.a:expr."\n".')))'
+  else
+    let payload.code = '(try (clojure.core/eval ''(do '.a:expr."\n".'))'
+  endif
+  let payload.code = payload.code .   
         \ ' (catch Exception e' .
         \ '   (clojure.core/print (clojure.core/apply clojure.core/str (clojure.core/interleave (clojure.core/repeat "\b") (clojure.core/map clojure.core/str (.getStackTrace e)))))' .
         \ '   (throw e)))'
@@ -231,22 +236,21 @@ def fireplace_repl_interact():
   port = int(vim.eval('self.port'))
   s.settimeout(8)
   try:
-    try:
-      s.connect((host, port))
-      s.setblocking(1)
-      s.sendall(vim.eval('payload'))
-      while True:
-        while len(select.select([s], [], [], 0.1)[0]) == 0:
-          vim.eval('getchar(1)')
-        body = s.recv(8192)
-        if re.search("=> $", body) != None:
-          raise Exception("not an nREPL server: upgrade to Leiningen 2")
-        buffer += body
-        if string.find(body, '6:statusl4:done') != -1:
-          break
-      fireplace_let('out', buffer)
-    except Exception, e:
-      fireplace_let('err', str(e))
+    s.connect((host, port))
+    s.setblocking(1)
+    s.sendall(vim.eval('payload'))
+    while True:
+      while len(select.select([s], [], [], 0.1)[0]) == 0:
+        vim.eval('getchar(1)')
+      body = s.recv(8192)
+      if re.search("=> $", body) != None:
+        raise Exception("not an nREPL server: upgrade to Leiningen 2")
+      buffer += body
+      if string.find(body, '6:statusl4:done') != -1:
+        break
+    fireplace_let('out', buffer)
+  except Exception, e:
+    fireplace_let('err', str(e))
   finally:
     s.close()
 EOF

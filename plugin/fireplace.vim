@@ -16,6 +16,10 @@ augroup END
 " }}}1
 " Escaping {{{1
 
+if !exists("g:fireplace_pprint")
+    let g:fireplace_pprint=0
+endif
+
 function! s:str(string)
   return '"' . escape(a:string, '"\') . '"'
 endfunction
@@ -173,7 +177,7 @@ endfunction
 " }}}1
 " :Connect {{{1
 
-command! -bar -complete=customlist,s:connect_complete -nargs=+ FireplaceConnect :exe s:Connect(<f-args>)
+command! -bar -complete=customlist,s:connect_complete -nargs=* FireplaceConnect :exe s:Connect(<f-args>)
 
 function! fireplace#input_host_port()
   let arg = input('Host> ', 'localhost')
@@ -251,7 +255,7 @@ endfunction
 
 augroup fireplace_connect
   autocmd!
-  autocmd FileType clojure command! -bar -complete=customlist,s:connect_complete -nargs=+ Connect :FireplaceConnect <args>
+  autocmd FileType clojure command! -bar -complete=customlist,s:connect_complete -nargs=* Connect :FireplaceConnect <args>
 augroup END
 
 " }}}1
@@ -507,6 +511,8 @@ function! fireplace#session_eval(expr) abort
     endif
     if nr != -1
       call setloclist(nr, fireplace#quickfix_for(response.stacktrace))
+      lopen
+      wincmd p
     endif
   endif
 
@@ -1162,6 +1168,7 @@ function! s:leiningen_connect()
     try
       call s:register_connection(nrepl#fireplace_connection#open(port), b:leiningen_root)
     catch /^nREPL Connection Error:/
+      call delete(portfile)
     endtry
   endif
 endfunction
