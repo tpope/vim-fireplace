@@ -598,10 +598,6 @@ function! s:opfunc(type) abort
   endtry
 endfunction
 
-function! s:filterop(type) abort
-  return s:replaceop(a:type, s:opfunc(a:type))
-endfunction
-
 function! s:replaceop(type, expr) abort
   let reg_save = @@
   try
@@ -614,6 +610,15 @@ function! s:replaceop(type, expr) abort
   finally
     let @@ = reg_save
   endtry
+endfunction
+
+function! s:filterop(type) abort
+  return s:replaceop(a:type, s:opfunc(a:type))
+endfunction
+
+function! s:unthreadop(type) abort
+  let expr = '(poker.refactor/unthread (quote '.s:opfunc(a:type).'))'
+  return s:replaceop(a:type, expr)
 endfunction
 
 function! s:printop(type) abort
@@ -752,6 +757,9 @@ xnoremap <silent> <Plug>FireplacePrint  :<C-U>call <SID>printop(visualmode())<CR
 nnoremap <silent> <Plug>FireplaceFilter :<C-U>set opfunc=<SID>filterop<CR>g@
 xnoremap <silent> <Plug>FireplaceFilter :<C-U>call <SID>filterop(visualmode())<CR>
 
+nnoremap <silent> <Plug>FireplaceUnthread :<C-U>set opfunc=<SID>unthreadop<CR>g@
+xnoremap <silent> <Plug>FireplaceUnthread :<C-U>call <SID>unthreadop(visualmode())<CR>
+
 nnoremap <silent> <Plug>FireplaceEdit   :<C-U>set opfunc=<SID>editop<CR>g@
 xnoremap <silent> <Plug>FireplaceEdit   :<C-U>call <SID>editop(visualmode())<CR>
 
@@ -789,6 +797,9 @@ function! s:setup_eval() abort
 
   nmap <buffer> c! <Plug>FireplaceFilter
   nmap <buffer> c!! <Plug>FireplaceFilterab
+
+  nmap <buffer> crut <Plug>FireplaceUnthread
+  nmap <buffer> crutt <Plug>FireplaceUnthreadab
 
   nmap <buffer> cq <Plug>FireplaceEdit
   nmap <buffer> cqq <Plug>FireplaceEditab
