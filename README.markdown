@@ -98,9 +98,9 @@ Because why not?  It works in the quasi-REPL too.
 
 ### Refactoring
 
-If [Poker] has been `refer`-ed in the nREPL session, `crut`, `crtf` and
-`crtl` apply unthreading, threading-first and threading-last refactorings
-to a motion. Highly experimental. 
+If [Poker](https://github.com/ctford/poker) has been `refer`-ed in the
+nREPL session, `crut`, `crtf` and `crtl` apply unthreading, threading-first
+and threading-last refactorings to a motion. Highly experimental. 
 
 ## FAQ
 
