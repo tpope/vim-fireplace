@@ -599,10 +599,13 @@ function! s:opfunc(type) abort
 endfunction
 
 function! s:filterop(type) abort
+  return s:replaceop(a:type, s:opfunc(a:type))
+endfunction
+
+function! s:replaceop(type, expr) abort
   let reg_save = @@
   try
-    let expr = s:opfunc(a:type)
-    let @@ = matchstr(expr, '^\n\+').fireplace#session_eval(expr).matchstr(expr, '\n\+$')
+    let @@ = matchstr(a:expr, '^\n\+').fireplace#session_eval(a:expr).matchstr(a:expr, '\n\+$')
     if @@ !~# '^\n*$'
       normal! gvp
     endif
