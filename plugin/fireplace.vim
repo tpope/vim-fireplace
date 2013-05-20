@@ -631,6 +631,11 @@ function! s:threadlastop(type) abort
   return s:replaceop(a:type, expr)
 endfunction
 
+function! s:threadop(type) abort
+  let expr = '(poker.refactor/thread (quote '.s:opfunc(a:type).'))'
+  return s:replaceop(a:type, expr)
+endfunction
+
 function! s:printop(type) abort
   let s:todo = s:opfunc(a:type)
   call feedkeys("\<Plug>FireplacePrintLast")
@@ -773,6 +778,8 @@ nnoremap <silent> <Plug>FireplaceThreadFirst :<C-U>set opfunc=<SID>threadfirstop
 xnoremap <silent> <Plug>FireplaceThreadFirst :<C-U>call <SID>threadfirstop(visualmode())<CR>
 nnoremap <silent> <Plug>FireplaceThreadLast :<C-U>set opfunc=<SID>threadlastop<CR>g@
 xnoremap <silent> <Plug>FireplaceThreadLast :<C-U>call <SID>threadlastop(visualmode())<CR>
+nnoremap <silent> <Plug>FireplaceThread :<C-U>set opfunc=<SID>threadop<CR>g@
+xnoremap <silent> <Plug>FireplaceThread :<C-U>call <SID>threadop(visualmode())<CR>
 
 nnoremap <silent> <Plug>FireplaceEdit   :<C-U>set opfunc=<SID>editop<CR>g@
 xnoremap <silent> <Plug>FireplaceEdit   :<C-U>call <SID>editop(visualmode())<CR>
@@ -812,12 +819,14 @@ function! s:setup_eval() abort
   nmap <buffer> c! <Plug>FireplaceFilter
   nmap <buffer> c!! <Plug>FireplaceFilterab
 
-  nmap <buffer> crut <Plug>FireplaceUnthread
-  nmap <buffer> crutt <Plug>FireplaceUnthreadab
-  nmap <buffer> crtf <Plug>FireplaceThreadFirst
-  nmap <buffer> crtff <Plug>FireplaceThreadFirstab
-  nmap <buffer> crtl <Plug>FireplaceThreadLast
-  nmap <buffer> crtll <Plug>FireplaceThreadLastab
+  nmap <buffer> cruu <Plug>FireplaceUnthread
+  nmap <buffer> cru <Plug>FireplaceUnthreadab
+  nmap <buffer> crf <Plug>FireplaceThreadFirst
+  nmap <buffer> crff <Plug>FireplaceThreadFirstab
+  nmap <buffer> crl <Plug>FireplaceThreadLast
+  nmap <buffer> crll <Plug>FireplaceThreadLastab
+  nmap <buffer> crt <Plug>FireplaceThread
+  nmap <buffer> crtt <Plug>FireplaceThreadab
 
   nmap <buffer> cq <Plug>FireplaceEdit
   nmap <buffer> cqq <Plug>FireplaceEditab
