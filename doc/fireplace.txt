@@ -137,7 +137,7 @@ cpr                     Eval a require :reload form.
                                                 *fireplace-c!*
 c!{motion}              Eval/replace the code indicated by {motion}.
 
-c!!                     Eval/replace the inner-most expr at the cusror.
+c!!                     Eval/replace the inner-most expr at the cursor.
 
                                                 *fireplace-cqp*
 cqp                     Bring up a prompt for code to eval/print.
