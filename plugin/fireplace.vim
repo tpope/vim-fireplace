@@ -1156,6 +1156,9 @@ function! s:leiningen_connect()
     return
   endif
   let portfile = b:leiningen_root . '/target/repl-port'
+  if !filereadable(portfile)
+    let portfile = b:leiningen_root . '/out/repl-port'
+  endif
   if getfsize(portfile) > 0 && getftime(portfile) !=# get(s:leiningen_repl_ports, b:leiningen_root, -1)
     let port = matchstr(readfile(portfile, 'b', 1)[0], '\d\+')
     let s:leiningen_repl_ports[b:leiningen_root] = getftime(portfile)
