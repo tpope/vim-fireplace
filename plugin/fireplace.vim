@@ -1177,7 +1177,7 @@ function! s:leiningen_connect()
   if !exists('b:leiningen_root')
     return
   endif
-  let portfile = b:leiningen_root . '/target/repl-port'
+  let portfile = b:leiningen_root . '/' . b:repl_port_path
   if getfsize(portfile) > 0 && getftime(portfile) !=# get(s:leiningen_repl_ports, b:leiningen_root, -1)
     let port = matchstr(readfile(portfile, 'b', 1)[0], '\d\+')
     let s:leiningen_repl_ports[b:leiningen_root] = getftime(portfile)
@@ -1194,6 +1194,11 @@ function! s:leiningen_init() abort
     let root = s:hunt(expand('%:p'), 'project.clj', '(\s*defproject')
     if root !=# ''
       let b:leiningen_root = root
+      let b:repl_port_path = 'target/repl-port'
+      let target_path = matchlist(join(readfile(root . '/project.clj')), ':target-path\s*"\(.\{-}\)"')
+      if len(target_path) >= 2
+        let b:repl_port_path = target_path[1] . '/repl-port'
+      endif
     endif
   endif
   if !exists('b:leiningen_root')
