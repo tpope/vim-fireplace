@@ -155,6 +155,7 @@ endfunction
 
 function! s:repl.includes_file(file) dict abort
   let file = substitute(a:file, '\C^zipfile:\(.*\)::', '\1/', '')
+  let file = substitute(file, '\C^fugitive:[\/][\/]\(.*\)\.git[\/][\/][^\/]\+[\/]', '\1', '')
   for path in self.path()
     if file[0 : len(path)-1] ==? path
       return 1
