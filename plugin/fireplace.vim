@@ -1126,7 +1126,7 @@ augroup fireplace_alternate
   autocmd FileType clojure command! -buffer -bar AT :exe s:Alternate('tabedit')
 augroup END
 
-function! s:alternates() abort
+function! fireplace#alternates() abort
   let ns = fireplace#ns()
   if ns =~# '-test$'
     let alt = [ns[0:-6]]
@@ -1141,7 +1141,7 @@ function! s:alternates() abort
 endfunction
 
 function! s:Alternate(cmd) abort
-  let alternates = s:alternates()
+  let alternates = fireplace#alternates()
   for file in alternates
     let path = fireplace#findresource(file)
     if !empty(path)
