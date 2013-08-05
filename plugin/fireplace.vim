@@ -540,7 +540,7 @@ function! fireplace#evalprint(expr) abort
 endfunction
 
 function! fireplace#macroexpand(fn, form) abort
-  return fireplace#evalprint('(clojure.core/'.a:fn.' (quote '.a:form.'))')
+  return fireplace#evalprint('('.a:fn.' (quote '.a:form.'))')
 endfunction
 
 let g:fireplace#reader =
@@ -619,11 +619,11 @@ function! s:filterop(type) abort
 endfunction
 
 function! s:macroexpandop(type) abort
-  call fireplace#macroexpand("macroexpand", s:opfunc(a:type))
+  call fireplace#macroexpand("clojure.walk/macroexpand-all", s:opfunc(a:type))
 endfunction
 
 function! s:macroexpand1op(type) abort
-  call fireplace#macroexpand("macroexpand-1", s:opfunc(a:type))
+  call fireplace#macroexpand("clojure.core/macroexpand-1", s:opfunc(a:type))
 endfunction
 
 function! s:printop(type) abort
