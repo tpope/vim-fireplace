@@ -70,6 +70,7 @@ function! fireplace#ns_complete(A, L, P) abort
   return filter(map(matches, 's:to_ns(v:val)'), 'a:A ==# "" || a:A ==# v:val[0 : strlen(a:A)-1]')
 endfunction
 
+
 function! fireplace#omnicomplete(findstart, base) abort
   if a:findstart
     let line = getline('.')[0 : col('.')-2]
@@ -1183,14 +1184,35 @@ function! s:leiningen_connect()
     let port = matchstr(readfile(portfile, 'b', 1)[0], '\d\+')
     let s:leiningen_repl_ports[b:leiningen_root] = getftime(portfile)
     try
+      call s:check_leinigen_repl()
       call s:register_connection(nrepl#fireplace_connection#open(port), b:leiningen_root)
     catch /^nREPL Connection Error:/
     endtry
   endif
 endfunction
 
-function! s:leiningen_init() abort
+function! s:check_leinigen_repl()
+  if s:repl_stopped()
+    let errmsg = "nREPL Connection Error: rpel job is stopped in background."
+    echomsg errmsg
+    throw  errmsg
+  endif
+endfunction
 
+" Checks if the repl is stopped in background.
+function! s:repl_stopped() abort
+  if has("unix")
+    let tid = system('echo ' . shellescape("$$"))
+    let pattern = shellescape("'lein.*repl'")
+    let command = "pgrep -P ". tid. " -f " . pattern . " -c"
+    " Cast output to Vim integer.
+    let repl_stopped = system(command) + 0
+    return repl_stopped > 0
+  endif
+  return 0
+endfunction
+
+function! s:leiningen_init() abort
   if !exists('b:leiningen_root')
     let root = s:hunt(expand('%:p'), 'project.clj', '(\s*defproject')
     if root !=# ''
