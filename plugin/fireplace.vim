@@ -1174,11 +1174,29 @@ if !exists('s:leiningen_repl_ports')
   let s:leiningen_repl_ports = {}
 endif
 
-function! s:leiningen_connect()
+function! s:portfile()
   if !exists('b:leiningen_root')
+    return ''
+  endif
+
+  let root = b:leiningen_root
+  let portfiles = [root.'/target/repl-port', root.'/target/repl/repl-port']
+
+  for f in portfiles
+    if filereadable(f)
+      return f
+    endif
+  endfor
+  return ''
+endfunction
+
+
+function! s:leiningen_connect()
+  let portfile = s:portfile()
+  if empty(portfile)
     return
   endif
-  let portfile = b:leiningen_root . '/target/repl-port'
+
   if getfsize(portfile) > 0 && getftime(portfile) !=# get(s:leiningen_repl_ports, b:leiningen_root, -1)
     let port = matchstr(readfile(portfile, 'b', 1)[0], '\d\+')
     let s:leiningen_repl_ports[b:leiningen_root] = getftime(portfile)
