@@ -452,6 +452,9 @@ endfunction
 
 function! s:temp_response(response) abort
   let output = []
+  if get(a:response, 'err', '') !=# ''
+    let output = map(split(a:response.err, "\n"), '";!!".v:val')
+  endif
   if get(a:response, 'out', '') !=# ''
     let output = map(split(a:response.out, "\n"), '";".v:val')
   endif
@@ -494,7 +497,7 @@ endfunction
 function! fireplace#session_eval(expr) abort
   let response = s:eval(a:expr, {'session': 1})
 
-  if !empty(get(response, 'value', ''))
+  if !empty(get(response, 'value', '')) || !empty(get(response, 'err', ''))
     call insert(s:history, {'buffer': bufnr(''), 'code': a:expr, 'ns': fireplace#ns(), 'response': response})
   endif
   if len(s:history) > &history
