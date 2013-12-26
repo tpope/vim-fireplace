@@ -67,7 +67,7 @@ cursor.  `cqc` gives you a blank line in insert mode.
 Standard stuff here.  `:Eval` evaluates a range (`:%Eval` gets the whole
 file), `:Require` requires a namespace with `:reload` (`:Require!` does
 `:reload-all`), either the current buffer or a given argument.  There's a `cp`
-operator that evaluates a given motion (`cpp` for the expression under the
+operator that evaluates a given motion (`cpp` for the outermost form under the
 cursor). `cm` and `c1m` are similar, but they only run
 `clojure.walk/macroexpand-all` and `macroexpand-1` instead of evaluating the
 form entirely.

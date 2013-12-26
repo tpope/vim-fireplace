@@ -584,7 +584,16 @@ function! s:opfunc(type) abort
   try
     set selection=inclusive clipboard-=unnamed clipboard-=unnamedplus
     if a:type =~ '^\d\+$'
-      silent exe 'normal! ^v'.a:type.'$hy'
+      let open = '[[{(]'
+      let close = '[]})]'
+      call searchpair(open, '', close, 'r', g:fireplace#skip)
+      call setpos("']", getpos("."))
+      call searchpair(open, '', close, 'b', g:fireplace#skip)
+      while col('.') > 1 && getline('.')[col('.')-2] =~# '[#''`~@]'
+        normal! h
+      endwhile
+      call setpos("'[", getpos("."))
+      silent exe "normal! `[v`]y"
     elseif a:type =~# '^.$'
       silent exe "normal! `<" . a:type . "`>y"
     elseif a:type ==# 'line'
@@ -761,6 +770,7 @@ endfunction
 nnoremap <silent> <Plug>FireplacePrintLast :exe <SID>print_last()<CR>
 nnoremap <silent> <Plug>FireplacePrint  :<C-U>set opfunc=<SID>printop<CR>g@
 xnoremap <silent> <Plug>FireplacePrint  :<C-U>call <SID>printop(visualmode())<CR>
+nnoremap <silent> <Plug>FireplaceCountPrint :<C-U>call <SID>printop(v:count)<CR>
 
 nnoremap <silent> <Plug>FireplaceFilter :<C-U>set opfunc=<SID>filterop<CR>g@
 xnoremap <silent> <Plug>FireplaceFilter :<C-U>call <SID>filterop(visualmode())<CR>
@@ -803,7 +813,7 @@ function! s:setup_eval() abort
   command! -buffer -bang -bar -count=1 Last exe s:Last(<bang>0, <count>)
 
   nmap <buffer> cp <Plug>FireplacePrint
-  nmap <buffer> cpp <Plug>FireplacePrintab
+  nmap <buffer> cpp <Plug>FireplaceCountPrint
 
   nmap <buffer> c! <Plug>FireplaceFilter
   nmap <buffer> c!! <Plug>FireplaceFilterab

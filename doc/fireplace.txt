@@ -129,7 +129,7 @@ stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
                                                 *fireplace-cp*
 cp{motion}              Eval/print the code indicated by {motion}.
 
-cpp                     Eval/print the inner-most expr at the cursor.
+cpp                     Eval/print the outermost form at the cursor.
 
                                                 *fireplace-cpr*
 cpr                     Eval a require :reload form.
@@ -137,19 +137,19 @@ cpr                     Eval a require :reload form.
                                                 *fireplace-c!*
 c!{motion}              Eval/replace the code indicated by {motion}.
 
-c!!                     Eval/replace the inner-most expr at the cursor.
+c!!                     Eval/replace the innermost form at the cursor.
 
                                                 *fireplace-cm*
 cm{motion}              Fully macroexpand the code indicated by {motion}.
 
                                                 *fireplace-cmm*
-cmm                     Fully macroexpand the inner-most expr at the cursor.
+cmm                     Fully macroexpand the innermost form at the cursor.
 
                                                 *fireplace-c1m*
 c1m{motion}             Macroexpand the code indicated by {motion} once.
 
                                                 *fireplace-c1mm*
-c1mm                    Macroexpand the inner-most expr at the cursor once.
+c1mm                    Macroexpand the innermost form at the cursor once.
 
                                                 *fireplace-cqp*
 cqp                     Bring up a prompt for code to eval/print.
