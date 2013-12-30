@@ -164,6 +164,17 @@ function! s:nrepl_eval(expr, ...) dict abort
       echo "nREPL: server has bug preventing session support"
       echohl None
     endif
+  elseif has_key(options, 'file_path')
+    let payload.op = 'load-file'
+    let payload['file-path'] = options.file_path
+    let payload['file-name'] = fnamemodify(options.file_path, ':t')
+    if has_key(payload, 'ns')
+      let payload.file = "(in-ns '".payload.ns.") ".payload.code
+      call remove(payload, 'ns')
+    else
+      let payload.file = payload.code
+    endif
+    call remove(payload, 'code')
   endif
   let response = self.process(payload)
   if has_key(response, 'ns') && !a:0
