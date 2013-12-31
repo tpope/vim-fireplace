@@ -195,7 +195,7 @@ function! s:nrepl_call(payload) dict abort
         \ 'body = s.readpartial(8192);' .
         \ 'raise %(not an nREPL server: upgrade to Leiningen 2) if body =~ /=> $/;' .
         \ 'print body;' .
-        \ 'break if body.include?(%(6:statusl4:done)) }};' .
+        \ 'break if body =~ /6:statusl(5:error|14:session-closed)?4:done/ }};' .
         \ 'rescue; abort $!.to_s;' .
         \ 'end') . ' ' .
         \ s:shellesc(nrepl#fireplace_connection#bencode(a:payload))
@@ -253,7 +253,7 @@ def fireplace_repl_interact():
         if re.search("=> $", body) != None:
           raise Exception("not an nREPL server: upgrade to Leiningen 2")
         buffer += body
-        if string.find(body, '6:statusl4:done') != -1:
+        if re.search('6:statusl(5:error|14:session-closed)?4:done', body):
           break
       fireplace_let('out', buffer)
     except Exception, e:
