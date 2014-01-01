@@ -129,8 +129,6 @@ function! s:nrepl_process(payload) dict abort
         if index(combined[key], response[key]) < 0
           call extend(combined[key], [response[key]])
         endif
-      elseif key ==# 'out' && response.out =~# '^\b.*(.*)$'
-        let combined.stacktrace = split(response.out, "\b")
       elseif type(response[key]) == type('')
         let combined[key] = get(combined, key, '') . response[key]
       else
@@ -146,10 +144,7 @@ endfunction
 
 function! s:nrepl_eval(expr, ...) dict abort
   let payload = {"op": "eval"}
-  let payload.code = '(try (clojure.core/eval ''(do '.a:expr."\n".'))' .
-        \ ' (catch Exception e' .
-        \ '   (clojure.core/print (clojure.core/apply clojure.core/str (clojure.core/interleave (clojure.core/repeat "\b") (clojure.core/map clojure.core/str (.getStackTrace e)))))' .
-        \ '   (throw e)))'
+  let payload.code = a:expr
   let options = a:0 ? a:1 : {}
   if has_key(options, 'ns')
     let payload.ns = options.ns
@@ -164,7 +159,8 @@ function! s:nrepl_eval(expr, ...) dict abort
       echo "nREPL: server has bug preventing session support"
       echohl None
     endif
-  elseif has_key(options, 'file_path')
+  endif
+  if has_key(options, 'file_path')
     let payload.op = 'load-file'
     let payload['file-path'] = options.file_path
     let payload['file-name'] = fnamemodify(options.file_path, ':t')
@@ -181,10 +177,23 @@ function! s:nrepl_eval(expr, ...) dict abort
     let self.ns = response.ns
   endif
 
+  if has_key(response, 'ex') && has_key(payload, 'session')
+    let response.stacktrace = s:extract_last_stacktrace(self)
+  endif
+
   if has_key(response, 'value')
     let response.value = response.value[-1]
   endif
   return response
+endfunction
+
+function! s:extract_last_stacktrace(nrepl)
+    let format_st = '(clojure.core/symbol (clojure.core/str "\n\b" (clojure.core/apply clojure.core/str (clojure.core/interleave (clojure.core/repeat "\n") (clojure.core/map clojure.core/str (.getStackTrace *e)))) "\n\b\n"))'
+    let stacktrace = split(get(split(a:nrepl.process({'op': 'eval', 'code': '['.format_st.' *3 *2 *1]', 'session': a:nrepl.session}).value[0], "\n\b\n"), 1, ""), "\n")
+    call a:nrepl.call({'op': 'eval', 'code': '(nth *1 1)', 'session': a:nrepl.session})
+    call a:nrepl.call({'op': 'eval', 'code': '(nth *2 2)', 'session': a:nrepl.session})
+    call a:nrepl.call({'op': 'eval', 'code': '(nth *3 3)', 'session': a:nrepl.session})
+    return stacktrace
 endfunction
 
 function! s:nrepl_call(payload) dict abort

@@ -526,17 +526,13 @@ function! fireplace#eval(expr, ...) abort
   throw err
 endfunction
 
-function! fireplace#session_eval(expr) abort
-  return fireplace#eval(a:expr, {'session': 1})
+function! fireplace#session_eval(expr, ...) abort
+  return fireplace#eval(a:expr, extend({'session': 1}, a:0 ? a:1 : {}))
 endfunction
 
-function! fireplace#echo_session_eval(expr) abort
-  return fireplace#echo_eval(a:expr, {'session': 1})
-endfunction
-
-function! fireplace#echo_eval(expr, options) abort
+function! fireplace#echo_session_eval(expr, ...) abort
   try
-    echo fireplace#eval(a:expr, a:options)
+    echo fireplace#session_eval(a:expr, a:0 ? a:1 : {})
   catch /^Clojure:/
   endtry
   return ''
@@ -664,7 +660,6 @@ function! s:Eval(bang, line1, line2, count, args) abort
   let options = {}
   if a:args !=# ''
     let expr = a:args
-    let options.session = 1
   else
     if a:count ==# 0
       normal! ^
@@ -677,7 +672,6 @@ function! s:Eval(bang, line1, line2, count, args) abort
     if !line1 || !line2
       return ''
     endif
-    let options.session = 0
     let options.file_path = s:buffer_path()
     let expr = repeat("\n", line1-1).join(getline(line1, line2), "\n")
     if a:bang
@@ -697,7 +691,7 @@ function! s:Eval(bang, line1, line2, count, args) abort
     catch /^Clojure:/
     endtry
   else
-    call fireplace#echo_eval(expr, options)
+    call fireplace#echo_session_eval(expr, options)
   endif
   return ''
 endfunction
