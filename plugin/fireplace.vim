@@ -141,10 +141,10 @@ function! s:repl.eval(expr, options) dict abort
 endfunction
 
 function! s:repl.require(lib) dict abort
-  if a:lib !~# '^\%(user\)\=$' && !get(self.requires, a:lib, 0)
+  if !empty(a:lib) && a:lib !=# fireplace#user_ns() && !get(self.requires, a:lib, 0)
     let reload = has_key(self.requires, a:lib) ? ' :reload' : ''
     let self.requires[a:lib] = 0
-    let result = self.eval('(doto '.s:qsym(a:lib).' (require'.reload.') the-ns)', {'ns': 'user', 'session': 0})
+    let result = self.eval('(doto '.s:qsym(a:lib).' (require'.reload.') the-ns)', {'ns': fireplace#user_ns(), 'session': 0})
     let self.requires[a:lib] = !has_key(result, 'ex')
     if has_key(result, 'ex')
       return result.err
@@ -277,7 +277,7 @@ function! s:oneoff.eval(expr, options) dict abort
     echomsg "No REPL found. Running java clojure.main ..."
     echohl None
   endif
-  if a:options.ns !=# '' && a:options.ns !=# 'user'
+  if a:options.ns !=# '' && a:options.ns !=# fireplace#user_ns()
     let ns = '(require '.s:qsym(a:options.ns).') (in-ns '.s:qsym(a:options.ns).') '
   else
     let ns = ''
@@ -436,7 +436,7 @@ function! s:eval(expr, ...) abort
   let options = a:0 ? copy(a:1) : {}
   let client = get(options, 'client', s:client())
   if !has_key(options, 'ns')
-    if fireplace#ns() !~# '^\%(user\)$'
+    if fireplace#ns() !=# fireplace#user_ns()
       let error = client.require(fireplace#ns())
       if !empty(error)
         echohl ErrorMSG
@@ -1038,6 +1038,10 @@ function! s:buffer_path(...) abort
   return ''
 endfunction
 
+function! fireplace#user_ns() abort
+  return 'user'
+endfunction
+
 function! fireplace#ns() abort
   let lnum = 1
   while lnum < line('$') && getline(lnum) =~# '^\s*\%(;.*\)\=$'
@@ -1056,7 +1060,7 @@ function! fireplace#ns() abort
     return s:qffiles[expand('%:p')].ns
   endif
   let path = s:buffer_path()
-  return s:to_ns(path ==# '' ? 'user' : path)
+  return s:to_ns(path ==# '' ? fireplace#user_ns() : path)
 endfunction
 
 function! s:Lookup(ns, macro, arg) abort
