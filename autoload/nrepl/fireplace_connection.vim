@@ -18,9 +18,9 @@ function! nrepl#fireplace_connection#bencode(value) abort
   elseif type(a:value) == type('')
     return strlen(a:value).':'.a:value
   elseif type(a:value) == type([])
-    return 'l'.join(map(a:value,'nrepl#fireplace_connection#bencode(v:val)'),'').'e'
+    return 'l'.join(map(copy(a:value),'nrepl#fireplace_connection#bencode(v:val)'),'').'e'
   elseif type(a:value) == type({})
-    return 'd'.join(values(map(a:value,'nrepl#fireplace_connection#bencode(v:key).nrepl#fireplace_connection#bencode(v:val)')),'').'e'
+    return 'd'.join(values(map(copy(a:value),'nrepl#fireplace_connection#bencode(v:key).nrepl#fireplace_connection#bencode(v:val)')),'').'e'
   else
     throw "Can't bencode ".string(a:value)
   endif
