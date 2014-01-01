@@ -1039,10 +1039,13 @@ function! s:buffer_path(...) abort
 endfunction
 
 function! fireplace#user_ns() abort
-  return 'user'
+  return get(b:, 'fireplace_user_ns', 'user')
 endfunction
 
 function! fireplace#ns() abort
+  if exists('b:fireplace_ns')
+    return b:fireplace_ns
+  endif
   let lnum = 1
   while lnum < line('$') && getline(lnum) =~# '^\s*\%(;.*\)\=$'
     let lnum += 1
