@@ -174,7 +174,7 @@ endfunction
 " }}}1
 " :Connect {{{1
 
-command! -bar -complete=customlist,s:connect_complete -nargs=+ FireplaceConnect :exe s:Connect(<f-args>)
+command! -bar -complete=customlist,s:connect_complete -nargs=* FireplaceConnect :exe s:Connect(<f-args>)
 
 function! fireplace#input_host_port()
   let arg = input('Host> ', 'localhost')
@@ -213,10 +213,10 @@ function! s:connect_complete(A, L, P)
   return options
 endfunction
 
-function! s:Connect(arg, ...)
-  if a:arg =~# '^\w\+://'
+function! s:Connect(...)
+  if (a:0 ? a:1 : '') =~# '^\w\+://'
     let [proto, arg] = split(a:arg, '://')
-  elseif a:arg !=# ''
+  elseif a:0
     return 'echoerr '.string('Usage: :Connect proto://...')
   else
     let protos = s:protos()
@@ -243,7 +243,7 @@ function! s:Connect(arg, ...)
   let client = s:register_connection(connection)
   echo 'Connected to '.proto.'://'.arg
   let path = fnamemodify(exists('b:java_root') ? b:java_root : fnamemodify(expand('%'), ':p:s?.*\zs[\/]src[\/].*??'), ':~')
-  let root = a:0 ? expand(a:1) : input('Scope connection to: ', path, 'dir')
+  let root = a:0 > 1 ? expand(a:2) : input('Scope connection to: ', path, 'dir')
   if root !=# '' && root !=# '-'
     let s:repl_paths[fnamemodify(root, ':p:s?.\zs[\/]$??')] = client
   endif
@@ -252,7 +252,7 @@ endfunction
 
 augroup fireplace_connect
   autocmd!
-  autocmd FileType clojure command! -bar -complete=customlist,s:connect_complete -nargs=+ Connect :FireplaceConnect <args>
+  autocmd FileType clojure command! -bar -complete=customlist,s:connect_complete -nargs=* Connect :FireplaceConnect <args>
 augroup END
 
 " }}}1
