@@ -16,11 +16,11 @@ augroup END
 " }}}1
 " Escaping {{{1
 
-function! s:str(string)
+function! s:str(string) abort
   return '"' . escape(a:string, '"\') . '"'
 endfunction
 
-function! s:qsym(symbol)
+function! s:qsym(symbol) abort
   if a:symbol =~# '^[[:alnum:]?*!+/=<>.:-]\+$'
     return "'".a:symbol
   else
@@ -163,7 +163,7 @@ function! s:repl.includes_file(file) dict abort
   endfor
 endfunction
 
-function! s:register_connection(conn, ...)
+function! s:register_connection(conn, ...) abort
   call insert(s:repls, extend({'connection': a:conn}, deepcopy(s:repl)))
   if a:0 && a:1 !=# ''
     let s:repl_paths[a:1] = s:repls[0]
@@ -176,7 +176,7 @@ endfunction
 
 command! -bar -complete=customlist,s:connect_complete -nargs=* FireplaceConnect :exe s:Connect(<f-args>)
 
-function! fireplace#input_host_port()
+function! fireplace#input_host_port() abort
   let arg = input('Host> ', 'localhost')
   if arg ==# ''
     return ''
@@ -190,11 +190,11 @@ function! fireplace#input_host_port()
   return arg
 endfunction
 
-function! s:protos()
+function! s:protos() abort
   return map(split(globpath(&runtimepath, 'autoload/*/fireplace_connection.vim'), "\n"), 'fnamemodify(v:val, ":h:t")')
 endfunction
 
-function! s:connect_complete(A, L, P)
+function! s:connect_complete(A, L, P) abort
   let proto = matchstr(a:A, '\w\+\ze://')
   if proto ==# ''
     let options = map(s:protos(), 'v:val."://"')
@@ -213,7 +213,7 @@ function! s:connect_complete(A, L, P)
   return options
 endfunction
 
-function! s:Connect(...)
+function! s:Connect(...) abort
   if (a:0 ? a:1 : '') =~# '^\w\+://'
     let [proto, arg] = split(a:1, '://')
   elseif a:0
@@ -315,7 +315,7 @@ function! s:oneoff.eval(expr, options) dict abort
   endif
 endfunction
 
-function! s:oneoff.require(symbol)
+function! s:oneoff.require(symbol) abort
   return ''
 endfunction
 
@@ -347,7 +347,7 @@ function! fireplace#client() abort
   return s:client()
 endfunction
 
-function! fireplace#local_client(...)
+function! fireplace#local_client(...) abort
   if !a:0
     silent doautocmd User FireplacePreConnect
   endif
@@ -700,7 +700,7 @@ endfunction
 " line window and tries to switch out of it (such as with ctrl-w), Vim will
 " crash when the command line window closes.  Adding an indirect function call
 " works around this.
-function! s:actually_input(...)
+function! s:actually_input(...) abort
   return call(function('input'), a:000)
 endfunction
 
@@ -834,16 +834,16 @@ function! s:setup_eval() abort
   map! <buffer> <C-R>( <Plug>FireplaceRecall
 endfunction
 
-function! s:setup_historical()
+function! s:setup_historical() abort
   setlocal readonly nomodifiable
   nnoremap <buffer><silent>q :bdelete<CR>
 endfunction
 
-function! s:cmdwinenter()
+function! s:cmdwinenter() abort
   setlocal filetype=clojure
 endfunction
 
-function! s:cmdwinleave()
+function! s:cmdwinleave() abort
   setlocal filetype< omnifunc<
 endfunction
 
@@ -860,7 +860,7 @@ augroup END
 " }}}1
 " :Require {{{1
 
-function! s:Require(bang, ns)
+function! s:Require(bang, ns) abort
   let cmd = ('(clojure.core/require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
   echo cmd
   try
@@ -871,7 +871,7 @@ function! s:Require(bang, ns)
   endtry
 endfunction
 
-function! s:setup_require()
+function! s:setup_require() abort
   command! -buffer -bar -bang -complete=customlist,fireplace#ns_complete -nargs=? Require :exe s:Require(<bang>0, <q-args>)
   nnoremap <silent><buffer> cpr :Require<CR>
 endfunction
@@ -1079,7 +1079,7 @@ function! s:Lookup(ns, macro, arg) abort
   return ''
 endfunction
 
-function! s:inputlist(label, entries)
+function! s:inputlist(label, entries) abort
   let choices = [a:label]
   for i in range(len(a:entries))
     let choices += [printf('%2d. %s', i+1, a:entries[i])]
@@ -1112,7 +1112,7 @@ function! s:Apropos(pattern) abort
   endif
 endfunction
 
-function! s:K()
+function! s:K() abort
   let word = expand('<cword>')
   let java_candidate = matchstr(word, '^\%(\w\+\.\)*\u\l\w*\ze\%(\.\|\/\w\+\)\=$')
   if java_candidate !=# ''
@@ -1196,7 +1196,7 @@ if !exists('s:leiningen_repl_ports')
   let s:leiningen_repl_ports = {}
 endif
 
-function! s:portfile()
+function! s:portfile() abort
   if !exists('b:leiningen_root')
     return ''
   endif
@@ -1213,7 +1213,7 @@ function! s:portfile()
 endfunction
 
 
-function! s:leiningen_connect()
+function! s:leiningen_connect() abort
   let portfile = s:portfile()
   if empty(portfile)
     return
