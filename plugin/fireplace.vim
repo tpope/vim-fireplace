@@ -272,7 +272,7 @@ let s:oneoff_out = tempname()
 let s:oneoff_err = tempname()
 
 function! s:oneoff.eval(expr, options) dict abort
-  if &verbose && get(options, 'session', 1)
+  if &verbose && get(a:options, 'session', 1)
     echohl WarningMSG
     echomsg "No REPL found. Running java clojure.main ..."
     echohl None
