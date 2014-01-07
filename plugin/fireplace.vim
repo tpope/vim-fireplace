@@ -1225,6 +1225,11 @@ function! s:leiningen_connect() abort
     try
       call s:register_connection(nrepl#fireplace_connection#open(port), b:leiningen_root)
     catch /^nREPL Connection Error:/
+      if &verbose
+        echohl WarningMSG
+        echomsg v:exception
+        echohl None
+      endif
     endtry
   endif
 endfunction
