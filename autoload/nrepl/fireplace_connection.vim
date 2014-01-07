@@ -6,6 +6,8 @@ if exists("g:autoloaded_nrepl_fireplace_connection") || &cp
 endif
 let g:autoloaded_nrepl_fireplace_connection = 1
 
+let s:python_dir = fnamemodify(expand("<sfile>"), ':p:h:h:h') . '/python'
+
 function! s:function(name) abort
   return function(substitute(a:name,'^s:',matchstr(expand('<sfile>'), '<SNR>\d\+_'),''))
 endfunction
@@ -197,22 +199,16 @@ function! s:extract_last_stacktrace(nrepl)
 endfunction
 
 function! s:nrepl_call(payload) dict abort
-  let in = 'ruby -rsocket -e '.s:shellesc(
-        \ 'begin;' .
-        \ 'TCPSocket.open(%(' . self.host . '), ' . self.port . ') {|s|' .
-        \ 's.write(ARGV.first); loop {' .
-        \ 'body = s.readpartial(8192);' .
-        \ 'raise %(not an nREPL server: upgrade to Leiningen 2) if body =~ /=> $/;' .
-        \ 'print body;' .
-        \ 'break if body =~ /6:statusl(5:error|14:session-closed)?4:done/ }};' .
-        \ 'rescue; abort $!.to_s;' .
-        \ 'end') . ' ' .
-        \ s:shellesc(nrepl#fireplace_connection#bencode(a:payload))
+  let in = 'python'
+        \ . ' ' . s:shellesc(s:python_dir.'/nrepl_fireplace.py')
+        \ . ' ' . s:shellesc(self.host)
+        \ . ' ' . s:shellesc(self.port)
+        \ . ' ' . s:shellesc(nrepl#fireplace_connection#bencode(a:payload))
   let out = system(in)
   if !v:shell_error
     return nrepl#fireplace_connection#bdecode('l'.out.'e')
   endif
-  throw 'nREPL: '.split(out, "\n")[0]
+  throw 'nREPL: '.out
 endfunction
 
 let s:nrepl = {
@@ -225,12 +221,16 @@ if !has('python')
   finish
 endif
 
+if !exists('s:python')
+  exe 'python sys.path.insert(0, "'.s:python_dir.'")'
+  let s:python = 1
+  python import nrepl_fireplace
+else
+  python reload(nrepl_fireplace)
+endif
+
 python << EOF
 import vim
-import select
-import socket
-import string
-import re
 
 def fireplace_string_encode(input):
   str_list = []
@@ -244,38 +244,19 @@ def fireplace_string_encode(input):
 def fireplace_let(var, value):
   return vim.command('let ' + var + " = " + fireplace_string_encode(value))
 
+def fireplace_check():
+  vim.eval('getchar(1)')
+
 def fireplace_repl_interact():
-  buffer = ''
-  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  host = vim.eval('self.host')
-  port = int(vim.eval('self.port'))
-  s.settimeout(8)
   try:
-    try:
-      s.connect((host, port))
-      s.setblocking(1)
-      s.sendall(vim.eval('payload'))
-      while True:
-        while len(select.select([s], [], [], 0.1)[0]) == 0:
-          vim.eval('getchar(1)')
-        body = s.recv(8192)
-        if re.search("=> $", body) != None:
-          raise Exception("not an nREPL server: upgrade to Leiningen 2")
-        buffer += body
-        if re.search('6:statusl(5:error|14:session-closed)?4:done', body):
-          break
-      fireplace_let('out', buffer)
-    except Exception, e:
-      fireplace_let('err', str(e))
-  finally:
-    s.close()
+    fireplace_let('out', nrepl_fireplace.repl_send(vim.eval('self.host'), int(vim.eval('self.port')), vim.eval('payload'), fireplace_check))
+  except Exception, e:
+    fireplace_let('err', str(e))
 EOF
 
 function! s:nrepl_call(payload) dict abort
   let payload = nrepl#fireplace_connection#bencode(a:payload)
-  python << EOF
-fireplace_repl_interact()
-EOF
+  python fireplace_repl_interact()
   if !exists('err')
     return nrepl#fireplace_connection#bdecode('l'.out.'e')
   endif

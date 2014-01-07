@@ -37,7 +37,7 @@ to multiple instances of nREPL for different projects, and it will use the
 right one automatically.
 
 The only external dependency is that you have either a Vim with Python support
-compiled in, or `ruby` in your path. (Don't ask.)
+compiled in, or `python` in your path.
 
 Oh, and if you don't have an nREPL connection, installing [classpath.vim][]
 lets it fall back to using `java clojure.main`, using a class path based on

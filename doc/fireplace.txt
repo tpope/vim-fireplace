@@ -26,8 +26,7 @@ buffer and classpath.vim is installed, java (or $JAVA_CMD) is invoked
 directly, which can be quite slow depending on your setup.
 
 The only adapter shipped with fireplace.vim is for nREPL.  You need either
-|if_pyth| or the ruby command in your PATH.  (This curious combination is an
-accident of history.)
+|if_pyth| or the python command in your PATH.
 
 LEININGEN                                       *fireplace-leiningen*
 
