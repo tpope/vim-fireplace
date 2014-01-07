@@ -28,43 +28,6 @@ function! nrepl#fireplace_connection#bencode(value) abort
   endif
 endfunction
 
-function! nrepl#fireplace_connection#bdecode(value) abort
-  return s:bdecode({'pos': 0, 'value': a:value})
-endfunction
-
-function! s:bdecode(state) abort
-  let value = a:state.value
-  if value[a:state.pos] =~# '\d'
-    let pos = a:state.pos
-    let length = matchstr(value[pos : -1], '^\d\+')
-    let a:state.pos += strlen(length) + length + 1
-    return value[pos+strlen(length)+1 : pos+strlen(length)+length]
-  elseif value[a:state.pos] ==# 'i'
-    let int = matchstr(value[a:state.pos+1:-1], '[^e]*')
-    let a:state.pos += 2 + strlen(int)
-    return str2nr(int)
-  elseif value[a:state.pos] ==# 'l'
-    let values = []
-    let a:state.pos += 1
-    while value[a:state.pos] !=# 'e' && value[a:state.pos] !=# ''
-      call add(values, s:bdecode(a:state))
-    endwhile
-    let a:state.pos += 1
-    return values
-  elseif value[a:state.pos] ==# 'd'
-    let values = {}
-    let a:state.pos += 1
-    while value[a:state.pos] !=# 'e' && value[a:state.pos] !=# ''
-      let key = s:bdecode(a:state)
-      let values[key] = s:bdecode(a:state)
-    endwhile
-    let a:state.pos += 1
-    return values
-  else
-    throw 'bencode parse error: '.string(a:state)
-  endif
-endfunction
-
 " }}}1
 
 function! s:shellesc(arg) abort
@@ -198,20 +161,26 @@ function! s:extract_last_stacktrace(nrepl) abort
     return stacktrace
 endfunction
 
-function! s:nrepl_call(payload) dict abort
+function! s:nrepl_dispatch(command, ...) dict abort
   let in = 'python'
         \ . ' ' . s:shellesc(s:python_dir.'/nrepl_fireplace.py')
+        \ . ' ' . s:shellesc(a:command)
         \ . ' ' . s:shellesc(self.host)
         \ . ' ' . s:shellesc(self.port)
-        \ . ' ' . s:shellesc(nrepl#fireplace_connection#bencode(a:payload))
+        \ . ' ' . join(map(copy(a:000), 's:shellesc(v:val)'), ' ')
   let out = system(in)
   if !v:shell_error
-    return nrepl#fireplace_connection#bdecode('l'.out.'e')
+    return eval(out)
   endif
   throw 'nREPL: '.out
 endfunction
 
+function! s:nrepl_call(payload) dict abort
+  return self.dispatch('call', nrepl#fireplace_connection#bencode(a:payload))
+endfunction
+
 let s:nrepl = {
+      \ 'dispatch': s:function('s:nrepl_dispatch'),
       \ 'call': s:function('s:nrepl_call'),
       \ 'eval': s:function('s:nrepl_eval'),
       \ 'path': s:function('s:nrepl_path'),
@@ -222,7 +191,7 @@ if !has('python')
 endif
 
 if !exists('s:python')
-  exe 'python sys.path.insert(0, "'.s:python_dir.'")'
+  exe 'python sys.path.insert(0, "'.escape(s:python_dir, '\"').'")'
   let s:python = 1
   python import nrepl_fireplace
 else
@@ -232,33 +201,23 @@ endif
 python << EOF
 import vim
 
-def fireplace_string_encode(input):
-  str_list = []
-  for c in input:
-    if (000 <= ord(c) and ord(c) <= 037) or c == '"' or c == "\\":
-      str_list.append("\\{0:03o}".format(ord(c)))
-    else:
-      str_list.append(c)
-  return '"' + ''.join(str_list) + '"'
-
 def fireplace_let(var, value):
-  return vim.command('let ' + var + " = " + fireplace_string_encode(value))
+  return vim.command('let ' + var + ' = ' + nrepl_fireplace.vim_encode(value))
 
 def fireplace_check():
   vim.eval('getchar(1)')
 
-def fireplace_repl_interact():
+def fireplace_repl_dispatch(command, *args):
   try:
-    fireplace_let('out', nrepl_fireplace.repl_send(vim.eval('self.host'), int(vim.eval('self.port')), vim.eval('payload'), fireplace_check))
+    fireplace_let('out', nrepl_fireplace.dispatch(command, vim.eval('self.host'), vim.eval('self.port'), fireplace_check, *args))
   except Exception, e:
     fireplace_let('err', str(e))
 EOF
 
-function! s:nrepl_call(payload) dict abort
-  let payload = nrepl#fireplace_connection#bencode(a:payload)
-  python fireplace_repl_interact()
+function! s:nrepl_dispatch(command, ...) dict abort
+  python fireplace_repl_dispatch(vim.eval('a:command'), *vim.eval('a:000'))
   if !exists('err')
-    return nrepl#fireplace_connection#bdecode('l'.out.'e')
+    return out
   endif
   throw 'nREPL Connection Error: '.err
 endfunction
