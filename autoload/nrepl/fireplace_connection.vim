@@ -164,12 +164,16 @@ function! s:extract_last_stacktrace(nrepl) abort
     return stacktrace
 endfunction
 
+let s:keepalive = tempname()
+call writefile([getpid()], s:keepalive)
+
 function! s:nrepl_dispatch(command, ...) dict abort
   let in = 'python'
         \ . ' ' . s:shellesc(s:python_dir.'/nrepl_fireplace.py')
         \ . ' ' . s:shellesc(a:command)
         \ . ' ' . s:shellesc(self.host)
         \ . ' ' . s:shellesc(self.port)
+        \ . ' ' . s:shellesc(s:keepalive)
         \ . ' ' . join(map(copy(a:000), 's:shellesc(v:val)'), ' ')
   let out = system(in)
   if !v:shell_error
@@ -228,7 +232,7 @@ def fireplace_check():
 
 def fireplace_repl_dispatch(command, *args):
   try:
-    fireplace_let('out', nrepl_fireplace.dispatch(command, vim.eval('self.host'), vim.eval('self.port'), fireplace_check, *args))
+    fireplace_let('out', nrepl_fireplace.dispatch(command, vim.eval('self.host'), vim.eval('self.port'), fireplace_check, None, *args))
   except Exception, e:
     fireplace_let('err', str(e))
 EOF

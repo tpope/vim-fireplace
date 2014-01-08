@@ -59,13 +59,19 @@ def bdecode(f, char=None):
 
 
 class Connection:
-  def __init__(self, host, port, poll=noop):
-    self.poll = poll
+  def __init__(self, host, port, custom_poll=noop, keepalive_file=None):
+    self.custom_poll = custom_poll
+    self.keepalive_file = keepalive_file
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(8)
     s.connect((host, int(port)))
     s.setblocking(1)
     self.socket = s
+
+  def poll(self):
+    self.custom_poll()
+    if self.keepalive_file and not os.path.exists(self.keepalive_file):
+      exit(0)
 
   def close(self):
     return self.socket.close()
@@ -91,16 +97,16 @@ class Connection:
       if 'status' in responses[-1] and 'done' in responses[-1]['status']:
         return responses
 
-def dispatch(command, host, port, poll, *args):
-  conn = Connection(host, port, poll)
+def dispatch(command, host, port, poll, keepalive, *args):
+  conn = Connection(host, port, poll, keepalive)
   try:
     return getattr(conn, command)(*args)
   finally:
     conn.close()
 
-def main(command, host, port, *args):
+def main(command, host, port, keepalive, *args):
   try:
-    sys.stdout.write(vim_encode(dispatch(command, host, port, noop, *args)))
+    sys.stdout.write(vim_encode(dispatch(command, host, port, noop, keepalive, *args)))
   except Exception, e:
     print(e)
     exit(1)
