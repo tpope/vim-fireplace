@@ -182,7 +182,7 @@ function! s:nrepl_dispatch(command, ...) dict abort
   throw 'nREPL: '.out
 endfunction
 
-function! s:nrepl_call(payload) dict abort
+function! s:nrepl_prepare(payload) dict abort
   let payload = copy(a:payload)
   if !has_key(payload, 'id')
     let payload.id = s:id()
@@ -199,11 +199,17 @@ function! s:nrepl_call(payload) dict abort
   elseif !has_key(payload, 'session')
     let payload.session = self.session
   endif
+  return payload
+endfunction
+
+function! s:nrepl_call(payload) dict abort
+  let payload = self.prepare(a:payload)
   return filter(self.dispatch('call', nrepl#fireplace_connection#bencode(payload)), 'v:val.id == payload.id')
 endfunction
 
 let s:nrepl = {
       \ 'dispatch': s:function('s:nrepl_dispatch'),
+      \ 'prepare': s:function('s:nrepl_prepare'),
       \ 'call': s:function('s:nrepl_call'),
       \ 'eval': s:function('s:nrepl_eval'),
       \ 'path': s:function('s:nrepl_path'),
