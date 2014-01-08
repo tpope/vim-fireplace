@@ -583,18 +583,7 @@ function! s:opfunc(type) abort
   let reg_save = @@
   try
     set selection=inclusive clipboard-=unnamed clipboard-=unnamedplus
-    if a:type =~ '^\d\+$'
-      let open = '[[{(]'
-      let close = '[]})]'
-      call searchpair(open, '', close, 'r', g:fireplace#skip)
-      call setpos("']", getpos("."))
-      call searchpair(open, '', close, 'b', g:fireplace#skip)
-      while col('.') > 1 && getline('.')[col('.')-2] =~# '[#''`~@]'
-        normal! h
-      endwhile
-      call setpos("'[", getpos("."))
-      silent exe "normal! `[v`]y"
-    elseif a:type =~# '^.$'
+    if a:type =~# '^.$'
       silent exe "normal! `<" . a:type . "`>y"
     elseif a:type ==# 'line'
       silent exe "normal! '[V']y"
@@ -662,18 +651,31 @@ function! s:Eval(bang, line1, line2, count, args) abort
     let expr = a:args
   else
     if a:count ==# 0
-      normal! ^
-      let line1 = searchpair('(','',')', 'bcrn', g:fireplace#skip)
-      let line2 = searchpair('(','',')', 'rn', g:fireplace#skip)
+      let open = '[[{(]'
+      let close = '[]})]'
+      let [line1, col1] = searchpairpos(open, '', close, 'bcrn', g:fireplace#skip)
+      let [line2, col2] = searchpairpos(open, '', close, 'rn', g:fireplace#skip)
+      while col1 > 1 && getline(line1)[col1-2] =~# '[#''`~@]'
+        let col1 -= 1
+      endwhile
     else
       let line1 = a:line1
       let line2 = a:line2
+      let col1 = 1
+      let col2 = strlen(getline(line2))
     endif
     if !line1 || !line2
       return ''
     endif
     let options.file_path = s:buffer_path()
-    let expr = repeat("\n", line1-1).join(getline(line1, line2), "\n")
+    let expr = repeat("\n", line1-1).repeat(" ", col1-1)
+    if line1 == line2
+      let expr .= getline(line1)[col1-1 : col2-1]
+    else
+    let expr .= getline(line1)[col1-1 : -1] . "\n"
+          \ . join(map(getline(line1+1, line2-1), 'v:val . "\n"'))
+          \ . getline(line2)[0 : col2-1]
+    endif
     if a:bang
       exe line1.','.line2.'delete _'
     endif
@@ -772,7 +774,7 @@ endfunction
 nnoremap <silent> <Plug>FireplacePrintLast :exe <SID>print_last()<CR>
 nnoremap <silent> <Plug>FireplacePrint  :<C-U>set opfunc=<SID>printop<CR>g@
 xnoremap <silent> <Plug>FireplacePrint  :<C-U>call <SID>printop(visualmode())<CR>
-nnoremap <silent> <Plug>FireplaceCountPrint :<C-U>call <SID>printop(v:count)<CR>
+nnoremap <silent> <Plug>FireplaceCountPrint :<C-U>Eval<CR>
 
 nnoremap <silent> <Plug>FireplaceFilter :<C-U>set opfunc=<SID>filterop<CR>g@
 xnoremap <silent> <Plug>FireplaceFilter :<C-U>call <SID>filterop(visualmode())<CR>
