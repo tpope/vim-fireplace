@@ -272,7 +272,7 @@ let s:oneoff_out = tempname()
 let s:oneoff_err = tempname()
 
 function! s:oneoff.eval(expr, options) dict abort
-  if &verbose && get(a:options, 'session', 1)
+  if &verbose && !empty(get(a:options, 'session', 1))
     echohl WarningMSG
     echomsg "No REPL found. Running java clojure.main ..."
     echohl None
@@ -494,7 +494,7 @@ function! s:qfhistory() abort
   return list
 endfunction
 
-function! fireplace#eval(expr, ...) abort
+function! fireplace#session_eval(expr, ...) abort
   let response = s:eval(a:expr, a:0 ? a:1 : {})
 
   if !empty(get(response, 'value', '')) || !empty(get(response, 'err', ''))
@@ -526,8 +526,8 @@ function! fireplace#eval(expr, ...) abort
   throw err
 endfunction
 
-function! fireplace#session_eval(expr, ...) abort
-  return fireplace#eval(a:expr, extend({'session': 1}, a:0 ? a:1 : {}))
+function! fireplace#eval(expr, ...) abort
+  return fireplace#eval(a:expr, extend({'session': 0}, a:0 ? a:1 : {}))
 endfunction
 
 function! fireplace#echo_session_eval(expr, ...) abort

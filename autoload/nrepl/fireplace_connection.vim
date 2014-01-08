@@ -62,7 +62,7 @@ function! nrepl#fireplace_connection#open(arg) abort
   let client = deepcopy(s:nrepl)
   let client.host = host
   let client.port = port
-  let session = client.process({'op': 'clone'})['new-session']
+  let session = client.process({'op': 'clone', 'session': 0})['new-session']
   let response = client.process({'op': 'eval', 'session': session, 'code':
         \ '(do (println "success") (symbol (str (System/getProperty "path.separator") (System/getProperty "java.class.path"))))'})
   let client._path = response.value[-1]
@@ -116,14 +116,8 @@ function! s:nrepl_eval(expr, ...) dict abort
   elseif has_key(self, 'ns')
     let payload.ns = self.ns
   endif
-  if get(options, 'session', 1)
-    if has_key(self, 'session')
-      let payload.session = self.session
-    elseif &verbose
-      echohl WarningMSG
-      echo "nREPL: server has bug preventing session support"
-      echohl None
-    endif
+  if has_key(options, 'session')
+    let payload.session = options.session
   endif
   if has_key(options, 'file_path')
     let payload.op = 'load-file'
@@ -142,7 +136,7 @@ function! s:nrepl_eval(expr, ...) dict abort
     let self.ns = response.ns
   endif
 
-  if has_key(response, 'ex') && has_key(payload, 'session')
+  if has_key(response, 'ex') && !empty(get(payload, 'session', 1))
     let response.stacktrace = s:extract_last_stacktrace(self)
   endif
 
@@ -176,7 +170,20 @@ function! s:nrepl_dispatch(command, ...) dict abort
 endfunction
 
 function! s:nrepl_call(payload) dict abort
-  return self.dispatch('call', nrepl#fireplace_connection#bencode(a:payload))
+  let payload = copy(a:payload)
+  if empty(get(payload, 'session', 1))
+    unlet payload.session
+  elseif !has_key(self, 'session')
+    if &verbose
+      echohl WarningMSG
+      echo "nREPL: server has bug preventing session support"
+      echohl None
+    endif
+    unlet! payload.session
+  elseif !has_key(payload, 'session')
+    let payload.session = self.session
+  endif
+  return self.dispatch('call', nrepl#fireplace_connection#bencode(payload))
 endfunction
 
 let s:nrepl = {
