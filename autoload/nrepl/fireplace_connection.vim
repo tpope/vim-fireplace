@@ -71,12 +71,12 @@ function! nrepl#fireplace_connection#open(arg) abort
   let client = deepcopy(s:nrepl)
   let client.host = host
   let client.port = port
-  let session = client.process({'op': 'clone', 'session': 0})['new-session']
-  let response = client.process({'op': 'eval', 'session': session, 'code':
+  let client.session = client.process({'op': 'clone', 'session': 0})['new-session']
+  let response = client.process({'op': 'eval', 'code':
         \ '(do (println "success") (symbol (str (System/getProperty "path.separator") (System/getProperty "java.class.path"))))'})
   let client._path = response.value[-1]
-  if has_key(response, 'out')
-    let client.session = session
+  if !has_key(response, 'out')
+    unlet client.session
   endif
   return client
 endfunction
