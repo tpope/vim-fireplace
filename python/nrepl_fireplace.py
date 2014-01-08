@@ -75,6 +75,8 @@ class Connection:
     return ''
 
   def receive(self, char=None):
+    while len(select.select([self.socket], [], [], 0.1)[0]) == 0:
+      self.poll()
     f = self.socket.makefile()
     try:
       return bdecode(f)
