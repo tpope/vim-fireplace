@@ -97,16 +97,16 @@ class Connection:
       if 'status' in responses[-1] and 'done' in responses[-1]['status']:
         return responses
 
-def dispatch(command, host, port, poll, keepalive, *args):
+def dispatch(host, port, poll, keepalive, command, *args):
   conn = Connection(host, port, poll, keepalive)
   try:
     return getattr(conn, command)(*args)
   finally:
     conn.close()
 
-def main(command, host, port, keepalive, *args):
+def main(host, port, keepalive, command, *args):
   try:
-    sys.stdout.write(vim_encode(dispatch(command, host, port, noop, keepalive, *args)))
+    sys.stdout.write(vim_encode(dispatch(host, port, noop, keepalive, command, *args)))
   except Exception, e:
     print(e)
     exit(1)
