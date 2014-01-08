@@ -45,6 +45,15 @@ function! s:shellesc(arg) abort
   endif
 endfunction
 
+if !exists('s:id')
+  let s:vim_id = localtime()
+  let s:id = 0
+endif
+function! s:id() abort
+  let s:id += 1
+  return 'fireplace-'.hostname().'-'.s:vim_id.'-'.s:id
+endfunction
+
 function! nrepl#fireplace_connection#prompt() abort
   return fireplace#input_host_port()
 endfunction
@@ -171,6 +180,9 @@ endfunction
 
 function! s:nrepl_call(payload) dict abort
   let payload = copy(a:payload)
+  if !has_key(payload, 'id')
+    let payload.id = s:id()
+  endif
   if empty(get(payload, 'session', 1))
     unlet payload.session
   elseif !has_key(self, 'session')
@@ -183,7 +195,7 @@ function! s:nrepl_call(payload) dict abort
   elseif !has_key(payload, 'session')
     let payload.session = self.session
   endif
-  return self.dispatch('call', nrepl#fireplace_connection#bencode(payload))
+  return filter(self.dispatch('call', nrepl#fireplace_connection#bencode(payload)), 'v:val.id == payload.id')
 endfunction
 
 let s:nrepl = {
