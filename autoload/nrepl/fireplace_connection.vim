@@ -209,7 +209,7 @@ let s:nrepl = {
       \ 'path': s:function('s:nrepl_path'),
       \ 'process': s:function('s:nrepl_process')}
 
-if !has('python')
+if !has('python') || $FIREPLACE_NO_IF_PYTHON
   finish
 endif
 
