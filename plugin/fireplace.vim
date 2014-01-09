@@ -688,6 +688,10 @@ function! s:Eval(bang, line1, line2, count, args) abort
       let close = '[]})]'
       let [line1, col1] = searchpairpos(open, '', close, 'bcrn', g:fireplace#skip)
       let [line2, col2] = searchpairpos(open, '', close, 'rn', g:fireplace#skip)
+      if !line1 && !line2
+        let [line1, col1] = searchpairpos(open, '', close, 'brn', g:fireplace#skip)
+        let [line2, col2] = searchpairpos(open, '', close, 'crn', g:fireplace#skip)
+      endif
       while col1 > 1 && getline(line1)[col1-2] =~# '[#''`~@]'
         let col1 -= 1
       endwhile
