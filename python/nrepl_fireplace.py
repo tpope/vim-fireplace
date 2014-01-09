@@ -25,37 +25,41 @@ def vim_encode(data):
     raise TypeError("can't encode a " + type(data).__name__)
 
 def bdecode(f, char=None):
-    if char == None:
+  if char == None:
+    char = f.read(1)
+  if char == 'l':
+    l = []
+    while True:
       char = f.read(1)
-    if char == 'l':
-      l = []
-      while True:
-        char = f.read(1)
-        if char == 'e':
-          return l
-        l.append(bdecode(f, char))
-    elif char == 'd':
-      d = {}
-      while True:
-        char = f.read(1)
-        if char == 'e':
-          return d
-        key = bdecode(f, char)
-        d[key] = bdecode(f)
-    elif char == 'i':
-      i = 0
-      while True:
-        char = f.read(1)
-        if char == 'e':
-          return i
-        i = 10 * i + int(char)
-    else:
-      i = int(char)
-      while True:
-        char = f.read(1)
-        if char == ':':
-          return f.read(i)
-        i = 10 * i + int(char)
+      if char == 'e':
+        return l
+      l.append(bdecode(f, char))
+  elif char == 'd':
+    d = {}
+    while True:
+      char = f.read(1)
+      if char == 'e':
+        return d
+      key = bdecode(f, char)
+      d[key] = bdecode(f)
+  elif char == 'i':
+    i = 0
+    while True:
+      char = f.read(1)
+      if char == 'e':
+        return i
+      i = 10 * i + int(char)
+  elif char.isdigit():
+    i = int(char)
+    while True:
+      char = f.read(1)
+      if char == ':':
+        return f.read(i)
+      i = 10 * i + int(char)
+  elif char == '':
+    raise EOFError("unexpected end of bencode data")
+  else:
+    raise TypeError("unexpected type "+char+"in bencode data")
 
 
 class Connection:
