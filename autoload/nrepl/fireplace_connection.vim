@@ -231,9 +231,14 @@ function! s:nrepl_prepare(payload) dict abort
   return payload
 endfunction
 
-function! s:nrepl_call(payload) dict abort
+function! s:nrepl_call(payload, ...) dict abort
   let payload = self.prepare(a:payload)
-  return filter(self.dispatch('call', nrepl#fireplace_connection#bencode(payload)), 'v:val.id == payload.id')
+  let response = filter(self.dispatch('call', nrepl#fireplace_connection#bencode(payload)), 'v:val.id == payload.id')
+  if a:0
+    call map(response, 'call(a:1, v:val)')
+  else
+    return response
+  endif
 endfunction
 
 let s:nrepl = {
