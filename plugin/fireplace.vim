@@ -370,12 +370,12 @@ function! fireplace#local_client(...) abort
   throw ':Connect to a REPL or install classpath.vim to evaluate code'
 endfunction
 
-function! fireplace#findresource(resource) abort
+function! fireplace#findresource(resource, ...) abort
   if a:resource ==# ''
     return ''
   endif
   try
-    let path = fireplace#local_client().path()
+    let path = a:0 ? a:1 : fireplace#local_client().path()
   catch /^:Connect/
     return ''
   endtry
