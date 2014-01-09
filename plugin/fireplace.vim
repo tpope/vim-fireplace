@@ -140,6 +140,17 @@ function! s:repl.eval(expr, options) dict abort
   return result
 endfunction
 
+function! s:repl.call(...) dict abort
+  try
+    let result = call(self.connection.call, a:000, self.connection)
+  catch /^\w\+ Connection Error:/
+    call filter(s:repl_paths, 'v:val isnot self')
+    call filter(s:repls, 'v:val isnot self')
+    throw v:exception
+  endtry
+  return result
+endfunction
+
 function! s:repl.require(lib) dict abort
   if !empty(a:lib) && a:lib !=# fireplace#user_ns() && !get(self.requires, a:lib, 0)
     let reload = has_key(self.requires, a:lib) ? ' :reload' : ''
@@ -319,6 +330,10 @@ function! s:oneoff.require(symbol) abort
   return ''
 endfunction
 
+function! s:oneoff.call(symbol) abort
+  throw 'No live REPL connection'
+endfunction
+
 " }}}1
 " Client {{{1
 
@@ -368,6 +383,24 @@ function! fireplace#local_client(...) abort
     return extend({'classpath': cp}, s:oneoff)
   endif
   throw ':Connect to a REPL or install classpath.vim to evaluate code'
+endfunction
+
+function! fireplace#call(payload, ...)
+  let client = s:client()
+  let payload = copy(a:payload)
+  if !has_key(payload, 'ns')
+    let payload.ns = fireplace#ns()
+    if fireplace#ns() !=# fireplace#user_ns()
+      let error = client.require(fireplace#ns())
+      if !empty(error)
+        echohl ErrorMSG
+        echo error
+        echohl NONE
+        throw "Clojure: couldn't require " . fireplace#ns()
+      endif
+    endif
+  endif
+  return call(client.call, [payload] + a:000, client)
 endfunction
 
 function! fireplace#findresource(resource, ...) abort
