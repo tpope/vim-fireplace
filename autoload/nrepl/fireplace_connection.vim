@@ -58,6 +58,17 @@ function! nrepl#fireplace_connection#prompt() abort
   return fireplace#input_host_port()
 endfunction
 
+if !exists('g:nrepl_fireplace_sessions')
+  let g:nrepl_fireplace_sessions = {}
+endif
+
+augroup nrepl_fireplace_connection
+  autocmd!
+  autocmd VimLeave * for s:session in values(g:nrepl_fireplace_sessions)
+        \ |   call s:session.close()
+        \ | endfor
+augroup END
+
 function! nrepl#fireplace_connection#open(arg) abort
   if a:arg =~# '^\d\+$'
     let host = 'localhost'
@@ -75,10 +86,25 @@ function! nrepl#fireplace_connection#open(arg) abort
   let response = client.process({'op': 'eval', 'code':
         \ '(do (println "success") (symbol (str (System/getProperty "path.separator") (System/getProperty "java.class.path"))))'})
   let client._path = response.value[-1]
-  if !has_key(response, 'out')
+  if has_key(response, 'out')
+    let g:nrepl_fireplace_sessions[client.session] = client
+  else
     unlet client.session
   endif
   return client
+endfunction
+
+function! s:nrepl_close() dict abort
+  if has_key(self, 'session')
+    try
+      unlet! g:nrepl_fireplace_sessions[self.session]
+      call self.call({'op': 'close'})
+    catch //
+    finally
+      unlet self.session
+    endtry
+  endif
+  return self
 endfunction
 
 function! s:nrepl_path() dict abort
@@ -211,6 +237,7 @@ function! s:nrepl_call(payload) dict abort
 endfunction
 
 let s:nrepl = {
+      \ 'close': s:function('s:nrepl_close'),
       \ 'command': s:function('s:nrepl_command'),
       \ 'dispatch': s:function('s:nrepl_dispatch'),
       \ 'prepare': s:function('s:nrepl_prepare'),
