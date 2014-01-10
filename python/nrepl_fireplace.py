@@ -1,7 +1,9 @@
-import sys
+import re
 import select
 import socket
-import re
+import sys
+
+from StringIO import StringIO
 
 def noop():
   pass
@@ -110,7 +112,7 @@ def dispatch(host, port, poll, keepalive, command, *args):
 
 def main(host, port, keepalive, command, *args):
   try:
-    sys.stdout.write(vim_encode(dispatch(host, port, noop, keepalive, command, *args)))
+    sys.stdout.write(vim_encode(dispatch(host, port, noop, keepalive, command, *[bdecode(StringIO(arg)) for arg in args])))
   except Exception, e:
     print(e)
     exit(1)

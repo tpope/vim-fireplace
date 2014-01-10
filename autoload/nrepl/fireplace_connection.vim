@@ -193,17 +193,18 @@ endfunction
 let s:keepalive = tempname()
 call writefile([getpid()], s:keepalive)
 
-function! s:nrepl_command(args) dict abort
+function! s:nrepl_command(cmd, args) dict abort
   return 'python'
         \ . ' ' . s:shellesc(s:python_dir.'/nrepl_fireplace.py')
         \ . ' ' . s:shellesc(self.host)
         \ . ' ' . s:shellesc(self.port)
         \ . ' ' . s:shellesc(s:keepalive)
-        \ . ' ' . join(map(copy(a:args), 's:shellesc(v:val)'), ' ')
+        \ . ' ' . s:shellesc(a:cmd)
+        \ . ' ' . join(map(copy(a:args), 's:shellesc(nrepl#fireplace_connection#bencode(v:val))'), ' ')
 endfunction
 
-function! s:nrepl_dispatch(...) dict abort
-  let in = self.command(a:000)
+function! s:nrepl_dispatch(cmd, ...) dict abort
+  let in = self.command(a:cmd, a:000)
   let out = system(in)
   if !v:shell_error
     return eval(out)
