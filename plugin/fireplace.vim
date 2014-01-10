@@ -140,9 +140,9 @@ function! s:repl.eval(expr, options) dict abort
   return result
 endfunction
 
-function! s:repl.call(...) dict abort
+function! s:repl.message(...) dict abort
   try
-    let result = call(self.connection.call, a:000, self.connection)
+    let result = call(self.connection.message, a:000, self.connection)
   catch /^\w\+ Connection Error:/
     call filter(s:repl_paths, 'v:val isnot self')
     call filter(s:repls, 'v:val isnot self')
@@ -330,7 +330,7 @@ function! s:oneoff.require(symbol) abort
   return ''
 endfunction
 
-function! s:oneoff.call(symbol) abort
+function! s:oneoff.message(symbol) abort
   throw 'No live REPL connection'
 endfunction
 
@@ -385,7 +385,7 @@ function! fireplace#local_client(...) abort
   throw ':Connect to a REPL or install classpath.vim to evaluate code'
 endfunction
 
-function! fireplace#call(payload, ...)
+function! fireplace#message(payload, ...)
   let client = s:client()
   let payload = copy(a:payload)
   if !has_key(payload, 'ns')
@@ -400,7 +400,7 @@ function! fireplace#call(payload, ...)
       endif
     endif
   endif
-  return call(client.call, [payload] + a:000, client)
+  return call(client.message, [payload] + a:000, client)
 endfunction
 
 function! fireplace#findresource(resource, ...) abort

@@ -95,12 +95,16 @@ class Connection:
     finally:
       f.close()
 
-  def call(self, payload):
+  def call(self, payload, terminators, selectors):
     self.send(payload)
     responses = []
     while True:
-      responses.append(self.receive())
-      if 'status' in responses[-1] and 'done' in responses[-1]['status']:
+      response = self.receive()
+      for key in selectors:
+        if response[key] != selectors[key]:
+          continue
+      responses.append(response)
+      if 'status' in response and set(terminators) & set(response['status']):
         return responses
 
 def dispatch(host, port, poll, keepalive, command, *args):

@@ -98,7 +98,7 @@ function! s:nrepl_close() dict abort
   if has_key(self, 'session')
     try
       unlet! g:nrepl_fireplace_sessions[self.session]
-      call self.call({'op': 'close'})
+      call self.message({'op': 'close'})
     catch //
     finally
       unlet self.session
@@ -111,9 +111,9 @@ function! s:nrepl_path() dict abort
   return split(self._path[1:-1], self._path[0])
 endfunction
 
-function! s:nrepl_process(payload) dict abort
+function! s:nrepl_process(responses) dict abort
   let combined = {'status': [], 'session': []}
-  for response in self.call(a:payload)
+  for response in self.message(a:responses)
     for key in keys(response)
       if key ==# 'id' || key ==# 'ns'
         let combined[key] = response[key]
@@ -143,35 +143,35 @@ function! s:nrepl_process(payload) dict abort
 endfunction
 
 function! s:nrepl_eval(expr, ...) dict abort
-  let payload = {"op": "eval"}
-  let payload.code = a:expr
+  let msg = {"op": "eval"}
+  let msg.code = a:expr
   let options = a:0 ? a:1 : {}
   if has_key(options, 'ns')
-    let payload.ns = options.ns
+    let msg.ns = options.ns
   elseif has_key(self, 'ns')
-    let payload.ns = self.ns
+    let msg.ns = self.ns
   endif
   if has_key(options, 'session')
-    let payload.session = options.session
+    let msg.session = options.session
   endif
   if has_key(options, 'file_path')
-    let payload.op = 'load-file'
-    let payload['file-path'] = options.file_path
-    let payload['file-name'] = fnamemodify(options.file_path, ':t')
-    if has_key(payload, 'ns')
-      let payload.file = "(in-ns '".payload.ns.") ".payload.code
-      call remove(payload, 'ns')
+    let msg.op = 'load-file'
+    let msg['file-path'] = options.file_path
+    let msg['file-name'] = fnamemodify(options.file_path, ':t')
+    if has_key(msg, 'ns')
+      let msg.file = "(in-ns '".msg.ns.") ".msg.code
+      call remove(msg, 'ns')
     else
-      let payload.file = payload.code
+      let msg.file = msg.code
     endif
-    call remove(payload, 'code')
+    call remove(msg, 'code')
   endif
-  let response = self.process(payload)
+  let response = self.process(msg)
   if has_key(response, 'ns') && !a:0
     let self.ns = response.ns
   endif
 
-  if has_key(response, 'ex') && !empty(get(payload, 'session', 1))
+  if has_key(response, 'ex') && !empty(get(msg, 'session', 1))
     let response.stacktrace = s:extract_last_stacktrace(self)
   endif
 
@@ -184,9 +184,9 @@ endfunction
 function! s:extract_last_stacktrace(nrepl) abort
     let format_st = '(clojure.core/symbol (clojure.core/str "\n\b" (clojure.core/apply clojure.core/str (clojure.core/interleave (clojure.core/repeat "\n") (clojure.core/map clojure.core/str (.getStackTrace *e)))) "\n\b\n"))'
     let stacktrace = split(get(split(a:nrepl.process({'op': 'eval', 'code': '['.format_st.' *3 *2 *1]', 'session': a:nrepl.session}).value[0], "\n\b\n"), 1, ""), "\n")
-    call a:nrepl.call({'op': 'eval', 'code': '(nth *1 1)', 'session': a:nrepl.session})
-    call a:nrepl.call({'op': 'eval', 'code': '(nth *2 2)', 'session': a:nrepl.session})
-    call a:nrepl.call({'op': 'eval', 'code': '(nth *3 3)', 'session': a:nrepl.session})
+    call a:nrepl.message({'op': 'eval', 'code': '(nth *1 1)', 'session': a:nrepl.session})
+    call a:nrepl.message({'op': 'eval', 'code': '(nth *2 2)', 'session': a:nrepl.session})
+    call a:nrepl.message({'op': 'eval', 'code': '(nth *3 3)', 'session': a:nrepl.session})
     return stacktrace
 endfunction
 
@@ -212,34 +212,50 @@ function! s:nrepl_dispatch(cmd, ...) dict abort
   throw 'nREPL: '.out
 endfunction
 
-function! s:nrepl_prepare(payload) dict abort
-  let payload = copy(a:payload)
-  if !has_key(payload, 'id')
-    let payload.id = s:id()
+function! s:nrepl_prepare(msg) dict abort
+  let msg = copy(a:msg)
+  if !has_key(msg, 'id')
+    let msg.id = s:id()
   endif
-  if empty(get(payload, 'session', 1))
-    unlet payload.session
+  if empty(get(msg, 'session', 1))
+    unlet msg.session
   elseif !has_key(self, 'session')
     if &verbose
       echohl WarningMSG
       echo "nREPL: server has bug preventing session support"
       echohl None
     endif
-    unlet! payload.session
-  elseif !has_key(payload, 'session')
-    let payload.session = self.session
+    unlet! msg.session
+  elseif !has_key(msg, 'session')
+    let msg.session = self.session
   endif
-  return payload
+  return msg
 endfunction
 
-function! s:nrepl_call(payload, ...) dict abort
-  let payload = self.prepare(a:payload)
-  let response = filter(self.dispatch('call', nrepl#fireplace_connection#bencode(payload)), 'v:val.id == payload.id')
-  if a:0
-    call map(response, 'call(a:1, v:val)')
+function! nrepl#fireplace_connection#callback(body, fn)
+  let response = {'body': a:body}
+  if has_key(a:body, 'session')
+    let response.session = g:nrepl_fireplace_sessions[a:body.session]
+  endif
+  call call(a:fn, [response])
+endfunction
+
+function! s:nrepl_call(msg, ...) dict abort
+  let payload = nrepl#fireplace_connection#bencode(a:msg)
+  let terms = a:0 ? a:1 : ['done']
+  let sels = a:0 > 1 ? a:2 : {}
+  let response = self.dispatch('call', payload, terms, sels)
+  if a:0 > 2
+    return map(response, 'nrepl#fireplace_connection#callback(v:val, a:3)')
   else
     return response
   endif
+endfunction
+
+function! s:nrepl_message(msg, ...) dict abort
+  let msg = self.prepare(a:msg)
+  let sel = {'id': msg.id}
+  return call(self.call, [msg, ['done'], sel] + a:000, self)
 endfunction
 
 let s:nrepl = {
@@ -248,6 +264,7 @@ let s:nrepl = {
       \ 'dispatch': s:function('s:nrepl_dispatch'),
       \ 'prepare': s:function('s:nrepl_prepare'),
       \ 'call': s:function('s:nrepl_call'),
+      \ 'message': s:function('s:nrepl_message'),
       \ 'eval': s:function('s:nrepl_eval'),
       \ 'path': s:function('s:nrepl_path'),
       \ 'process': s:function('s:nrepl_process')}
