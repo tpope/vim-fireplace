@@ -473,7 +473,7 @@ endfunction
 
 function! s:eval(expr, ...) abort
   let options = a:0 ? copy(a:1) : {}
-  let client = get(options, 'client', s:client())
+  let client = s:client()
   if !has_key(options, 'ns')
     if fireplace#ns() !=# client.user_ns()
       let error = client.require(fireplace#ns())
@@ -929,26 +929,16 @@ augroup END
 " }}}1
 " Go to source {{{1
 
-function! s:decode_url(url) abort
-  let url = a:url
-  let url = substitute(url, '^\%(jar:\)\=file:\zs/\ze\w:/', '', '')
-  let url = substitute(url, '^file:', '', '')
-  let url = substitute(url, '^jar:\(.*\)!/', 'zip\1::', '')
-  let url = substitute(url, '%\(\x\x\)', '\=eval(''"\x''.submatch(1).''"'')', 'g')
-  return url
-endfunction
-
 function! fireplace#source(symbol) abort
-  let options = {'client': fireplace#local_client(), 'session': 0}
+  let options = {'session': 0}
   let cmd =
         \ '(when-let [v (resolve ' . s:qsym(a:symbol) .')]' .
         \ '  (when-let [filepath (:file (meta v))]' .
-        \ '    (when-let [url (.getResource (clojure.lang.RT/baseLoader) filepath)]' .
-        \ '      [(str url)' .
-        \ '       (:line (meta v))])))'
+        \ '    [filepath' .
+        \ '     (:line (meta v))]))'
   let result = fireplace#evalparse(cmd, options)
   if type(result) == type([])
-    return '+' . result[1] . ' ' . fnameescape(s:decode_url(result[0]))
+    return '+' . result[1] . ' ' . fireplace#findresource(result[0])
   else
     return ''
   endif
@@ -999,23 +989,16 @@ augroup END
 " Go to file {{{1
 
 function! fireplace#findfile(path) abort
-  let options = {'client': fireplace#local_client(), 'session': 0}
-
-  let cmd =
-        \ '(symbol' .
-        \ '  (or' .
-        \ '    (when-let [url (.getResource (clojure.lang.RT/baseLoader) %s)]' .
-        \ '      (str url))' .
-        \ '    ""))'
+  let options = {'session': 0}
 
   let path = a:path
 
   if path !~# '[/.]' && path =~# '^\k\+$'
-    let aliascmd = printf(cmd,
-          \ '(if-let [ns ((ns-aliases *ns*) '.s:qsym(path).')]' .
+    let aliascmd =
+          \ '(symbol (if-let [ns ((ns-aliases *ns*) '.s:qsym(path).')]' .
           \ '  (str (.replace (.replace (str (ns-name ns)) "-" "_") "." "/") ".clj")' .
-          \ '  "'.path.'.clj")')
-    let result = get(split(s:eval(aliascmd, options).value, "\n"), 0, '')
+          \ '  "'.path.'.clj"))'
+    let path = get(split(s:eval(aliascmd, options).value, "\n"), 0, '')
   else
     if path !~# '/'
       let path = tr(path, '.-', '/_')
@@ -1023,16 +1006,8 @@ function! fireplace#findfile(path) abort
     if path !~# '\.\w\+$'
       let path .= '.clj'
     endif
-
-    let response = s:eval(printf(cmd, s:str(path)), options)
-    let result = get(split(get(response, 'value', ''), "\n"), 0, '')
   endif
-  let result = s:decode_url(result)
-  if result ==# ''
-    return fireplace#findresource(path)
-  else
-    return result
-  endif
+  return fireplace#findresource(path)
 endfunction
 
 function! s:GF(cmd, file) abort
