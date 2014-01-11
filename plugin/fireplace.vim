@@ -1236,6 +1236,7 @@ function! s:leiningen_connect() abort
     let port = matchstr(readfile(portfile, 'b', 1)[0], '\d\+')
     let s:leiningen_repl_ports[b:leiningen_root] = getftime(portfile)
     try
+      call s:check_leinigen_repl()
       call s:register_connection(nrepl#fireplace_connection#open(port), b:leiningen_root)
     catch /^nREPL Connection Error:/
       if &verbose
@@ -1247,8 +1248,28 @@ function! s:leiningen_connect() abort
   endif
 endfunction
 
-function! s:leiningen_init() abort
+function! s:check_leinigen_repl() abort
+  if s:repl_stopped()
+    let errmsg = "nREPL Connection Error: rpel job is stopped in background."
+    echomsg errmsg
+    throw  errmsg
+  endif
+endfunction
 
+" Checks if the repl is stopped in background.
+function! s:repl_stopped() abort
+  if has("unix")
+    let tid = system('echo ' . shellescape("$$"))
+    let pattern = shellescape("'lein.*repl'")
+    let command = "pgrep -P ". tid. " -f " . pattern . " -c"
+    " Cast output to Vim integer.
+    let repl_stopped = system(command) + 0
+    return repl_stopped > 0
+  endif
+  return 0
+endfunction
+
+function! s:leiningen_init() abort
   if !exists('b:leiningen_root')
     let root = s:hunt(expand('%:p'), 'project.clj', '(\s*defproject')
     if root !=# ''
