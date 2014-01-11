@@ -125,6 +125,10 @@ if !exists('s:repls')
   let s:repl_paths = {}
 endif
 
+function! s:repl.user_ns() abort
+  return 'user'
+endfunction
+
 function! s:repl.path() dict abort
   return self.connection.path()
 endfunction
@@ -152,10 +156,10 @@ function! s:repl.message(...) dict abort
 endfunction
 
 function! s:repl.require(lib) dict abort
-  if !empty(a:lib) && a:lib !=# fireplace#user_ns() && !get(self.requires, a:lib, 0)
+  if !empty(a:lib) && a:lib !=# self.user_ns() && !get(self.requires, a:lib, 0)
     let reload = has_key(self.requires, a:lib) ? ' :reload' : ''
     let self.requires[a:lib] = 0
-    let result = self.eval('(doto '.s:qsym(a:lib).' (require'.reload.') the-ns)', {'ns': fireplace#user_ns(), 'session': 0})
+    let result = self.eval('(doto '.s:qsym(a:lib).' (require'.reload.') the-ns)', {'ns': self.user_ns(), 'session': 0})
     let self.requires[a:lib] = !has_key(result, 'ex')
     if has_key(result, 'ex')
       return result.err
@@ -282,13 +286,17 @@ let s:oneoff_in  = tempname()
 let s:oneoff_out = tempname()
 let s:oneoff_err = tempname()
 
+function! s:oneoff.user_ns() abort
+  return 'user'
+endfunction
+
 function! s:oneoff.eval(expr, options) dict abort
   if &verbose && !empty(get(a:options, 'session', 1))
     echohl WarningMSG
     echomsg "No REPL found. Running java clojure.main ..."
     echohl None
   endif
-  if a:options.ns !=# '' && a:options.ns !=# fireplace#user_ns()
+  if a:options.ns !=# '' && a:options.ns !=# self.user_ns()
     let ns = '(require '.s:qsym(a:options.ns).') (in-ns '.s:qsym(a:options.ns).') '
   else
     let ns = ''
@@ -337,15 +345,19 @@ endfunction
 " }}}1
 " Client {{{1
 
-function! s:client() abort
-  silent doautocmd User FireplacePreConnect
+function! s:buf() abort
   if exists('s:input')
-    let buf = s:input
+    return s:input
   elseif has_key(s:qffiles, expand('%:p'))
-    let buf = s:qffiles[expand('%:p')].buffer
+    return s:qffiles[expand('%:p')].buffer
   else
-    let buf = '%'
+    return '%'
   endif
+endfunction
+
+function! s:client(...) abort
+  silent doautocmd User FireplacePreConnect
+  let buf = a:0 ? a:1 : s:buf()
   let root = simplify(fnamemodify(bufname(buf), ':p:s?[\/]$??'))
   let previous = ""
   while root !=# previous
@@ -355,32 +367,26 @@ function! s:client() abort
     let previous = root
     let root = fnamemodify(root, ':h')
   endwhile
-  return fireplace#local_client(1)
+  return fireplace#local_client(buf, 1)
 endfunction
 
-function! fireplace#client() abort
-  return s:client()
+function! fireplace#client(...) abort
+  return a:0 ? s:client(a:1) : s:client()
 endfunction
 
 function! fireplace#local_client(...) abort
-  if !a:0
+  if a:0 < 2
     silent doautocmd User FireplacePreConnect
   endif
-  if exists('s:input')
-    let buf = s:input
-  elseif has_key(s:qffiles, expand('%:p'))
-    let buf = s:qffiles[expand('%:p')].buffer
-  else
-    let buf = '%'
-  endif
+  let buf = a:0 ? a:1 : s:buf()
   for repl in s:repls
     if repl.includes_file(fnamemodify(bufname(buf), ':p'))
       return repl
     endif
   endfor
-  if exists('*classpath#from_vim')
+  if exists('*classpath#from_vim') && expand('%:e') ==# 'clj'
     let cp = classpath#from_vim(getbufvar(buf, '&path'))
-    return extend({'classpath': cp}, s:oneoff)
+    return extend({'classpath': cp, 'nr': bufnr(buf)}, s:oneoff)
   endif
   throw ':Connect to a REPL or install classpath.vim to evaluate code'
 endfunction
@@ -390,7 +396,7 @@ function! fireplace#message(payload, ...)
   let payload = copy(a:payload)
   if !has_key(payload, 'ns')
     let payload.ns = fireplace#ns()
-    if fireplace#ns() !=# fireplace#user_ns()
+    if fireplace#ns() !=# client.user_ns()
       let error = client.require(fireplace#ns())
       if !empty(error)
         echohl ErrorMSG
@@ -469,7 +475,7 @@ function! s:eval(expr, ...) abort
   let options = a:0 ? copy(a:1) : {}
   let client = get(options, 'client', s:client())
   if !has_key(options, 'ns')
-    if fireplace#ns() !=# fireplace#user_ns()
+    if fireplace#ns() !=# client.user_ns()
       let error = client.require(fireplace#ns())
       if !empty(error)
         echohl ErrorMSG
@@ -1077,10 +1083,6 @@ function! s:buffer_path(...) abort
   return ''
 endfunction
 
-function! fireplace#user_ns() abort
-  return get(b:, 'fireplace_user_ns', 'user')
-endfunction
-
 function! fireplace#ns() abort
   if exists('b:fireplace_ns')
     return b:fireplace_ns
@@ -1102,7 +1104,7 @@ function! fireplace#ns() abort
     return s:qffiles[expand('%:p')].ns
   endif
   let path = s:buffer_path()
-  return s:to_ns(path ==# '' ? fireplace#user_ns() : path)
+  return s:to_ns(path ==# '' ? fireplace#client().user_ns() : path)
 endfunction
 
 function! s:Lookup(ns, macro, arg) abort
