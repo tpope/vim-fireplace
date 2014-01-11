@@ -122,7 +122,13 @@ function! s:nrepl_eval(expr, ...) dict abort
     endif
     call remove(msg, 'code')
   endif
-  let response = self.process(msg)
+  let msg = self.prepare(msg)
+  try
+    let response = self.process(msg)
+  catch /^Vim:Interrupt$/
+    call self.call({'op': 'interrupt', 'session': msg.session, 'interrupt-id': msg.id})
+    throw 'Clojure: Interrupt'
+  endtry
   if has_key(response, 'ns') && !a:0
     let self.ns = response.ns
   endif
