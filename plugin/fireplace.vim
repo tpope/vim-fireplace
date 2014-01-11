@@ -1068,7 +1068,7 @@ augroup END
 " Documentation {{{1
 
 function! s:buffer_path(...) abort
-  let buffer = a:0 ? a:1 : exists('s:input') ? s:input : '%'
+  let buffer = a:0 ? a:1 : s:buf()
   if getbufvar(buffer, '&buftype') =~# '^no'
     return ''
   endif
@@ -1083,16 +1083,16 @@ function! s:buffer_path(...) abort
   return ''
 endfunction
 
-function! fireplace#ns() abort
-  if exists('b:fireplace_ns')
-    return b:fireplace_ns
+function! fireplace#ns(...) abort
+  let buffer = a:0 ? a:1 : s:buf()
+  if getbufvar(buffer, 'fireplace_ns')
+    return getbufvar(buffer, 'fireplace_ns')
   endif
-  let lnum = 1
-  while lnum < line('$') && getline(lnum) =~# '^\s*\%(;.*\)\=$'
-    let lnum += 1
-  endwhile
+  let head = getbufline(buffer, 1, 500)
+  let blank = '^\s*\%(;.*\)\=$'
+  call filter(head, 'v:val !~# blank')
   let keyword_group = '[A-Za-z0-9_?*!+/=<>.-]'
-  let lines = join(getline(lnum, lnum+50), ' ')
+  let lines = join(head[0:49], ' ')
   let lines = substitute(lines, '"\%(\\.\|[^"]\)*"\|\\.', '', 'g')
   let lines = substitute(lines, '\^\={[^{}]*}', '', '')
   let lines = substitute(lines, '\^:'.keyword_group.'\+', '', 'g')
@@ -1100,11 +1100,8 @@ function! fireplace#ns() abort
   if ns !=# ''
     return ns
   endif
-  if has_key(s:qffiles, expand('%:p'))
-    return s:qffiles[expand('%:p')].ns
-  endif
-  let path = s:buffer_path()
-  return s:to_ns(path ==# '' ? fireplace#client().user_ns() : path)
+  let path = s:buffer_path(buffer)
+  return s:to_ns(path ==# '' ? fireplace#client(buffer).user_ns() : path)
 endfunction
 
 function! s:Lookup(ns, macro, arg) abort
