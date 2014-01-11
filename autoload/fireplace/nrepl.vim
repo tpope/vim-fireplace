@@ -48,7 +48,7 @@ function! s:nrepl_close() dict abort
   if has_key(self, 'session')
     try
       unlet! g:fireplace_nrepl_sessions[self.session]
-      call self.message({'op': 'close'})
+      call self.message({'op': 'close'}, 'fireplace#nrepl#ignore')
     catch
     finally
       unlet self.session
@@ -110,6 +110,7 @@ function! s:nrepl_eval(expr, ...) dict abort
   if has_key(options, 'session')
     let msg.session = options.session
   endif
+  let msg = self.prepare(msg)
   if has_key(options, 'file_path')
     let msg.op = 'load-file'
     let msg['file-path'] = options.file_path
@@ -122,11 +123,12 @@ function! s:nrepl_eval(expr, ...) dict abort
     endif
     call remove(msg, 'code')
   endif
-  let msg = self.prepare(msg)
   try
     let response = self.process(msg)
   catch /^Vim:Interrupt$/
-    call self.call({'op': 'interrupt', 'session': msg.session, 'interrupt-id': msg.id})
+    if has_key(msg, 'session')
+      call self.message({'op': 'interrupt', 'session': msg.session, 'interrupt-id': msg.id}, 'fireplace#nrepl#ignore')
+    endif
     throw 'Clojure: Interrupt'
   endtry
   if has_key(response, 'ns') && !a:0
@@ -181,6 +183,9 @@ function! fireplace#nrepl#callback(body, type, fn)
     let response.session = g:fireplace_nrepl_sessions[a:body.session]
   endif
   call call(a:fn, [response])
+endfunction
+
+function! fireplace#nrepl#ignore(...) abort
 endfunction
 
 function! s:nrepl_call(msg, ...) dict abort
