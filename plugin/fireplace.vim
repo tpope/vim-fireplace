@@ -39,14 +39,25 @@ let s:jar_contents = {}
 
 function! fireplace#jar_contents(path) abort
   if !exists('s:zipinfo')
-    let s:zipinfo = executable('zipinfo')
-  endif
-  if !has_key(s:jar_contents, a:path) && s:zipinfo
-    let s:jar_contents[a:path] = split(system('zipinfo -1 '.shellescape(a:path)), "\n")
-    if v:shell_error
-      return []
+    if executable('zipinfo')
+      let s:zipinfo = 'zipinfo -1 '
+    elseif executable('python')
+      let s:zipinfo = 'python -c '.shellescape('import zipfile, sys; print chr(10).join(zipfile.ZipFile(sys.argv[1]).namelist())').' '
+    else
+      let s:zipinfo = ''
     endif
   endif
+
+  if !has_key(s:jar_contents, a:path) && has('python')
+    python import vim, zipfile
+    python vim.command("let s:jar_contents[a:path] = split('" + "\n".join(zipfile.ZipFile(vim.eval('a:path')).namelist()) + "', \"\n\")")
+  elseif !has_key(s:jar_contents, a:path) && !empty(s:zipinfo)
+    let s:jar_contents[a:path] = split(system(s:zipinfo.shellescape(a:path)), "\n")
+    if v:shell_error
+      let s:jar_contents[a:path] = []
+    endif
+  endif
+
   return copy(get(s:jar_contents, a:path, []))
 endfunction
 
@@ -353,6 +364,11 @@ function! s:buf() abort
   else
     return '%'
   endif
+endfunction
+
+function! fireplace#buffer(...) abort
+  let buf = a:0 ? a:1 : s:buf()
+  return fireplace#clojure#buffer(bufnr(buf))
 endfunction
 
 function! s:client(...) abort
