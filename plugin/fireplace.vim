@@ -678,7 +678,7 @@ endfunction
 
 function! s:editop(type) abort
   call feedkeys(&cedit . "\<Home>", 'n')
-  let input = s:input(substitute(substitute(s:opfunc(a:type), "\s*;[^\n]*", '', 'g'), '\n\+\s*', ' ', 'g'))
+  let input = s:input(substitute(substitute(s:opfunc(a:type), "\s*;[^\n\"]*\\%(\n\\@=\\|$\\)", '', 'g'), '\n\+\s*', ' ', 'g'))
   if input !=# ''
     call fireplace#echo_session_eval(input)
   endif
