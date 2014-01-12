@@ -107,22 +107,6 @@ care about nREPL support.
 
 [classpath.vim FAQ]: https://github.com/tpope/vim-classpath#FAQ
 
-## Contributing
-
-More than any other plugin, I'm in over my head here.  I tried to do my
-homework, but you don't learn best practices overnight.  Please, open
-[GitHub issues][] for bug reports and feature requests.  Even better than a
-feature request is just to tell me the pain you're experiencing, and perhaps
-some ideas for what might eliminate it.  I know Vimscript; you know Clojure.
-Let's synergize.
-
-I'm a stickler for [commit messages][], so if you send me a pull
-request with so much as superfluous period in the subject line, I will
-reject it, then TP your house.
-
-[GitHub issues]: http://github.com/tpope/vim-fireplace/issues
-[commit messages]: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
-
 ## Self-Promotion
 
 Like fireplace.vim? Follow the repository on
