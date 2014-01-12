@@ -144,26 +144,22 @@ function! s:repl.path() dict abort
   return self.connection.path()
 endfunction
 
-function! s:repl.eval(expr, options) dict abort
+function! s:repl.try(function, ...) dict abort
   try
-    let result = self.connection.eval(a:expr, a:options)
+    return call(self.connection[a:function], a:000, self.connection)
   catch /^\w\+ Connection Error:/
     call filter(s:repl_paths, 'v:val isnot self')
     call filter(s:repls, 'v:val isnot self')
     throw v:exception
   endtry
-  return result
+endfunction
+
+function! s:repl.eval(expr, options) dict abort
+  return self.try('eval', a:expr, a:options)
 endfunction
 
 function! s:repl.message(...) dict abort
-  try
-    let result = call(self.connection.message, a:000, self.connection)
-  catch /^\w\+ Connection Error:/
-    call filter(s:repl_paths, 'v:val isnot self')
-    call filter(s:repls, 'v:val isnot self')
-    throw v:exception
-  endtry
-  return result
+  return call(self.try, ['message'] + a:000, self)
 endfunction
 
 function! s:repl.require(lib) dict abort
