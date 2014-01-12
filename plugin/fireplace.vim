@@ -367,6 +367,19 @@ function! s:buf() abort
   endif
 endfunction
 
+function! fireplace#path(...) abort
+  let buf = a:0 ? a:1 : s:buf()
+  for repl in s:repls
+    if repl.includes_file(fnamemodify(bufname(buf), ':p'))
+      return repl.path()
+    endif
+  endfor
+  if exists('*classpath#from_vim')
+    return classpath#split(classpath#from_vim(getbufvar(buf, '&path')))
+  endif
+  return []
+endfunction
+
 function! s:client(...) abort
   silent doautocmd User FireplacePreConnect
   let buf = a:0 ? a:1 : s:buf()
@@ -379,28 +392,20 @@ function! s:client(...) abort
     let previous = root
     let root = fnamemodify(root, ':h')
   endwhile
-  return fireplace#local_client(buf, 1)
-endfunction
-
-function! fireplace#client(...) abort
-  return a:0 ? s:client(a:1) : s:client()
-endfunction
-
-function! fireplace#local_client(...) abort
-  if a:0 < 2
-    silent doautocmd User FireplacePreConnect
-  endif
-  let buf = a:0 ? a:1 : s:buf()
   for repl in s:repls
     if repl.includes_file(fnamemodify(bufname(buf), ':p'))
       return repl
     endif
   endfor
-  if exists('*classpath#from_vim') && expand('%:e') ==# 'clj'
+  if exists('*classpath#from_vim') && fnamemodify(bufname(buf), ':e') =~# '^cljx\=$'
     let cp = classpath#from_vim(getbufvar(buf, '&path'))
     return extend({'classpath': cp, 'nr': bufnr(buf)}, s:oneoff)
   endif
   throw ':Connect to a REPL or install classpath.vim to evaluate code'
+endfunction
+
+function! fireplace#client(...) abort
+  return a:0 ? s:client(a:1) : s:client()
 endfunction
 
 function! fireplace#message(payload, ...)
@@ -419,11 +424,7 @@ function! fireplace#findresource(resource, ...) abort
   if a:resource ==# ''
     return ''
   endif
-  try
-    let path = a:0 ? a:1 : fireplace#local_client().path()
-  catch /^:Connect/
-    return ''
-  endtry
+  let path = a:0 ? a:1 : fireplace#path()
   let file = findfile(a:resource, escape(join(path, ','), ' '))
   if !empty(file)
     return file
