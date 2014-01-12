@@ -937,7 +937,6 @@ augroup END
 " Go to source {{{1
 
 function! fireplace#source(symbol) abort
-  let options = {'session': 0}
   let cmd =
         \ '(when-let [v (resolve ' . s:qsym(a:symbol) .')]' .
         \ '  (when-let [filepath (:file (meta v))]' .
@@ -996,23 +995,15 @@ augroup END
 " Go to file {{{1
 
 function! fireplace#findfile(path) abort
-  let options = {'session': 0}
-
   let path = a:path
-
   if path !~# '[/.]' && path =~# '^\k\+$'
-    let aliascmd =
-          \ '(symbol (if-let [ns ((ns-aliases *ns*) '.s:qsym(path).')]' .
-          \ '  (str (.replace (.replace (str (ns-name ns)) "-" "_") "." "/") ".clj")' .
-          \ '  "'.path.'.clj"))'
-    let path = get(split(s:eval(aliascmd, options).value, "\n"), 0, '')
-  else
-    if path !~# '/'
-      let path = tr(path, '.-', '/_')
-    endif
-    if path !~# '\.\w\+$'
-      let path .= '.clj'
-    endif
+    let path = fireplace#evalparse('((ns-aliases *ns*) '.s:qsym(path).' '.s:qsym(path).')')
+  endif
+  if path !~# '/'
+    let path = tr(path, '.-', '/_')
+  endif
+  if path !~# '\.\w\+$'
+    let path .= '.clj'
   endif
   return fireplace#findresource(path)
 endfunction
