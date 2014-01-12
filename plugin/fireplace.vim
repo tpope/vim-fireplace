@@ -166,13 +166,18 @@ function! s:repl.require(lib) dict abort
   if !empty(a:lib) && a:lib !=# self.user_ns() && !get(self.requires, a:lib)
     let reload = has_key(self.requires, a:lib) ? ' :reload' : ''
     let self.requires[a:lib] = 0
-    let result = self.eval('(ns '.a:lib.' (:require '.a:lib.reload.'))', {'ns': self.user_ns(), 'session': 0})
+    let clone = self.try('clone')
+    try
+      let result = clone.eval('(ns '.a:lib.' (:require '.a:lib.reload.'))', {'ns': self.user_ns()})
+    finally
+      call clone.close()
+    endtry
     let self.requires[a:lib] = !has_key(result, 'ex')
     if has_key(result, 'ex')
-      return result.err
+      return result
     endif
   endif
-  return ''
+  return {}
 endfunction
 
 function! s:repl.includes_file(file) dict abort
@@ -342,7 +347,7 @@ function! s:oneoff.eval(expr, options) dict abort
 endfunction
 
 function! s:oneoff.require(symbol) abort
-  return ''
+  return {}
 endfunction
 
 function! s:oneoff.message(symbol) abort
@@ -405,12 +410,6 @@ function! fireplace#message(payload, ...)
     let payload.ns = fireplace#ns()
     if fireplace#ns() !=# client.user_ns()
       let error = client.require(fireplace#ns())
-      if !empty(error)
-        echohl ErrorMSG
-        echo error
-        echohl NONE
-        throw "Clojure: couldn't require " . fireplace#ns()
-      endif
     endif
   endif
   return call(client.message, [payload] + a:000, client)
@@ -485,10 +484,7 @@ function! s:eval(expr, ...) abort
     if fireplace#ns() !=# client.user_ns()
       let error = client.require(fireplace#ns())
       if !empty(error)
-        echohl ErrorMSG
-        echo error
-        echohl NONE
-        throw "Clojure: couldn't require " . fireplace#ns()
+        return error
       endif
     endif
     let options.ns = fireplace#ns()
