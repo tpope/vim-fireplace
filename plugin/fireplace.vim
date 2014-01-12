@@ -331,7 +331,7 @@ function! s:oneoff.eval(expr, options) dict abort
         \   '      (clojure.core/spit '.s:str(s:oneoff_ex).' (clojure.core/class e))' .
         \   '      (clojure.core/spit '.s:str(s:oneoff_stk).' (clojure.core/apply clojure.core/str (clojure.core/interpose "\n" (.getStackTrace e))))))' .
         \   '  nil)')
-  let wtf = system(command)
+  let captured = system(command)
   let result = {}
   let result.value = join(readfile(s:oneoff_pr, 'b'), "\n")
   let result.out   = join(readfile(s:oneoff_out, 'b'), "\n")
@@ -340,7 +340,7 @@ function! s:oneoff.eval(expr, options) dict abort
   let result.stacktrace = readfile(s:oneoff_stk)
   call filter(result, '!empty(v:val)')
   if v:shell_error && get(result, 'ex', '') ==# ''
-    throw 'Error running Clojure: '.wtf
+    throw 'Error running Java: '.get(split(captured, "\n"), -1, '')
   else
     return result
   endif
