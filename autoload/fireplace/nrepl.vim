@@ -58,6 +58,15 @@ function! s:nrepl_close() dict abort
   return self
 endfunction
 
+function! s:nrepl_clone() dict abort
+  let client = copy(self)
+  if has_key(self, 'session')
+    let client.session = client.process({'op': 'clone'})['new-session']
+    let g:fireplace_nrepl_sessions[client.session] = client
+  endif
+  return client
+endfunction
+
 function! s:nrepl_path() dict abort
   return split(self._path[1:-1], self._path[0])
 endfunction
@@ -202,6 +211,7 @@ endfunction
 
 let s:nrepl = {
       \ 'close': s:function('s:nrepl_close'),
+      \ 'clone': s:function('s:nrepl_clone'),
       \ 'prepare': s:function('s:nrepl_prepare'),
       \ 'call': s:function('s:nrepl_call'),
       \ 'message': s:function('s:nrepl_message'),
