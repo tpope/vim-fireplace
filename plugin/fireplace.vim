@@ -167,10 +167,10 @@ function! s:repl.message(...) dict abort
 endfunction
 
 function! s:repl.require(lib) dict abort
-  if !empty(a:lib) && a:lib !=# self.user_ns() && !get(self.requires, a:lib, 0)
+  if !empty(a:lib) && a:lib !=# self.user_ns() && !get(self.requires, a:lib)
     let reload = has_key(self.requires, a:lib) ? ' :reload' : ''
     let self.requires[a:lib] = 0
-    let result = self.eval('(doto '.s:qsym(a:lib).' (require'.reload.') the-ns)', {'ns': self.user_ns(), 'session': 0})
+    let result = self.eval('(ns '.a:lib.' (:require '.a:lib.reload.'))', {'ns': self.user_ns(), 'session': 0})
     let self.requires[a:lib] = !has_key(result, 'ex')
     if has_key(result, 'ex')
       return result.err
