@@ -576,10 +576,6 @@ function! fireplace#session_eval(expr, ...) abort
   throw err
 endfunction
 
-function! fireplace#eval(expr, ...) abort
-  return fireplace#eval(a:expr, extend({'session': 0}, a:0 ? a:1 : {}))
-endfunction
-
 function! fireplace#echo_session_eval(expr, ...) abort
   try
     echo fireplace#session_eval(a:expr, a:0 ? a:1 : {})
@@ -736,7 +732,7 @@ function! s:Eval(bang, line1, line2, count, args) abort
   endif
   if a:bang
     try
-      let result = fireplace#eval(expr, options)
+      let result = fireplace#session_eval(expr, options)
       if a:args !=# ''
         call append(a:line1, result)
         exe a:line1
