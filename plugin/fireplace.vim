@@ -577,7 +577,7 @@ function! fireplace#session_eval(expr, ...) abort
 endfunction
 
 function! fireplace#eval(expr, ...) abort
-  return fireplace#eval(a:expr, extend({'session': 0}, a:0 ? a:1 : {}))
+  return fireplace#session_eval(a:expr, extend({'session': 0}, a:0 ? a:1 : {}))
 endfunction
 
 function! fireplace#echo_session_eval(expr, ...) abort
