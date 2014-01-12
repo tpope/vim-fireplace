@@ -569,6 +569,10 @@ function! fireplace#session_eval(expr, ...) abort
   throw err
 endfunction
 
+function! fireplace#eval(...) abort
+  return call('fireplace#session_eval', a:000)
+endfunction
+
 function! fireplace#echo_session_eval(expr, ...) abort
   try
     echo fireplace#session_eval(a:expr, a:0 ? a:1 : {})
