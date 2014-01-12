@@ -366,11 +366,6 @@ function! s:buf() abort
   endif
 endfunction
 
-function! fireplace#buffer(...) abort
-  let buf = a:0 ? a:1 : s:buf()
-  return fireplace#clojure#buffer(bufnr(buf))
-endfunction
-
 function! s:client(...) abort
   silent doautocmd User FireplacePreConnect
   let buf = a:0 ? a:1 : s:buf()
