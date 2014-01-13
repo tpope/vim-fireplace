@@ -180,16 +180,6 @@ function! s:repl.require(lib) dict abort
   return {}
 endfunction
 
-function! s:repl.includes_file(file) dict abort
-  let file = substitute(a:file, '\C^zipfile:\(.*\)::', '\1/', '')
-  let file = substitute(file, '\C^fugitive:[\/][\/]\(.*\)\.git[\/][\/][^\/]\+[\/]', '\1', '')
-  for path in self.path()
-    if file[0 : len(path)-1] ==? path
-      return 1
-    endif
-  endfor
-endfunction
-
 function! s:register_connection(conn, ...) abort
   call insert(s:repls, extend({'connection': a:conn}, deepcopy(s:repl)))
   if a:0 && a:1 !=# ''
@@ -367,10 +357,20 @@ function! s:buf() abort
   endif
 endfunction
 
+function! s:includes_file(file, path) abort
+  let file = substitute(a:file, '\C^zipfile:\(.*\)::', '\1/', '')
+  let file = substitute(file, '\C^fugitive:[\/][\/]\(.*\)\.git[\/][\/][^\/]\+[\/]', '\1', '')
+  for path in a:path
+    if file[0 : len(path)-1] ==? path
+      return 1
+    endif
+  endfor
+endfunction
+
 function! fireplace#path(...) abort
   let buf = a:0 ? a:1 : s:buf()
   for repl in s:repls
-    if repl.includes_file(fnamemodify(bufname(buf), ':p'))
+    if s:includes_file(fnamemodify(bufname(buf), ':p'), repl.path())
       return repl.path()
     endif
   endfor
@@ -393,7 +393,7 @@ function! s:client(...) abort
     let root = fnamemodify(root, ':h')
   endwhile
   for repl in s:repls
-    if repl.includes_file(fnamemodify(bufname(buf), ':p'))
+    if s:includes_file(fnamemodify(bufname(buf), ':p'), repl.path)
       return repl
     endif
   endfor
