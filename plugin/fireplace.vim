@@ -939,7 +939,7 @@ function! fireplace#source(symbol) abort
         \ '  (when-let [filepath (:file (meta v))]' .
         \ '    [filepath' .
         \ '     (:line (meta v))]))'
-  let result = fireplace#evalparse(cmd, options)
+  let result = fireplace#evalparse(cmd)
   if type(result) == type([])
     return '+' . result[1] . ' ' . fireplace#findresource(result[0])
   else
