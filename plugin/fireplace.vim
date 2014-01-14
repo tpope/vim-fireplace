@@ -1177,8 +1177,11 @@ function! fireplace#alternates() abort
     let alt = [substitute(ns, '\.test\.', '.', '')]
   elseif ns =~# '-spec$'
     let alt = [ns[0:-6], ns . '-test']
+  elseif ns =~# '\.t-\([^\.]\)'
+    let alt = [substitute(ns, '\.t-\([^\.]\)', '\.\1', '')]
   else
-    let alt = [ns . '-test', substitute(ns, '\.', '.test.', ''), ns . '-spec']
+    let alt = [ns . '-test', substitute(ns, '\.', '.test.', ''), ns . '-spec',
+             \ substitute(ns, '\(.*\)\.\(.*\)', '\1.t-\2', '')]
   endif
   return map(alt, 'tr(v:val, ".-", "/_") . ".clj"')
 endfunction
