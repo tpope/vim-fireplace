@@ -420,15 +420,20 @@ function! fireplace#findresource(resource, ...) abort
   if a:resource ==# ''
     return ''
   endif
-  let path = a:0 ? a:1 : fireplace#path()
-  let file = findfile(a:resource, escape(join(path, ','), ' '))
-  if !empty(file)
-    return file
+  let resource = a:resource
+  if a:0 > 2 && type(a:3) == type([])
+    let suffixes = a:3
+  else
+    let suffixes = [''] + split(get(a:000, 2, ''), ',')
   endif
-  for jar in path
-    if fnamemodify(jar, ':e') ==# 'jar' && index(fireplace#jar_contents(jar), a:resource) >= 0
-      return 'zipfile:' . jar . '::' . a:resource
-    endif
+  for dir in a:0 ? a:1 : fireplace#path()
+    for suffix in suffixes
+      if fnamemodify(dir, ':e') ==# 'jar' && index(fireplace#jar_contents(dir), resource . suffix) >= 0
+        return 'zipfile:' . dir . '::' . resource . suffix
+      elseif filereadable(dir . '/' . resource . suffix)
+        return dir . (exists('+shellslash') && !&shellslash ? '\' : '/') . resource . suffix
+      endif
+    endfor
   endfor
   return ''
 endfunction
@@ -937,15 +942,17 @@ function! fireplace#source(symbol) abort
         \ '     (:line (meta v))]))'
   let result = fireplace#evalparse(cmd)
   if type(result) == type([])
-    return '+' . result[1] . ' ' . fireplace#findresource(result[0])
-  else
-    return ''
+    let file = fireplace#findresource(result[0])
+    if !empty(file)
+      return '+' . result[1] . ' ' . fnameescape(file)
+    endif
   endif
+  return ''
 endfunction
 
 function! s:Edit(cmd, keyword) abort
   try
-    if a:keyword =~# '^\k\+/$'
+    if a:keyword =~# '^\k\+[/.]$'
       let location = fireplace#findfile(a:keyword[0: -2])
     elseif a:keyword =~# '^\k\+\.[^/.]\+$'
       let location = fireplace#findfile(a:keyword)
@@ -956,7 +963,7 @@ function! s:Edit(cmd, keyword) abort
     return ''
   endtry
   if location !=# ''
-    if matchstr(location, '^+\d\+ \zs.*') ==# expand('%:p') && a:cmd ==# 'edit'
+    if matchstr(location, '^+\d\+ \zs.*') ==# fnameescape(expand('%:p')) && a:cmd ==# 'edit'
       return matchstr(location, '\d\+')
     else
       return a:cmd.' '.location.'|let &l:path = '.string(&l:path)
@@ -973,7 +980,12 @@ nnoremap <silent> <Plug>FireplaceDtabjump :<C-U>exe <SID>Edit('tabedit', expand(
 augroup fireplace_source
   autocmd!
   autocmd FileType clojure setlocal includeexpr=tr(v:fname,'.-','/_')
-  autocmd FileType clojure setlocal suffixesadd=.clj,.java
+  autocmd FileType clojure
+        \ if expand('%:e') ==# 'cljs' |
+        \   setlocal suffixesadd=.cljs,.cljx,.clj,.java |
+        \ else |
+        \   setlocal suffixesadd=.clj,.cljx,.cljs,.java |
+        \ endif
   autocmd FileType clojure setlocal define=^\\s*(def\\w*
   autocmd FileType clojure command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Djump  :exe s:Edit('edit', <q-args>)
   autocmd FileType clojure command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Dsplit :exe s:Edit('split', <q-args>)
@@ -989,29 +1001,35 @@ augroup END
 
 function! fireplace#findfile(path) abort
   let path = a:path
-  if path !~# '[/.]' && path =~# '^\k\+$'
-    let path = fireplace#evalparse('((ns-aliases *ns*) '.s:qsym(path).' '.s:qsym(path).')')
+  if a:path !~# '/'
+    let path = tr(a:path, '.-', '/_')
+  else
+    let path = substitute(a:path, '^/', '')
   endif
-  if path !~# '/'
-    let path = tr(path, '.-', '/_')
+  let resource = fireplace#findresource(path, fireplace#path(), 0, &suffixesadd)
+  if !empty(resource)
+    return resource
+  elseif fnamemodify(a:path, ':p') ==# a:path && filereadable(a:path)
+    return path
+  elseif a:path[0] !=# '/' && filereadable(expand('%:h') . '/' . path)
+    return expand('%:h') . '/' . path
   endif
-  if path !~# '\.\w\+$'
-    let path .= '.clj'
-  endif
-  return fireplace#findresource(path)
+  return ''
 endfunction
 
 function! s:GF(cmd, file) abort
   if a:file =~# '^[^/]*/[^/.]*$' && a:file =~# '^\k\+$'
     let [file, jump] = split(a:file, "/")
+    if file !~# '\.'
+      try
+        let file = fireplace#evalparse('((ns-aliases *ns*) '.s:qsym(file).' '.s:qsym(file).')')
+      catch /^Clojure:/
+      endtry
+    endif
   else
     let file = a:file
   endif
-  try
-    let file = fireplace#findfile(file)
-  catch /^Clojure:/
-    return ''
-  endtry
+  let file = fireplace#findfile(file)
   if file ==# ''
     let v:errmsg = "Couldn't find file for ".a:file
     return 'echoerr v:errmsg'
