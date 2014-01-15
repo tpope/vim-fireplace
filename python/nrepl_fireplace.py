@@ -18,7 +18,7 @@ def vim_encode(data):
     str_list = []
     for c in data:
       if (000 <= ord(c) and ord(c) <= 037) or c == '"' or c == "\\":
-        str_list.append("\\{0:03o}".format(ord(c)))
+        str_list.append("\\%03o" % ord(c))
       else:
         str_list.append(c)
     return '"' + ''.join(str_list) + '"'
