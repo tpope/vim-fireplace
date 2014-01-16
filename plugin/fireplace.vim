@@ -155,14 +155,26 @@ function! s:repl.try(function, ...) dict abort
 endfunction
 
 function! s:repl.eval(expr, options) dict abort
+  if has_key(a:options, 'ns') && a:options.ns !=# self.user_ns()
+    let error = self.preload(a:options.ns)
+    if !empty(error)
+      return error
+    endif
+  endif
   return self.try('eval', a:expr, a:options)
 endfunction
 
-function! s:repl.message(...) dict abort
-  return call(self.try, ['message'] + a:000, self)
+function! s:repl.message(payload, ...) dict abort
+  if has_key(a:payload, 'ns') && a:payload.ns !=# self.user_ns()
+    let error = self.preload(a:payload.ns)
+    if !empty(error)
+      return error
+    endif
+  endif
+  return call(self.try, ['message', a:payload] + a:000, self)
 endfunction
 
-function! s:repl.require(lib) dict abort
+function! s:repl.preload(lib) dict abort
   if !empty(a:lib) && a:lib !=# self.user_ns() && !get(self.requires, a:lib)
     let reload = has_key(self.requires, a:lib) ? ' :reload' : ''
     let self.requires[a:lib] = 0
@@ -336,10 +348,6 @@ function! s:oneoff.eval(expr, options) dict abort
   endif
 endfunction
 
-function! s:oneoff.require(symbol) abort
-  return {}
-endfunction
-
 function! s:oneoff.message(symbol) abort
   throw 'No live REPL connection'
 endfunction
@@ -409,9 +417,6 @@ function! fireplace#message(payload, ...)
   let payload = copy(a:payload)
   if !has_key(payload, 'ns')
     let payload.ns = fireplace#ns()
-    if fireplace#ns() !=# client.user_ns()
-      let error = client.require(fireplace#ns())
-    endif
   endif
   return call(client.message, [payload] + a:000, client)
 endfunction
@@ -483,12 +488,6 @@ function! s:eval(expr, ...) abort
   let options = a:0 ? copy(a:1) : {}
   let client = fireplace#client()
   if !has_key(options, 'ns')
-    if fireplace#ns() !=# client.user_ns()
-      let error = client.require(fireplace#ns())
-      if !empty(error)
-        return error
-      endif
-    endif
     let options.ns = fireplace#ns()
   endif
   return client.eval(a:expr, options)
