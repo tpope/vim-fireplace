@@ -140,7 +140,7 @@ function! s:nrepl_eval(expr, ...) dict abort
     endif
     throw 'Clojure: Interrupt'
   endtry
-  if has_key(response, 'ns') && !a:0
+  if has_key(response, 'ns') && !has_key(options, 'ns')
     let self.ns = response.ns
   endif
 
