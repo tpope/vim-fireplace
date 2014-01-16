@@ -103,10 +103,10 @@ endfunction
 function! s:nrepl_transport_call(msg, terms, sels, ...) dict abort
   let payload = nrepl#fireplace_connection#bencode(a:msg)
   let response = self.dispatch('call', payload, a:terms, a:sels)
-  if a:0
-    return map(response, 'fireplace#nrepl#callback(v:val, "synchronous", a:1)')
-  else
+  if !a:0
     return response
+  elseif a:1 !=# 'ignore'
+    return map(response, 'fireplace#nrepl#callback(v:val, "synchronous", a:1)')
   endif
 endfunction
 

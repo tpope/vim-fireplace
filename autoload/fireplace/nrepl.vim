@@ -48,7 +48,7 @@ function! s:nrepl_close() dict abort
   if has_key(self, 'session')
     try
       unlet! g:fireplace_nrepl_sessions[self.session]
-      call self.message({'op': 'close'}, 'fireplace#nrepl#ignore')
+      call self.message({'op': 'close'}, 'ignore')
     catch
     finally
       unlet self.session
@@ -136,7 +136,7 @@ function! s:nrepl_eval(expr, ...) dict abort
     let response = self.process(msg)
   catch /^Vim:Interrupt$/
     if has_key(msg, 'session')
-      call self.message({'op': 'interrupt', 'session': msg.session, 'interrupt-id': msg.id}, 'fireplace#nrepl#ignore')
+      call self.message({'op': 'interrupt', 'session': msg.session, 'interrupt-id': msg.id}, 'ignore')
     endif
     throw 'Clojure: Interrupt'
   endtry
@@ -192,9 +192,6 @@ function! fireplace#nrepl#callback(body, type, fn)
     let response.session = g:fireplace_nrepl_sessions[a:body.session]
   endif
   call call(a:fn, [response])
-endfunction
-
-function! fireplace#nrepl#ignore(...) abort
 endfunction
 
 function! s:nrepl_call(msg, ...) dict abort
