@@ -69,7 +69,7 @@ endfunction
 
 function! fireplace#ns_complete(A, L, P) abort
   let matches = []
-  for dir in fireplace#client().path()
+  for dir in fireplace#path()
     if dir =~# '\.jar$'
       let files = filter(fireplace#jar_contents(dir), 'v:val =~# "\\.clj$"')
     else
@@ -380,7 +380,7 @@ function! fireplace#path(...) abort
   return []
 endfunction
 
-function! s:client(...) abort
+function! fireplace#client(...) abort
   silent doautocmd User FireplacePreConnect
   let buf = a:0 ? a:1 : s:buf()
   let root = simplify(fnamemodify(bufname(buf), ':p:s?[\/]$??'))
@@ -404,12 +404,8 @@ function! s:client(...) abort
   throw ':Connect to a REPL or install classpath.vim to evaluate code'
 endfunction
 
-function! fireplace#client(...) abort
-  return a:0 ? s:client(a:1) : s:client()
-endfunction
-
 function! fireplace#message(payload, ...)
-  let client = s:client()
+  let client = fireplace#client()
   let payload = copy(a:payload)
   if !has_key(payload, 'ns')
     let payload.ns = fireplace#ns()
@@ -480,7 +476,7 @@ endfunction
 
 function! s:eval(expr, ...) abort
   let options = a:0 ? copy(a:1) : {}
-  let client = s:client()
+  let client = fireplace#client()
   if !has_key(options, 'ns')
     if fireplace#ns() !=# client.user_ns()
       let error = client.require(fireplace#ns())
