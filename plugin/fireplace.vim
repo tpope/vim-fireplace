@@ -533,7 +533,6 @@ function! s:qfhistory() abort
     endif
     call extend(list, [s:qfentry(entry)])
   endfor
-  let g:list = list
   return list
 endfunction
 
