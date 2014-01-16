@@ -393,7 +393,7 @@ function! s:client(...) abort
     let root = fnamemodify(root, ':h')
   endwhile
   for repl in s:repls
-    if s:includes_file(fnamemodify(bufname(buf), ':p'), repl.path)
+    if s:includes_file(fnamemodify(bufname(buf), ':p'), repl.path())
       return repl
     endif
   endfor
