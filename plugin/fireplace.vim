@@ -1186,7 +1186,7 @@ function! fireplace#alternates() abort
     let alt = [ns . '-test', substitute(ns, '\.', '.test.', ''), ns . '-spec',
              \ substitute(ns, '\.\([^\.]*\)$', '.t-\1', '')]
   endif
-  return map(alt, 'tr(v:val, ".-", "/_") . ".clj"')
+  return map(alt, 'tr(v:val, ".-", "/_") . "." . expand("%:e")')
 endfunction
 
 function! s:Alternate(cmd) abort
