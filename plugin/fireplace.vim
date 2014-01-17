@@ -291,12 +291,6 @@ augroup END
 " }}}1
 " Java runner {{{1
 
-let s:oneoff = {}
-
-function! s:oneoff.path() dict abort
-  return classpath#split(self.classpath)
-endfunction
-
 let s:oneoff_pr  = tempname()
 let s:oneoff_ex  = tempname()
 let s:oneoff_stk = tempname()
@@ -304,18 +298,9 @@ let s:oneoff_in  = tempname()
 let s:oneoff_out = tempname()
 let s:oneoff_err = tempname()
 
-function! s:oneoff.user_ns() abort
-  return 'user'
-endfunction
-
-function! s:oneoff.eval(expr, options) dict abort
-  if &verbose && !empty(get(a:options, 'session', 1))
-    echohl WarningMSG
-    echomsg "No REPL found. Running java clojure.main ..."
-    echohl None
-  endif
-  if a:options.ns !=# '' && a:options.ns !=# self.user_ns()
-    let ns = '(require '.s:qsym(a:options.ns).') (in-ns '.s:qsym(a:options.ns).') '
+function! s:spawning_eval(classpath, expr, ns) abort
+  if a:ns !=# '' && a:ns !=# 'user'
+    let ns = '(require '.s:qsym(a:ns).') (in-ns '.s:qsym(a:ns).') '
   else
     let ns = ''
   endif
@@ -326,7 +311,7 @@ function! s:oneoff.eval(expr, options) dict abort
   call writefile([], s:oneoff_out, 'b')
   call writefile([], s:oneoff_err, 'b')
   let java_cmd = exists('$JAVA_CMD') ? $JAVA_CMD : 'java'
-  let command = java_cmd.' -cp '.shellescape(self.classpath).' clojure.main -e ' .
+  let command = java_cmd.' -cp '.shellescape(a:classpath).' clojure.main -e ' .
         \ shellescape(
         \   '(clojure.core/binding [*out* (java.io.FileWriter. '.s:str(s:oneoff_out).')' .
         \   '                       *err* (java.io.FileWriter. '.s:str(s:oneoff_err).')]' .
@@ -350,6 +335,25 @@ function! s:oneoff.eval(expr, options) dict abort
   else
     return result
   endif
+endfunction
+
+let s:oneoff = {}
+
+function! s:oneoff.user_ns() abort
+  return 'user'
+endfunction
+
+function! s:oneoff.path() dict abort
+  return classpath#split(self.classpath)
+endfunction
+
+function! s:oneoff.eval(expr, options) dict abort
+  if &verbose && !empty(get(a:options, 'session', 1))
+    echohl WarningMSG
+    echomsg "No REPL found. Running java clojure.main ..."
+    echohl None
+  endif
+  return s:spawning_eval(self.classpath, a:expr, get(a:options, 'ns', self.user_ns()))
 endfunction
 
 function! s:oneoff.message(symbol) abort
