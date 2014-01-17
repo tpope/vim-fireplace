@@ -144,11 +144,11 @@ function! s:repl.path() dict abort
   return self.connection.path()
 endfunction
 
-function! s:repl.try(function, ...) dict abort
+function! s:conn_try(connection, function, ...) abort
   try
-    return call(self.connection[a:function], a:000, self.connection)
+    return call(a:connection[a:function], a:000, a:connection)
   catch /^\w\+ Connection Error:/
-    call s:unregister_connection(self.connection)
+    call s:unregister_connection(a:connection)
     throw v:exception
   endtry
 endfunction
@@ -160,7 +160,7 @@ function! s:repl.eval(expr, options) dict abort
       return error
     endif
   endif
-  return self.try('eval', a:expr, a:options)
+  return s:conn_try(self.connection, 'eval', a:expr, a:options)
 endfunction
 
 function! s:repl.message(payload, ...) dict abort
@@ -170,14 +170,14 @@ function! s:repl.message(payload, ...) dict abort
       return error
     endif
   endif
-  return call(self.try, ['message', a:payload] + a:000, self)
+  return call('s:conn_try', [self.connection, 'message', a:payload] + a:000, self)
 endfunction
 
 function! s:repl.preload(lib) dict abort
   if !empty(a:lib) && a:lib !=# self.user_ns() && !get(self.requires, a:lib)
     let reload = has_key(self.requires, a:lib) ? ' :reload' : ''
     let self.requires[a:lib] = 0
-    let clone = self.try('clone')
+    let clone = s:conn_try(self.connection, 'clone')
     try
       let result = clone.eval('(ns '.a:lib.' (:require '.a:lib.reload.'))', {'ns': self.user_ns()})
     finally
