@@ -1063,13 +1063,11 @@ function! s:buffer_path(...) abort
     return ''
   endif
   let path = substitute(fnamemodify(bufname(buffer), ':p'), '\C^zipfile:\(.*\)::', '\1/', '')
-  if exists('*classpath#from_vim')
-    for dir in classpath#split(classpath#from_vim(getbufvar(buffer, '&path')))
-      if dir !=# '' && path[0 : strlen(dir)-1] ==# dir
-        return path[strlen(dir)+1:-1]
-      endif
-    endfor
-  endif
+  for dir in fireplace#path(buffer)
+    if dir !=# '' && path[0 : strlen(dir)-1] ==# dir && path[strlen(dir)] =~# '[\/]'
+      return path[strlen(dir)+1:-1]
+    endif
+  endfor
   return ''
 endfunction
 
