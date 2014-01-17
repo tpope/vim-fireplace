@@ -148,8 +148,7 @@ function! s:repl.try(function, ...) dict abort
   try
     return call(self.connection[a:function], a:000, self.connection)
   catch /^\w\+ Connection Error:/
-    call filter(s:repl_paths, 'v:val isnot self')
-    call filter(s:repls, 'v:val isnot self')
+    call s:unregister_connection(self.connection)
     throw v:exception
   endtry
 endfunction
@@ -198,6 +197,11 @@ function! s:register_connection(conn, ...) abort
     let s:repl_paths[a:1] = s:repls[0]
   endif
   return s:repls[0]
+endfunction
+
+function! s:unregister_connection(conn) abort
+  call filter(s:repl_paths, 'v:val.connection.transport isnot# a:conn.transport')
+  call filter(s:repls, 'v:val.connection.transport isnot# a:conn.transport')
 endfunction
 
 " }}}1
@@ -1216,7 +1220,7 @@ function! s:hunt(start, anchor, pattern) abort
 endfunction
 
 if !exists('s:leiningen_repl_ports')
-  let s:leiningen_repl_ports = {}
+  let s:leiningen_repls = {}
 endif
 
 function! s:portfile() abort
@@ -1237,16 +1241,25 @@ endfunction
 
 
 function! s:leiningen_connect() abort
+  for [k, v] in items(s:leiningen_repls)
+    if getfsize(v.file) <= 0
+      call remove(s:leiningen_repls, k)
+      call s:unregister_connection(v.connection)
+    endif
+  endfor
+
   let portfile = s:portfile()
   if empty(portfile)
     return
   endif
 
-  if getfsize(portfile) > 0 && getftime(portfile) !=# get(s:leiningen_repl_ports, b:leiningen_root, -1)
+  if getfsize(portfile) > 0 && getftime(portfile) !=# get(get(s:leiningen_repls, b:leiningen_root, {}), 'time', -1)
     let port = matchstr(readfile(portfile, 'b', 1)[0], '\d\+')
-    let s:leiningen_repl_ports[b:leiningen_root] = getftime(portfile)
+    let s:leiningen_repls[b:leiningen_root] = {'time': getftime(portfile), 'file': portfile}
     try
-      call s:register_connection(nrepl#fireplace_connection#open(port), b:leiningen_root)
+      let conn = nrepl#fireplace_connection#open(port)
+      let s:leiningen_repls[b:leiningen_root].connection = conn
+      call s:register_connection(conn, b:leiningen_root)
     catch /^nREPL Connection Error:/
       if &verbose
         echohl WarningMSG
