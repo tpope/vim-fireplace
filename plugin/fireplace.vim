@@ -179,7 +179,7 @@ function! s:repl.preload(lib) dict abort
     let self.requires[a:lib] = 0
     let clone = s:conn_try(self.connection, 'clone')
     try
-      let result = clone.eval('(ns '.a:lib.' (:require '.a:lib.reload.'))', {'ns': self.user_ns()})
+      let result = clone.eval('(in-ns '.s:qsym(a:lib).') (ns '.self.user_ns().' (:require '.a:lib.reload.'))', {'ns': self.user_ns()})
     finally
       call clone.close()
     endtry
@@ -191,8 +191,14 @@ function! s:repl.preload(lib) dict abort
   return {}
 endfunction
 
+let s:piggieback = copy(s:repl)
+
+function! s:piggieback.user_ns() abort
+  return 'cljs.user'
+endfunction
+
 function! s:register_connection(conn, ...) abort
-  call insert(s:repls, extend({'connection': a:conn}, deepcopy(s:repl)))
+  call insert(s:repls, extend({'connection': a:conn, 'piggiebacks': []}, deepcopy(s:repl)))
   if a:0 && a:1 !=# ''
     let s:repl_paths[a:1] = s:repls[0]
   endif
@@ -396,7 +402,7 @@ function! fireplace#path(...) abort
   return []
 endfunction
 
-function! fireplace#client(...) abort
+function! fireplace#platform(...) abort
   silent doautocmd User FireplacePreConnect
   let buf = a:0 ? a:1 : s:buf()
   let root = simplify(fnamemodify(bufname(buf), ':p:s?[\/]$??'))
@@ -420,7 +426,27 @@ function! fireplace#client(...) abort
   throw ':Connect to a REPL or install classpath.vim to evaluate code'
 endfunction
 
-function! fireplace#message(payload, ...)
+function! fireplace#client(...) abort
+  let buf = a:0 ? a:1 : s:buf()
+  let client = fireplace#platform(buf)
+  if fnamemodify(bufname(buf), ':e') ==# 'cljs'
+    if !has_key(client, 'connection')
+      throw ':Connect to a REPL to evaluate code'
+    endif
+    if empty(client.piggiebacks)
+      let connection = s:conn_try(client.connection, 'clone')
+      let result = connection.eval('(cemerick.piggieback/cljs-repl)')
+      if has_key(result, 'ex')
+        return result
+      endif
+      call insert(client.piggiebacks, extend({'connection': connection}, deepcopy(s:piggieback)))
+    endif
+    return client.piggiebacks[0]
+  endif
+  return client
+endfunction
+
+function! fireplace#message(payload, ...) abort
   let client = fireplace#client()
   let payload = copy(a:payload)
   if !has_key(payload, 'ns')
