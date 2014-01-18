@@ -197,6 +197,14 @@ function! s:piggieback.user_ns() abort
   return 'cljs.user'
 endfunction
 
+function! s:piggieback.eval(expr, options) abort
+  let options = copy(a:options)
+  if has_key(options, 'file_path')
+    call remove(options, 'file_path')
+  endif
+  return call(s:repl.eval, [a:expr, options], self)
+endfunction
+
 function! s:register_connection(conn, ...) abort
   call insert(s:repls, extend({'connection': a:conn, 'piggiebacks': []}, deepcopy(s:repl)))
   if a:0 && a:1 !=# ''
