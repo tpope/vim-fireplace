@@ -28,6 +28,20 @@ directly, which can be quite slow depending on your setup.
 The only adapter shipped with fireplace.vim is for nREPL.  You need either
 |if_pyth| or the python command in your PATH.
 
+                        *fireplace-piggieback* *fireplace-clojurescript*
+ClojureScript is can be evaled with Piggieback if the appropriate nREPL
+middleware is loaded.  https://github.com/cemerick/piggieback
+
+                                                *fireplace-:Piggieback*
+:Piggieback [{env}]     Create a new nREPL session and invoke
+                        cemerick.piggieback/cljs-repl with the given or
+                        default (Rhino) environment.  This will also happen
+                        automatically on first eval in a ClojureScript buffer
+                        if not invoked explicitly.
+
+:Piggieback!            Terminate the most recently created piggieback
+                        session.
+
 LEININGEN                                       *fireplace-leiningen*
 
 In addition to automatic repl connection, Clojure buffers in a Leiningen

@@ -190,6 +190,29 @@ endfunction
 
 let s:piggieback = copy(s:repl)
 
+function! s:repl.piggieback(arg, ...) abort
+  if a:0 && a:1
+    if len(self.piggiebacks)
+      call remove(self.piggiebacks, 0)
+    endif
+    return {}
+  endif
+  if empty(a:arg)
+    let arg = ''
+  else
+    let arg = ' :repl-env ' . a:arg
+  endif
+  let connection = s:conn_try(self.connection, 'clone')
+  let response = connection.eval('(cemerick.piggieback/cljs-repl'.arg.')')
+
+  if empty(get(response, 'ex'))
+    call insert(self.piggiebacks, extend({'connection': connection}, deepcopy(s:piggieback)))
+    return {}
+  endif
+  call connection.close()
+  return response
+endfunction
+
 function! s:piggieback.user_ns() abort
   return 'cljs.user'
 endfunction
@@ -294,9 +317,15 @@ function! s:Connect(...) abort
   return ''
 endfunction
 
+function! s:piggieback(arg, remove) abort
+  let response = fireplace#platform().piggieback(a:arg, a:remove)
+  call s:output_response(response)
+endfunction
+
 augroup fireplace_connect
   autocmd!
   autocmd FileType clojure command! -bar -complete=customlist,s:connect_complete -nargs=* Connect :FireplaceConnect <args>
+  autocmd FileType clojure command! -bar -complete=customlist,fireplace#eval_complete -bang -nargs=* Piggieback :call s:piggieback(<q-args>, <bang>0)
 augroup END
 
 " }}}1
@@ -367,9 +396,11 @@ function! s:oneoff.eval(expr, options) dict abort
   return s:spawning_eval(self.classpath, a:expr, get(a:options, 'ns', self.user_ns()))
 endfunction
 
-function! s:oneoff.message(symbol) abort
+function! s:oneoff.message(...) abort
   throw 'No live REPL connection'
 endfunction
+
+let s:oneoff.piggieback = s:oneoff.message
 
 " }}}1
 " Client {{{1
@@ -439,12 +470,10 @@ function! fireplace#client(...) abort
       throw ':Connect to a REPL to evaluate code'
     endif
     if empty(client.piggiebacks)
-      let connection = s:conn_try(client.connection, 'clone')
-      let result = connection.eval('(cemerick.piggieback/cljs-repl)')
+      let result = client.piggieback('')
       if has_key(result, 'ex')
         return result
       endif
-      call insert(client.piggiebacks, extend({'connection': connection}, deepcopy(s:piggieback)))
     endif
     return client.piggiebacks[0]
   endif
