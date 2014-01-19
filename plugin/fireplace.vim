@@ -948,7 +948,11 @@ augroup END
 " :Require {{{1
 
 function! s:Require(bang, ns) abort
-  let cmd = ('(clojure.core/require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
+  if expand('%:e') ==# 'cljs'
+    let cmd = '(load-file '.s:str(tr(a:ns ==# '' ? fireplace#ns() : a:ns, '-.', '_/').'.cljs').')'
+  else
+    let cmd = ('(clojure.core/require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
+  endif
   echo cmd
   try
     call fireplace#session_eval(cmd)
