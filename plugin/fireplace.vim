@@ -165,10 +165,7 @@ endfunction
 
 function! s:repl.message(payload, ...) dict abort
   if has_key(a:payload, 'ns') && a:payload.ns !=# self.user_ns()
-    let error = self.preload(a:payload.ns)
-    if !empty(error)
-      return error
-    endif
+    let ignored_error = self.preload(a:payload.ns)
   endif
   return call('s:conn_try', [self.connection, 'message', a:payload] + a:000, self)
 endfunction
