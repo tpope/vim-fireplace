@@ -179,7 +179,7 @@ function! s:repl.preload(lib) dict abort
     let self.requires[a:lib] = 0
     let clone = s:conn_try(self.connection, 'clone')
     try
-      let result = clone.eval('(in-ns '.s:qsym(a:lib).') (ns '.self.user_ns().' (:require '.a:lib.reload.'))', {'ns': self.user_ns()})
+      let result = clone.eval('(ns '.self.user_ns().' (:require '.a:lib.reload.'))', {'ns': self.user_ns()})
     finally
       call clone.close()
     endtry
