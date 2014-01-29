@@ -17,7 +17,7 @@ def vim_encode(data):
   elif isinstance(data, str):
     str_list = []
     for c in data:
-      if (000 <= ord(c) and ord(c) <= 037) or c == '"' or c == "\\":
+      if (0 <= ord(c) and ord(c) <= 31) or c == '"' or c == "\\":
         str_list.append("\\%03o" % ord(c))
       else:
         str_list.append(c)
