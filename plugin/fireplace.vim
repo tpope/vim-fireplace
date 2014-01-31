@@ -511,34 +511,32 @@ function! fireplace#findresource(resource, ...) abort
   return ''
 endfunction
 
-function! fireplace#quickfix_for(stacktrace) abort
-  let qflist = []
-  for line in a:stacktrace
-    let entry = {'text': line}
-    let match = matchlist(line, '\(.*\)(\(.*\))')
-    if !empty(match)
-      let [_, class, file; __] = match
-      if file =~# '^NO_SOURCE_FILE:' || file !~# ':'
-        let entry.resource = ''
-        let entry.lnum = 0
-      else
-        let truncated = substitute(class, '\.[A-Za-z0-9_]\+\%($.*\)$', '', '')
-        let entry.resource = tr(truncated, '.', '/').'/'.split(file, ':')[0]
-        let entry.lnum = split(file, ':')[-1]
-      endif
-      let qflist += [entry]
-    endif
-  endfor
-  let paths = map(copy(qflist), 'fireplace#findresource(v:val.resource)')
-  let i = 0
-  for i in range(len(qflist))
-    if !empty(paths[i])
-      let qflist[i].filename = paths[i]
+function! s:qfmassage(line, path) abort
+  let entry = {'text': a:line}
+  let match = matchlist(a:line, '\(\S\+\)\s\=(\(\S\+\))')
+  if !empty(match)
+    let [_, class, file; __] = match
+    if file =~# '^NO_SOURCE_FILE:' || file !~# ':'
+      let entry.resource = ''
+      let entry.lnum = 0
     else
-      call remove(qflist[i], 'lnum')
+      let truncated = substitute(class, '\.[A-Za-z0-9_]\+\%([$/].*\)$', '', '')
+      let entry.resource = tr(truncated, '.', '/').'/'.split(file, ':')[0]
+      let entry.lnum = split(file, ':')[-1]
     endif
-  endfor
-  return qflist
+    let entry.filename = fireplace#findresource(entry.resource, a:path)
+    if empty(entry.filename)
+      let entry.lnum = 0
+    else
+      let entry.text = class
+    endif
+  endif
+  return entry
+endfunction
+
+function! fireplace#quickfix_for(stacktrace) abort
+  let path = fireplace#path()
+  return map(copy(a:stacktrace), 's:qfmassage(v:val, path)')
 endfunction
 
 function! s:output_response(response) abort
@@ -1285,8 +1283,9 @@ function! s:hunt(start, anchor, pattern) abort
   return ''
 endfunction
 
-if !exists('s:leiningen_repl_ports')
+if !exists('s:leiningen_repls')
   let s:leiningen_repls = {}
+  let s:leiningen_paths = {}
 endif
 
 function! s:portfile() abort
@@ -1326,6 +1325,7 @@ function! s:leiningen_connect() abort
       let conn = nrepl#fireplace_connection#open(port)
       let s:leiningen_repls[b:leiningen_root].connection = conn
       call s:register_connection(conn, b:leiningen_root)
+      let s:leiningen_paths[b:leiningen_root] = conn.path()
     catch /^nREPL Connection Error:/
       if &verbose
         echohl WarningMSG
@@ -1350,15 +1350,35 @@ function! s:leiningen_init() abort
 
   let b:java_root = b:leiningen_root
 
-  setlocal makeprg=lein efm=%+G
+  compiler lein
 
+  if exists('classpath#from_vim')
+    let s:leiningen_paths[b:leiningen_root] = classpath#from_vim(&path)
+  endif
   call s:leiningen_connect()
+endfunction
+
+function! s:massage_quickfix() abort
+  if &errorformat !~# 'fireplace$'
+    return
+  endif
+  if has_key(s:leiningen_paths, getcwd())
+    let path = s:leiningen_paths[getcwd()]
+  else
+    return
+  endif
+  let qflist = getqflist()
+  for entry in qflist
+    call extend(entry, s:qfmassage(get(entry, 'text', ''), path))
+  endfor
+  call setqflist(qflist, 'replace')
 endfunction
 
 augroup fireplace_leiningen
   autocmd!
   autocmd User FireplacePreConnect call s:leiningen_connect()
   autocmd FileType clojure call s:leiningen_init()
+  autocmd QuickFixCmdPost make,cfile,cgetfile call s:massage_quickfix()
 augroup END
 
 " }}}1

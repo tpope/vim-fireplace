@@ -45,9 +45,9 @@ middleware is loaded.  https://github.com/cemerick/piggieback
 LEININGEN                                       *fireplace-leiningen*
 
 In addition to automatic repl connection, Clojure buffers in a Leiningen
-project will automatically have their 'makeprg' set to lein.  This has the
-nominal value of letting you call, for example, |:make| deps rather than
-:!lein deps.
+project will automatically have their 'makeprg' set to lein and 'efm' set to
+"%+G,fireplace".  This combination enables `:make test` to run `lein test` and
+parse the stacktraces in the results.
 
 DOCUMENTATION                                   *fireplace-documentation*
 
