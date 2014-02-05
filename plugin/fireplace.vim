@@ -1135,7 +1135,7 @@ endfunction
 
 function! fireplace#ns(...) abort
   let buffer = a:0 ? a:1 : s:buf()
-  if getbufvar(buffer, 'fireplace_ns')
+  if !empty(getbufvar(buffer, 'fireplace_ns'))
     return getbufvar(buffer, 'fireplace_ns')
   endif
   let head = getbufline(buffer, 1, 500)
