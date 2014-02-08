@@ -30,7 +30,9 @@ The only adapter shipped with fireplace.vim is for nREPL.  You need either
 
                         *fireplace-piggieback* *fireplace-clojurescript*
 ClojureScript is can be evaled with Piggieback if the appropriate nREPL
-middleware is loaded.  https://github.com/cemerick/piggieback
+middleware is loaded.  https://github.com/cemerick/piggieback. Be aware that
+your ClojureScript files must be available on the classpath for this to work
+properly.
 
                                                 *fireplace-:Piggieback*
 :Piggieback [{env}]     Create a new nREPL session and invoke
