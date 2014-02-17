@@ -87,8 +87,8 @@ function! fireplace#omnicomplete(findstart, base) abort
     return col('.') - strlen(matchstr(line, '\k\+$')) - 1
   else
     try
-      let omnifier = '(fn [[k v]] (let [m (meta v)]' .
-            \ ' {:word k :menu (pr-str (:arglists m (symbol ""))) :info (str "  " (:doc m)) :kind (if (:arglists m) "f" "v")}))'
+      let omnifier = '(fn [[k v]] (let [{:keys [arglists] :as m} (meta v)]' .
+            \ ' {:word k :menu (pr-str (or arglists (symbol ""))) :info (str (when arglists (str arglists "\n")) "  " (:doc m)) :kind (if arglists "f" "v")}))'
 
       let ns = fireplace#ns()
 
