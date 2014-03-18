@@ -1353,7 +1353,7 @@ function! s:leiningen_init() abort
 
   compiler lein
 
-  if exists('classpath#from_vim')
+  if exists('*classpath#from_vim')
     let s:leiningen_paths[b:leiningen_root] = classpath#split(classpath#from_vim(&path))
   endif
   call s:leiningen_connect()
