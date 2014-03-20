@@ -546,7 +546,7 @@ function! s:output_response(response) abort
     echohl NONE
   endif
   if get(a:response, 'out', '') !=# ''
-    echo substitute(a:response.out, '\r\|\n$', '', 'g')
+    echo substitute(a:response.out, '\e\[[0-9;]\+m\|\r\|\n$', '', 'g')
   endif
 endfunction
 
