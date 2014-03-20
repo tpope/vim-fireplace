@@ -540,13 +540,14 @@ function! fireplace#quickfix_for(stacktrace) abort
 endfunction
 
 function! s:output_response(response) abort
+  let substitution_pat =  '\e\[[0-9;]*m\|\r\|\n$'
   if get(a:response, 'err', '') !=# ''
     echohl ErrorMSG
-    echo substitute(a:response.err, '\r\|\n$', '', 'g')
+    echo substitute(a:response.err, substitution_pat, '', 'g')
     echohl NONE
   endif
   if get(a:response, 'out', '') !=# ''
-    echo substitute(a:response.out, '\r\|\n$', '', 'g')
+    echo substitute(a:response.out, substitution_pat, '', 'g')
   endif
 endfunction
 
