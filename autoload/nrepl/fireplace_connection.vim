@@ -34,7 +34,14 @@ function! s:shellesc(arg) abort
   if a:arg =~ '^[A-Za-z0-9_/.-]\+$'
     return a:arg
   elseif &shell =~# 'cmd'
-    return '"'.substitute(substitute(a:arg, '"', '""""', 'g'), '%', '"%"', 'g').'"'
+    if &shellxquote ==# '"'
+      return '"' . substitute(a:arg, '"', '""', 'g') . '"'
+    else
+      let esc = exists('+shellxescape') ? &shellxescape : '"&|<>()@^'
+      return &shellxquote .
+            \ substitute(a:arg, '['.esc.']', '^&', 'g') .
+            \ get({'(': ')', '"(': ')"'}, &shellxquote, &shellxquote)
+    endif
   else
     let escaped = shellescape(a:arg)
     if &shell =~# 'sh' && &shell !~# 'csh'
