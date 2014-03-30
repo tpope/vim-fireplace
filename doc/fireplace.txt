@@ -127,8 +127,7 @@ stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
 :Require! [ns]          Require :reload-all the given/current namespace.
 
                                                 *fireplace-:Eval*
-:Eval                   Eval/print the outermost expression for the current
-                        line.
+:Eval                   Eval/print the outermost form for the current line.
 
 :{range}Eval            Eval/print the given range.
 
@@ -144,7 +143,7 @@ stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
                                                 *fireplace-cp*
 cp{motion}              Eval/print the code indicated by {motion}.
 
-cpp                     Eval/print the outermost form at the cursor.
+cpp                     Eval/print the innermost form at the cursor.
 
                                                 *fireplace-cpr*
 cpr                     Eval a require :reload form.

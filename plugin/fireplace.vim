@@ -692,7 +692,23 @@ function! s:opfunc(type) abort
   let reg_save = @@
   try
     set selection=inclusive clipboard-=unnamed clipboard-=unnamedplus
-    if a:type =~# '^.$'
+    if type(a:type) == type(0)
+      let open = '[[{(]'
+      let close = '[]})]'
+      if getline('.')[col('.')-1] =~# close
+        let [line1, col1] = searchpairpos(open, '', close, 'bn', g:fireplace#skip)
+        let [line2, col2] = [line('.'), col('.')]
+      else
+        let [line1, col1] = searchpairpos(open, '', close, 'bcn', g:fireplace#skip)
+        let [line2, col2] = searchpairpos(open, '', close, 'n', g:fireplace#skip)
+      endif
+      while col1 > 1 && getline(line1)[col1-2] =~# '[#''`~@]'
+        let col1 -= 1
+      endwhile
+      call setpos("'[", [0, line1, col1, 0])
+      call setpos("']", [0, line2, col2, 0])
+      silent exe "normal! `[v`]y"
+    elseif a:type =~# '^.$'
       silent exe "normal! `<" . a:type . "`>y"
     elseif a:type ==# 'line'
       silent exe "normal! '[V']y"
@@ -705,7 +721,7 @@ function! s:opfunc(type) abort
       silent exe "normal! `[v`]y"
     endif
     redraw
-    return @@
+    return repeat("\n", line("'<")-1) . repeat(" ", col("'<")-1) . @@
   finally
     let @@ = reg_save
     let &selection = sel_save
@@ -742,13 +758,16 @@ function! s:printop(type) abort
 endfunction
 
 function! s:print_last() abort
-  call fireplace#echo_session_eval(s:todo)
+  call fireplace#echo_session_eval(s:todo, {'file_path': s:buffer_path()})
   return ''
 endfunction
 
 function! s:editop(type) abort
   call feedkeys(&cedit . "\<Home>", 'n')
-  let input = s:input(substitute(substitute(s:opfunc(a:type), "\s*;[^\n\"]*\\%(\n\\@=\\|$\\)", '', 'g'), '\n\+\s*', ' ', 'g'))
+  let input = s:input(substitute(substitute(substitute(
+        \ s:opfunc(a:type), "\s*;[^\n\"]*\\%(\n\\@=\\|$\\)", '', 'g'),
+        \ '\n\+\s*', ' ', 'g'),
+        \ '^\s*', '', ''))
   if input !=# ''
     call fireplace#echo_session_eval(input)
   endif
@@ -785,9 +804,9 @@ function! s:Eval(bang, line1, line2, count, args) abort
     if line1 == line2
       let expr .= getline(line1)[col1-1 : col2-1]
     else
-    let expr .= getline(line1)[col1-1 : -1] . "\n"
-          \ . join(map(getline(line1+1, line2-1), 'v:val . "\n"'))
-          \ . getline(line2)[0 : col2-1]
+      let expr .= getline(line1)[col1-1 : -1] . "\n"
+            \ . join(map(getline(line1+1, line2-1), 'v:val . "\n"'))
+            \ . getline(line2)[0 : col2-1]
     endif
     if a:bang
       exe line1.','.line2.'delete _'
@@ -887,18 +906,22 @@ endfunction
 nnoremap <silent> <Plug>FireplacePrintLast :exe <SID>print_last()<CR>
 nnoremap <silent> <Plug>FireplacePrint  :<C-U>set opfunc=<SID>printop<CR>g@
 xnoremap <silent> <Plug>FireplacePrint  :<C-U>call <SID>printop(visualmode())<CR>
-nnoremap <silent> <Plug>FireplaceCountPrint :<C-U>Eval<CR>
+nnoremap <silent> <Plug>FireplaceCountPrint  :<C-U>call <SID>printop(v:count)<CR>
 
 nnoremap <silent> <Plug>FireplaceFilter :<C-U>set opfunc=<SID>filterop<CR>g@
 xnoremap <silent> <Plug>FireplaceFilter :<C-U>call <SID>filterop(visualmode())<CR>
+nnoremap <silent> <Plug>FireplaceCountFilter :<C-U>call <SID>filterop(v:count)<CR>
 
 nnoremap <silent> <Plug>FireplaceMacroExpand  :<C-U>set opfunc=<SID>macroexpandop<CR>g@
 xnoremap <silent> <Plug>FireplaceMacroExpand  :<C-U>call <SID>macroexpandop(visualmode())<CR>
-nnoremap <silent> <Plug>FireplaceMacroExpand1 :<C-U>set opfunc=<SID>macroexpand1op<CR>g@
-xnoremap <silent> <Plug>FireplaceMacroExpand1 :<C-U>call <SID>macroexpand1op(visualmode())<CR>
+nnoremap <silent> <Plug>FireplaceCountMacroExpand  :<C-U>call <SID>macroexpandop(v:count)<CR>
+nnoremap <silent> <Plug>Fireplace1MacroExpand :<C-U>set opfunc=<SID>macroexpand1op<CR>g@
+xnoremap <silent> <Plug>Fireplace1MacroExpand :<C-U>call <SID>macroexpand1op(visualmode())<CR>
+nnoremap <silent> <Plug>Fireplace1MacroExpand :<C-U>call <SID>macroexpand1op(v:count)<CR>
 
 nnoremap <silent> <Plug>FireplaceEdit   :<C-U>set opfunc=<SID>editop<CR>g@
 xnoremap <silent> <Plug>FireplaceEdit   :<C-U>call <SID>editop(visualmode())<CR>
+nnoremap <silent> <Plug>FireplaceCountEdit :<C-U>call <SID>editop(v:count)<CR>
 
 nnoremap          <Plug>FireplacePrompt :exe <SID>inputeval()<CR>
 
@@ -933,15 +956,15 @@ function! s:setup_eval() abort
   nmap <buffer> cpp <Plug>FireplaceCountPrint
 
   nmap <buffer> c! <Plug>FireplaceFilter
-  nmap <buffer> c!! <Plug>FireplaceFilterab
+  nmap <buffer> c!! <Plug>FireplaceCountFilter
 
   nmap <buffer> cm <Plug>FireplaceMacroExpand
-  nmap <buffer> cmm <Plug>FireplaceMacroExpandab
-  nmap <buffer> c1m <Plug>FireplaceMacroExpand1
-  nmap <buffer> c1mm <Plug>FireplaceMacroExpand1ab
+  nmap <buffer> cmm <Plug>FireplaceCountMacroExpand
+  nmap <buffer> c1m <Plug>Fireplace1MacroExpand
+  nmap <buffer> c1mm <Plug>FireplaceCount1MacroExpand
 
   nmap <buffer> cq <Plug>FireplaceEdit
-  nmap <buffer> cqq <Plug>FireplaceEditab
+  nmap <buffer> cqq <Plug>FireplaceCountEdit
 
   nmap <buffer> cqp <Plug>FireplacePrompt
   exe 'nmap <buffer> cqc <Plug>FireplacePrompt' . &cedit . 'i'
