@@ -1061,6 +1061,7 @@ function! s:Edit(cmd, keyword) abort
   endtry
   if location !=# ''
     if matchstr(location, '^+\d\+ \zs.*') ==# fnameescape(expand('%:p')) && a:cmd ==# 'edit'
+      normal! m'
       return matchstr(location, '\d\+')
     else
       return a:cmd.' '.location.'|let &l:path = '.string(&l:path)
