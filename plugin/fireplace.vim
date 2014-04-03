@@ -388,16 +388,14 @@ function! s:oneoff.path() dict abort
 endfunction
 
 function! s:oneoff.eval(expr, options) dict abort
-  if &verbose && !empty(get(a:options, 'session', 1))
-    echohl WarningMSG
-    echomsg "No REPL found. Running java clojure.main ..."
-    echohl None
+  if !empty(get(a:options, 'session', 1))
+    throw 'Fireplace: no live REPL connection'
   endif
   return s:spawning_eval(self.classpath, a:expr, get(a:options, 'ns', self.user_ns()))
 endfunction
 
 function! s:oneoff.message(...) abort
-  throw 'No live REPL connection'
+  throw 'Fireplace: no live REPL connection'
 endfunction
 
 let s:oneoff.piggieback = s:oneoff.message
@@ -459,7 +457,7 @@ function! fireplace#platform(...) abort
     let cp = classpath#from_vim(getbufvar(buf, '&path'))
     return extend({'classpath': cp, 'nr': bufnr(buf)}, s:oneoff)
   endif
-  throw ':Connect to a REPL or install classpath.vim to evaluate code'
+  throw 'Fireplace: :Connect to a REPL or install classpath.vim'
 endfunction
 
 function! fireplace#client(...) abort
@@ -467,7 +465,7 @@ function! fireplace#client(...) abort
   let client = fireplace#platform(buf)
   if fnamemodify(bufname(buf), ':e') ==# 'cljs'
     if !has_key(client, 'connection')
-      throw ':Connect to a REPL to evaluate code'
+      throw 'Fireplace: no live REPL connection'
     endif
     if empty(client.piggiebacks)
       let result = client.piggieback('')
@@ -643,6 +641,10 @@ function! fireplace#echo_session_eval(expr, ...) abort
   try
     echo fireplace#session_eval(a:expr, a:0 ? a:1 : {})
   catch /^Clojure:/
+  catch
+    echohl ErrorMSG
+    echomsg v:exception
+    echohl NONE
   endtry
   return ''
 endfunction
