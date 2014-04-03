@@ -731,7 +731,10 @@ endfunction
 
 function! s:filterop(type) abort
   let reg_save = @@
+  let sel_save = &selection
+  let cb_save = &clipboard
   try
+    set selection=inclusive clipboard-=unnamed clipboard-=unnamedplus
     let expr = s:opfunc(a:type)
     let @@ = matchstr(expr, '^\n\+').fireplace#session_eval(expr).matchstr(expr, '\n\+$')
     if @@ !~# '^\n*$'
@@ -741,6 +744,8 @@ function! s:filterop(type) abort
     return ''
   finally
     let @@ = reg_save
+    let &selection = sel_save
+    let &clipboard = cb_save
   endtry
 endfunction
 
