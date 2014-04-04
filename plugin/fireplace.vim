@@ -1355,8 +1355,7 @@ function! s:hunt(start, anchor, pattern) abort
   return ''
 endfunction
 
-if !exists('s:leiningen_repls')
-  let s:leiningen_repls = {}
+if !exists('s:leiningen_paths')
   let s:leiningen_paths = {}
 endif
 
@@ -1377,13 +1376,6 @@ function! s:leiningen_portfile() abort
 endfunction
 
 function! s:leiningen_connect() abort
-  for [k, v] in items(s:leiningen_repls)
-    if getfsize(v.file) <= 0
-      call remove(s:leiningen_repls, k)
-      call s:unregister_connection(v.connection)
-    endif
-  endfor
-
   let portfile = s:leiningen_portfile()
   if empty(portfile)
     return
