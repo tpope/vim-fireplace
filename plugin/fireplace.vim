@@ -472,7 +472,7 @@ function! fireplace#platform(...) abort
     endif
   endfor
 
-  let portfile = findfile('.nrepl-port', '.;/')
+  let portfile = findfile('.nrepl-port', '.;')
   if !empty(portfile)
     call s:register_portfile(portfile, fnamemodify(portfile, ':h'))
   endif
