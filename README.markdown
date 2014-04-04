@@ -79,7 +79,8 @@ can be easily accessed with `:lopen`.
 
 ### Navigating and Comprehending
 
-I'm new to Clojure, so stuff that helps me understand code is a top priority.
+I was brand new to Clojure when I started this plugin, so stuff that helped me
+understand code was a top priority.
 
 * `:Source`, `:Doc`, `:FindDoc`, and `:Apropos`, which map to the underlying
   `clojure.repl` macro (with tab complete, of course).
