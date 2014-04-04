@@ -140,6 +140,13 @@ stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
 :[range]Eval! {expr}    Eval the given expression and insert it after
                         the given range or current line.
 
+                                                *fireplace-:RunTests*
+:RunTests [ns] [...]    Call clojure.test/run-tests on the given namespaces
+                        and load the results into the quickfix list.
+
+:RunTests! [pattern]    Call clojure.test/run-all-tests with the given pattern
+                        and load the results into the quickfix list.
+
                                                 *fireplace-cp*
 cp{motion}              Eval/print the code indicated by {motion}.
 

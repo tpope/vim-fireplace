@@ -1298,6 +1298,68 @@ augroup fireplace_doc
 augroup END
 
 " }}}1
+" Tests {{{1
+
+function! fireplace#capture_test_run(expr) abort
+  let expr = '(require ''clojure.test) '
+        \ . '(binding [clojure.test/report (fn [m]'
+        \ .  ' (case (:type m)'
+        \ .    ' (:fail :error)'
+        \ .    ' (let [{file :file test :name} (meta (last clojure.test/*testing-vars*))]'
+        \ .      ' (clojure.test/with-test-out'
+        \ .        ' (println (clojure.string/join "\t" [file (:line m) (name (:type m)) test]))'
+        \ .        ' (when (seq clojure.test/*testing-contexts*) (println (clojure.test/testing-contexts-str)))'
+        \ .        ' (when-let [message (:message m)] (println message))'
+        \ .        ' (println "expected:" (pr-str (:expected m)))'
+        \ .        ' (println "  actual:" (pr-str (:actual m)))))'
+        \ .    ' ((.getRawRoot #''clojure.test/report) m)))]'
+        \ . ' ' . a:expr . ')'
+  let qflist = []
+  let response = s:eval(expr, {'session': 0})
+  if !has_key(response, 'out')
+    return s:output_response(response)
+  endif
+  for line in split(response.out, "\n")
+    let entry = {'text': line}
+    if line =~# '\t.*\t.*\t'
+      let [resource, lnum, type, name] = split(line, "\t", 1)
+      let entry.lnum = lnum
+      let entry.type = (type ==# 'fail' ? 'W' : 'E')
+      let entry.text = name
+      if resource ==# 'NO_SOURCE_FILE'
+        let resource = ''
+        let entry.lnum = 0
+      endif
+      let entry.filename = fireplace#findresource(resource, fireplace#path())
+      if empty(entry.filename)
+        let entry.lnum = 0
+      endif
+    endif
+    call add(qflist, entry)
+  endfor
+  call setqflist(qflist)
+  cwindow
+endfunction
+
+function! s:RunTests(bang, ...) abort
+  if a:bang && a:0
+    let expr = '(clojure.test/run-all-tests #"'.join(a:000, '|').'")'
+  elseif a:bang
+    let expr = '(clojure.test/run-all-tests)'
+  else
+    let expr = '(' .join(['clojure.test/run-tests'] + map(copy(a:000), '"''".v:val'), ' ').')'
+  endif
+  call fireplace#capture_test_run(expr)
+  cwindow
+  echo expr
+endfunction
+
+augroup fireplace_command
+  autocmd!
+  autocmd FileType clojure command! -buffer -bar -bang -nargs=* -complete=customlist,fireplace#ns_complete RunTests call s:RunTests(<bang>0, <f-args>)
+augroup END
+
+" }}}1
 " Alternate {{{1
 
 augroup fireplace_alternate
