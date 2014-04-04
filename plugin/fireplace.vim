@@ -1453,8 +1453,29 @@ function! s:leiningen_portfile() abort
   return ''
 endfunction
 
-function! s:leiningen_connect() abort
+function! s:leiningen_connect(auto) abort
+  if !exists('b:leiningen_root')
+    return
+  endif
   let portfile = s:leiningen_portfile()
+  if a:auto && empty(portfile) && exists(':Start') ==# 2
+
+    let cd = has('*haslocaldir') && haslocaldir() ? 'lcd' : 'cd'
+    let cwd = getcwd()
+    try
+      execute cd fnameescape(b:leiningen_root)
+      Start! -title=lein\ repl lein repl
+    finally
+      execute cd fnameescape(cwd)
+    endtry
+
+    let i = 0
+    while empty(portfile) && i < 300 && !getchar(0)
+      let i += 1
+      sleep 100m
+      let portfile = s:leiningen_portfile()
+    endwhile
+  endif
   if empty(portfile)
     return
   endif
@@ -1483,7 +1504,7 @@ function! s:leiningen_init() abort
   if exists('*classpath#from_vim')
     let s:leiningen_paths[b:leiningen_root] = classpath#split(classpath#from_vim(&path))
   endif
-  call s:leiningen_connect()
+  call s:leiningen_connect(0)
 endfunction
 
 function! s:massage_quickfix() abort
@@ -1504,7 +1525,7 @@ endfunction
 
 augroup fireplace_leiningen
   autocmd!
-  autocmd User FireplacePreConnect call s:leiningen_connect()
+  autocmd User FireplacePreConnect call s:leiningen_connect(1)
   autocmd FileType clojure call s:leiningen_init()
   autocmd QuickFixCmdPost make,cfile,cgetfile call s:massage_quickfix()
 augroup END
