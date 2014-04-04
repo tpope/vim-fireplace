@@ -1045,13 +1045,15 @@ augroup END
 " }}}1
 " :Require {{{1
 
-function! s:Require(bang, ns) abort
+function! s:Require(bang, echo, ns) abort
   if expand('%:e') ==# 'cljs'
     let cmd = '(load-file '.s:str(tr(a:ns ==# '' ? fireplace#ns() : a:ns, '-.', '_/').'.cljs').')'
   else
     let cmd = ('(clojure.core/require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
   endif
-  echo cmd
+  if a:echo
+    echo cmd
+  endif
   try
     call fireplace#session_eval(cmd)
     return ''
@@ -1060,9 +1062,19 @@ function! s:Require(bang, ns) abort
   endtry
 endfunction
 
+function! s:cpr() abort
+  let echo = "(require ".fireplace#ns().' :reload) (clojure.test/run-tests)'
+  try
+    call s:Require(0, 0, '')
+  catch /^Fireplace: no live REPL connection$/
+  endtry
+  call s:RunTests(0, 0)
+  echo echo
+endfunction
+
 function! s:setup_require() abort
-  command! -buffer -bar -bang -complete=customlist,fireplace#ns_complete -nargs=? Require :exe s:Require(<bang>0, <q-args>)
-  nnoremap <silent><buffer> cpr :Require<CR>
+  command! -buffer -bar -bang -complete=customlist,fireplace#ns_complete -nargs=? Require :exe s:Require(<bang>0, 1, <q-args>)
+  nnoremap <silent><buffer> cpr :if expand('%:e') ==# 'cljs'<Bar>Require<Bar>else<Bar>call <SID>cpr()<Bar>endif<CR>
 endfunction
 
 augroup fireplace_require
@@ -1341,7 +1353,7 @@ function! fireplace#capture_test_run(expr) abort
   cwindow
 endfunction
 
-function! s:RunTests(bang, ...) abort
+function! s:RunTests(bang, echo, ...) abort
   if a:bang && a:0
     let expr = '(clojure.test/run-all-tests #"'.join(a:000, '|').'")'
   elseif a:bang
@@ -1351,12 +1363,16 @@ function! s:RunTests(bang, ...) abort
   endif
   call fireplace#capture_test_run(expr)
   cwindow
-  echo expr
+  if a:echo
+    echo expr
+  endif
 endfunction
 
 augroup fireplace_command
   autocmd!
-  autocmd FileType clojure command! -buffer -bar -bang -nargs=* -complete=customlist,fireplace#ns_complete RunTests call s:RunTests(<bang>0, <f-args>)
+  autocmd FileType clojure command! -buffer -bar -bang -nargs=*
+        \ -complete=customlist,fireplace#ns_complete RunTests
+        \ call s:RunTests(<bang>0, 1, <f-args>)
 augroup END
 
 " }}}1
