@@ -1465,6 +1465,9 @@ function! s:leiningen_connect(auto) abort
     try
       execute cd fnameescape(b:leiningen_root)
       Start! -title=lein\ repl lein repl
+      if get(get(g:, 'dispatch_last_start', {}), 'handler', 'headless') ==# 'headless'
+        return
+      endif
     finally
       execute cd fnameescape(cwd)
     endtry
