@@ -1460,7 +1460,7 @@ function! s:leiningen_connect(auto) abort
   let portfile = s:leiningen_portfile()
   if a:auto && empty(portfile) && exists(':Start') ==# 2
 
-    let cd = has('*haslocaldir') && haslocaldir() ? 'lcd' : 'cd'
+    let cd = exists('*haslocaldir') && haslocaldir() ? 'lcd' : 'cd'
     let cwd = getcwd()
     try
       execute cd fnameescape(b:leiningen_root)
