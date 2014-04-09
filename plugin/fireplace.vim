@@ -413,14 +413,15 @@ function! s:oneoff.user_ns() abort
 endfunction
 
 function! s:oneoff.path() dict abort
-  return classpath#split(self.classpath)
+  return self._path
 endfunction
 
 function! s:oneoff.eval(expr, options) dict abort
   if !empty(get(a:options, 'session', 1))
     throw 'Fireplace: no live REPL connection'
   endif
-  return s:spawning_eval(self.classpath, a:expr, get(a:options, 'ns', self.user_ns()))
+  return s:spawning_eval(join(self.path(), has('win32') ? ';' : ':'),
+        \                a:expr, get(a:options, 'ns', self.user_ns()))
 endfunction
 
 function! s:oneoff.message(...) abort
@@ -452,6 +453,13 @@ function! s:includes_file(file, path) abort
   endfor
 endfunction
 
+function! s:path_extract(path)
+  if exists('*classpath#from_vim') && a:path =~# '\.jar'
+    return classpath#split(classpath#from_vim(a:path))
+  endif
+  return []
+endfunction
+
 function! fireplace#path(...) abort
   let buf = a:0 ? a:1 : s:buf()
   for repl in s:repls
@@ -459,10 +467,7 @@ function! fireplace#path(...) abort
       return repl.path()
     endif
   endfor
-  if exists('*classpath#from_vim')
-    return classpath#split(classpath#from_vim(getbufvar(buf, '&path')))
-  endif
-  return []
+  return s:path_extract(getbufvar(buf, '&path'))
 endfunction
 
 function! fireplace#platform(...) abort
@@ -493,9 +498,9 @@ function! fireplace#platform(...) abort
       return repl
     endif
   endfor
-  if exists('*classpath#from_vim') && fnamemodify(bufname(buf), ':e') =~# '^cljx\=$'
-    let cp = classpath#from_vim(getbufvar(buf, '&path'))
-    return extend({'classpath': cp, 'nr': bufnr(buf)}, s:oneoff)
+  let path = s:path_extract(getbufvar(buf, '&path'))
+  if !empty(path) && fnamemodify(bufname(buf), ':e') =~# '^cljx\=$'
+    return extend({'_path': path, 'nr': bufnr(buf)}, s:oneoff)
   endif
   throw 'Fireplace: :Connect to a REPL or install classpath.vim'
 endfunction
@@ -1504,8 +1509,9 @@ function! s:leiningen_init() abort
 
   compiler lein
 
-  if exists('*classpath#from_vim')
-    let s:leiningen_paths[b:leiningen_root] = classpath#split(classpath#from_vim(&path))
+  let path = s:path_extract(&path)
+  if !empty(path)
+    let s:leiningen_paths[b:leiningen_root] = path
   endif
   call s:leiningen_connect(0)
 endfunction
