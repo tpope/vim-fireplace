@@ -454,10 +454,17 @@ function! s:includes_file(file, path) abort
 endfunction
 
 function! s:path_extract(path)
-  if exists('*classpath#from_vim') && a:path =~# '\.jar'
-    return classpath#split(classpath#from_vim(a:path))
+  let path = []
+  if a:path =~# '\.jar'
+    for elem in split(substitute(a:path, ',$', '', ''), ',')
+      if elem ==# ''
+        let path += ['.']
+      else
+        let path += split(glob(substitute(elem, '\\\ze[\\ ,]', '', 'g'), 1), "\n")
+      endif
+    endfor
   endif
-  return []
+  return path
 endfunction
 
 function! fireplace#path(...) abort
