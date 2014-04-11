@@ -240,7 +240,7 @@ function! s:unregister_connection(conn) abort
   call filter(s:repl_portfiles, 'v:val.connection.transport isnot# a:conn.transport')
 endfunction
 
-function! s:register_portfile(portfile, ...) abort
+function! fireplace#register_port_file(portfile, ...) abort
   let old = get(s:repl_portfiles, a:portfile, {})
   if has_key(old, 'time') && getftime(a:portfile) !=# old.time
     call s:unregister_connection(old.connection)
@@ -486,7 +486,7 @@ function! fireplace#platform(...) abort
 
   let portfile = findfile('.nrepl-port', '.;')
   if !empty(portfile)
-    call s:register_portfile(portfile, fnamemodify(portfile, ':h'))
+    call fireplace#register_port_file(portfile, fnamemodify(portfile, ':h'))
   endif
   silent doautocmd User FireplacePreConnect
 
@@ -1495,7 +1495,7 @@ function! s:leiningen_connect(auto) abort
   if empty(portfile)
     return
   endif
-  let conn = s:register_portfile(portfile, b:leiningen_root)
+  let conn = fireplace#register_port_file(portfile, b:leiningen_root)
   if has_key(conn, 'path')
     let s:leiningen_paths[b:leiningen_root] = conn.path()
   endif
