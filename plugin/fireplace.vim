@@ -1477,7 +1477,9 @@ function! s:leiningen_connect(auto) abort
     let cwd = getcwd()
     try
       execute cd fnameescape(b:leiningen_root)
-      Start! -title=lein\ repl lein repl
+      execute 'Start! -title='
+            \ . escape(fnamemodify(b:leiningen_root, ':t') . ' repl', ' ')
+            \ 'lein repl'
       if get(get(g:, 'dispatch_last_start', {}), 'handler', 'headless') ==# 'headless'
         return
       endif
