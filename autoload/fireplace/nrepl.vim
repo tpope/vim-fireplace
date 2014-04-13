@@ -146,7 +146,7 @@ function! s:nrepl_eval(expr, ...) dict abort
   endif
 
   if has_key(response, 'ex') && !empty(get(msg, 'session', 1))
-    let response.stacktrace = s:extract_last_stacktrace(self)
+    let response.stacktrace = s:extract_last_stacktrace(self, get(msg, 'session', self.session))
   endif
 
   if has_key(response, 'value')
@@ -155,12 +155,12 @@ function! s:nrepl_eval(expr, ...) dict abort
   return response
 endfunction
 
-function! s:extract_last_stacktrace(nrepl) abort
+function! s:extract_last_stacktrace(nrepl, session) abort
   let format_st = '(symbol (str "\n\b" (apply str (interleave (repeat "\n") (map str (.getStackTrace *e)))) "\n\b\n"))'
-  let stacktrace = split(get(split(a:nrepl.process({'op': 'eval', 'code': '['.format_st.' *3 *2 *1]', 'ns': 'user', 'session': a:nrepl.session}).value[0], "\n\b\n"), 1, ""), "\n")
-  call a:nrepl.message({'op': 'eval', 'code': '(*1 1)', 'ns': 'user', 'session': a:nrepl.session})
-  call a:nrepl.message({'op': 'eval', 'code': '(*2 2)', 'ns': 'user', 'session': a:nrepl.session})
-  call a:nrepl.message({'op': 'eval', 'code': '(*3 3)', 'ns': 'user', 'session': a:nrepl.session})
+  let stacktrace = split(get(split(a:nrepl.process({'op': 'eval', 'code': '['.format_st.' *3 *2 *1]', 'ns': 'user', 'session': a:session}).value[0], "\n\b\n"), 1, ""), "\n")
+  call a:nrepl.message({'op': 'eval', 'code': '(*1 1)', 'ns': 'user', 'session': a:session})
+  call a:nrepl.message({'op': 'eval', 'code': '(*2 2)', 'ns': 'user', 'session': a:session})
+  call a:nrepl.message({'op': 'eval', 'code': '(*3 3)', 'ns': 'user', 'session': a:session})
   return stacktrace
 endfunction
 
