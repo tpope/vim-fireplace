@@ -174,13 +174,6 @@ function! s:nrepl_prepare(msg) dict abort
   endif
   if empty(get(msg, 'session', 1))
     unlet msg.session
-  elseif !has_key(self, 'session')
-    if &verbose
-      echohl WarningMSG
-      echo "nREPL: server has bug preventing session support"
-      echohl None
-    endif
-    unlet! msg.session
   elseif !has_key(msg, 'session')
     let msg.session = self.session
   endif
