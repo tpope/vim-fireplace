@@ -556,10 +556,13 @@ function! fireplace#message(payload, ...) abort
 endfunction
 
 function! fireplace#op_available(op) abort
-  let client = fireplace#platform()
-  if has_key(client, 'connection')
-    return client.connection.has_op(a:op)
-  endif
+  try
+    let client = fireplace#platform()
+    if has_key(client, 'connection')
+      return client.connection.has_op(a:op)
+    endif
+  catch /^Fireplace: :Connect to a REPL/
+  endtry
 endfunction
 
 function! fireplace#findresource(resource, ...) abort
