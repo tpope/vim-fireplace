@@ -817,7 +817,7 @@ function! s:macroexpandop(type) abort
 endfunction
 
 function! s:macroexpand1op(type) abort
-  call fireplace#macroexpand("clojure.core/macroexpand-1", s:opfunc(a:type))
+  call fireplace#macroexpand("macroexpand-1", s:opfunc(a:type))
 endfunction
 
 function! s:printop(type) abort
