@@ -87,6 +87,20 @@ function! fireplace#omnicomplete(findstart, base) abort
     return col('.') - strlen(matchstr(line, '\k\+$')) - 1
   else
     try
+
+      if fireplace#op_available('complete')
+        let response = fireplace#message({'op': 'complete', 'symbol': a:base})
+        if type(get(response[0], 'value')) == type([])
+          if type(get(response[0].value, 0)) == type([])
+            return map(response[0].value[0], '{"word": v:val}')
+          elseif type(get(response[0].value, 0)) == type('')
+            return map(response[0].value, '{"word": v:val}')
+          else
+            return []
+          endif
+        endif
+      endif
+
       let omnifier = '(fn [[k v]] (let [{:keys [arglists] :as m} (meta v)]' .
             \ ' {:word k :menu (pr-str (or arglists (symbol ""))) :info (str (when arglists (str arglists "\n")) "  " (:doc m)) :kind (if arglists "f" "v")}))'
 
