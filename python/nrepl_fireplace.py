@@ -4,7 +4,10 @@ import select
 import socket
 import sys
 
-from StringIO import StringIO
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 
 def noop():
   pass
@@ -84,13 +87,16 @@ class Connection:
     return self.socket.close()
 
   def send(self, payload):
-    self.socket.sendall(payload)
+    if sys.version_info[0] >= 3:
+      self.socket.sendall(bytes(payload, 'UTF-8'))
+    else:
+      self.socket.sendall(payload)
     return ''
 
   def receive(self, char=None):
-    while len(select.select([self.socket], [], [], 0.1)[0]) == 0:
-      self.poll()
     f = self.socket.makefile()
+    while len(select.select([f], [], [], 0.1)[0]) == 0:
+      self.poll()
     try:
       return bdecode(f)
     finally:
@@ -118,8 +124,8 @@ def dispatch(host, port, poll, keepalive, command, *args):
 def main(host, port, keepalive, command, *args):
   try:
     sys.stdout.write(vim_encode(dispatch(host, port, noop, keepalive, command, *[bdecode(StringIO(arg)) for arg in args])))
-  except Exception, e:
-    print(e)
+  except Exception:
+    print((sys.exc_info()[1]))
     exit(1)
 
 if __name__ == "__main__":
