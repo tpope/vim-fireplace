@@ -539,6 +539,13 @@ function! fireplace#message(payload, ...) abort
   return call(client.message, [payload] + a:000, client)
 endfunction
 
+function! fireplace#op_available(op) abort
+  let client = fireplace#platform()
+  if has_key(client, 'connection')
+    return client.connection.has_op(a:op)
+  endif
+endfunction
+
 function! fireplace#findresource(resource, ...) abort
   if a:resource ==# ''
     return ''

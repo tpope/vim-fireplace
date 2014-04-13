@@ -207,6 +207,10 @@ function! s:nrepl_message(msg, ...) dict abort
   return call(self.call, [msg, ['done'], sel] + a:000, self)
 endfunction
 
+function! s:nrepl_has_op(op) dict abort
+  return has_key(self.describe.ops, a:op)
+endfunction
+
 let s:nrepl = {
       \ 'close': s:function('s:nrepl_close'),
       \ 'clone': s:function('s:nrepl_clone'),
@@ -214,5 +218,6 @@ let s:nrepl = {
       \ 'call': s:function('s:nrepl_call'),
       \ 'message': s:function('s:nrepl_message'),
       \ 'eval': s:function('s:nrepl_eval'),
+      \ 'has_op': s:function('s:nrepl_has_op'),
       \ 'path': s:function('s:nrepl_path'),
       \ 'process': s:function('s:nrepl_process')}
