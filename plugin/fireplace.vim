@@ -1070,13 +1070,13 @@ function! s:Require(bang, echo, ns) abort
   if expand('%:e') ==# 'cljs'
     let cmd = '(load-file '.s:str(tr(a:ns ==# '' ? fireplace#ns() : a:ns, '-.', '_/').'.cljs').')'
   else
-    let cmd = ('(clojure.core/require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
+    let cmd = ('(require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
   endif
   if a:echo
     echo cmd
   endif
   try
-    call fireplace#session_eval(cmd)
+    call fireplace#session_eval(cmd, {'ns': fireplace#client().user_ns()})
     return ''
   catch /^Clojure:.*/
     return ''
@@ -1349,7 +1349,7 @@ function! fireplace#capture_test_run(expr) abort
         \ .    ' ((.getRawRoot #''clojure.test/report) m)))]'
         \ . ' ' . a:expr . ')'
   let qflist = []
-  let response = s:eval(expr, {'session': 0})
+  let response = s:eval(expr, {'session': 0, 'ns': fireplace#client().user_ns()})
   if !has_key(response, 'out')
     return s:output_response(response)
   endif

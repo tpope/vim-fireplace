@@ -156,11 +156,11 @@ function! s:nrepl_eval(expr, ...) dict abort
 endfunction
 
 function! s:extract_last_stacktrace(nrepl) abort
-  let format_st = '(clojure.core/symbol (clojure.core/str "\n\b" (clojure.core/apply clojure.core/str (clojure.core/interleave (clojure.core/repeat "\n") (clojure.core/map clojure.core/str (.getStackTrace *e)))) "\n\b\n"))'
-  let stacktrace = split(get(split(a:nrepl.process({'op': 'eval', 'code': '['.format_st.' *3 *2 *1]', 'session': a:nrepl.session}).value[0], "\n\b\n"), 1, ""), "\n")
-  call a:nrepl.message({'op': 'eval', 'code': '(*1 1)', 'session': a:nrepl.session})
-  call a:nrepl.message({'op': 'eval', 'code': '(*2 2)', 'session': a:nrepl.session})
-  call a:nrepl.message({'op': 'eval', 'code': '(*3 3)', 'session': a:nrepl.session})
+  let format_st = '(symbol (str "\n\b" (apply str (interleave (repeat "\n") (map str (.getStackTrace *e)))) "\n\b\n"))'
+  let stacktrace = split(get(split(a:nrepl.process({'op': 'eval', 'code': '['.format_st.' *3 *2 *1]', 'ns': 'user', 'session': a:nrepl.session}).value[0], "\n\b\n"), 1, ""), "\n")
+  call a:nrepl.message({'op': 'eval', 'code': '(*1 1)', 'ns': 'user', 'session': a:nrepl.session})
+  call a:nrepl.message({'op': 'eval', 'code': '(*2 2)', 'ns': 'user', 'session': a:nrepl.session})
+  call a:nrepl.message({'op': 'eval', 'code': '(*3 3)', 'ns': 'user', 'session': a:nrepl.session})
   return stacktrace
 endfunction
 
