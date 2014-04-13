@@ -34,7 +34,7 @@ function! s:shellesc(arg) abort
   if a:arg =~ '^[A-Za-z0-9_/.-]\+$'
     return a:arg
   elseif &shell =~# 'cmd'
-    return '"'.substitute(substitute(a:arg, '"', '""""', 'g'), '%', '"%"', 'g').'"'
+    throw 'Python interface not working. See :help python-dynamic'
   else
     let escaped = shellescape(a:arg)
     if &shell =~# 'sh' && &shell !~# 'csh'
