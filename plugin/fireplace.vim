@@ -1260,9 +1260,14 @@ function! fireplace#ns(...) abort
 endfunction
 
 function! s:Lookup(ns, macro, arg) abort
-  " doc is in clojure.core in older Clojure versions
   try
-    let response = s:eval("(clojure.core/require '".a:ns.") (clojure.core/eval (clojure.core/list (if (ns-resolve 'clojure.core '".a:macro.") 'clojure.core/".a:macro." '".a:ns.'/'.a:macro.") '".a:arg.'))', {'session': 0})
+    if has_key(fireplace#client(), 'connection') && fireplace#client().connection.describe.versions.clojure.minor > 2
+      call fireplace#client().preload(a:ns)
+      let response = s:eval('('.a:ns.'/'.a:macro.' '.a:arg.')', {'session': 0})
+    else
+      " doc is in clojure.core in older Clojure versions
+      let response = s:eval("(clojure.core/require '".a:ns.") (clojure.core/eval (clojure.core/list (if (ns-resolve 'clojure.core '".a:macro.") 'clojure.core/".a:macro." '".a:ns.'/'.a:macro.") '".a:arg.'))', {'session': 0})
+    endif
     call s:output_response(response)
   catch /^Clojure:/
   catch /.*/
