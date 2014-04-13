@@ -535,6 +535,8 @@ function! fireplace#message(payload, ...) abort
   let payload = copy(a:payload)
   if !has_key(payload, 'ns')
     let payload.ns = fireplace#ns()
+  elseif empty(payload.ns)
+    unlet payload.ns
   endif
   return call(client.message, [payload] + a:000, client)
 endfunction
