@@ -1392,7 +1392,7 @@ function! fireplace#capture_test_run(expr) abort
         \ .    ' ((.getRawRoot #''clojure.test/report) m)))]'
         \ . ' ' . a:expr . ')'
   let qflist = []
-  let response = s:eval(expr, {'session': 0, 'ns': fireplace#client().user_ns()})
+  let response = s:eval(expr, {'session': 0})
   if !has_key(response, 'out')
     return s:output_response(response)
   endif
