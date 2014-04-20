@@ -1144,18 +1144,37 @@ augroup END
 " }}}1
 " Go to source {{{1
 
-function! fireplace#source(symbol) abort
-  let cmd =
-        \ '(when-let [v (resolve ' . s:qsym(a:symbol) .')]' .
-        \ '  (when-let [filepath (:file (meta v))]' .
-        \ '    [filepath' .
-        \ '     (:line (meta v))]))'
-  let result = fireplace#evalparse(cmd)
-  if type(result) == type([])
-    let file = fireplace#findresource(result[0])
-    if !empty(file)
-      return '+' . result[1] . ' ' . fnameescape(file)
+function! fireplace#info(symbol) abort
+  if fireplace#op_available('info')
+    let response = fireplace#message({'op': 'info', 'symbol': a:symbol})[0]
+    if type(get(response, 'value')) == type({})
+      return response.value
     endif
+  endif
+  let cmd =
+        \ '(if-let [m (meta (resolve ' . s:qsym(a:symbol) .'))]'
+        \ . ' {:name (:name m)'
+        \ .  ' :ns (:ns m)'
+        \ .  ' :resource (:file m)'
+        \ .  ' :line (:line m)'
+        \ .  ' :doc (:doc m)'
+        \ .  ' :arglists-str (str (:arglists m))}'
+        \ . ' {})'
+  return fireplace#evalparse(cmd)
+endfunction
+
+function! fireplace#source(symbol) abort
+  let info = fireplace#info(a:symbol)
+
+  let file = ''
+  if !empty(get(info, 'resource'))
+    let file = fireplace#findresource(info.resource)
+  elseif get(info, 'file') =~# '^/\|^\w:\\' && filereadable(info.file)
+    let file = info.file
+  endif
+
+  if !empty(file) && !empty(get(info, 'line'))
+    return '+' . info.line . ' ' . fnameescape(file)
   endif
   return ''
 endfunction
