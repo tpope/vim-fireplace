@@ -1443,6 +1443,10 @@ augroup END
 " }}}1
 " Alternate {{{1
 
+if !empty(findfile('plugin/leiningen.vim', escape(&rtp, ' ')))
+  finish
+endif
+
 augroup fireplace_alternate
   autocmd!
   autocmd FileType clojure command! -buffer -bar -bang A :exe s:Alternate('edit<bang>')
