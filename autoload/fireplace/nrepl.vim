@@ -38,9 +38,17 @@ function! fireplace#nrepl#for(transport) abort
         \ client.describe.versions.nrepl.minor < 2
     throw 'nREPL: 0.2.0 or higher required'
   endif
-  let response = client.process({'op': 'eval', 'code':
-        \ '[(System/getProperty "path.separator") (System/getProperty "java.class.path")]', 'session': ''})
-  let client._path = split(eval(response.value[-1][5:-2]), response.value[-1][2])
+  if client.has_op('classpath')
+    let response = client.message({'op': 'classpath'})[0]
+    if type(get(response, 'value')) == type([])
+      let client._path = response.value
+    endif
+  endif
+  if !has_key(client, '_path')
+    let response = client.process({'op': 'eval', 'code':
+          \ '[(System/getProperty "path.separator") (System/getProperty "java.class.path")]', 'session': ''})
+    let client._path = split(eval(response.value[-1][5:-2]), response.value[-1][2])
+  endif
   let g:fireplace_nrepl_sessions[client.session] = client
   return client
 endfunction
