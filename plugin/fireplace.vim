@@ -837,7 +837,7 @@ function! s:filterop(type) abort
   try
     set selection=inclusive clipboard-=unnamed clipboard-=unnamedplus
     let expr = s:opfunc(a:type)
-    let @@ = matchstr(expr, '^\n\+').fireplace#session_eval(expr).matchstr(expr, '\n\+$')
+    let @@ = fireplace#session_eval(matchstr(expr, '^\n\+').expr).matchstr(expr, '\n\+$')
     if @@ !~# '^\n*$'
       normal! gvp
     endif
