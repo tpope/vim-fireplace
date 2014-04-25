@@ -6,7 +6,8 @@ License: Same terms as Vim itself (see |license|)
 This plugin is only available if 'compatible' is not set.
 
                                                 *fireplace*
-You need Clojure runtime files to use this plugin.  Try vim-clojure-static.
+While not strictly necessary, this plugin works best with the middleware
+provided by <https://github.com/clojure-emacs/cider-nrepl>.
 
 CONNECTING TO A REPL                            *fireplace-connect*
 

@@ -9,9 +9,12 @@ developers wouldn't have to speak in hushed tones.
 
 ## Installation
 
-Fireplace.vim doesn't provide indenting or syntax highlighting, so you'll want
-[a set of Clojure runtime files](https://github.com/guns/vim-clojure-static).
-You might also want [classpath.vim][] to run code when no REPL is available.
+First, set up [cider-repl][].  (If you skip this step, fireplace.vim will make
+do with eval, which mostly works.) Next, fireplace.vim doesn't provide
+indenting or syntax highlighting, so you'll want [a set of Clojure runtime
+files](https://github.com/guns/vim-clojure-static) if you're on a version of
+Vim earlier than 7.4.  You might also want [classpath.vim][] to run code when
+no REPL is available.
 
 If you don't have a preferred installation method, I recommend
 installing [pathogen.vim](https://github.com/tpope/vim-pathogen), and
@@ -19,8 +22,6 @@ then simply copy and paste:
 
     cd ~/.vim/bundle
     git clone git://github.com/tpope/vim-fireplace.git
-    git clone git://github.com/tpope/vim-classpath.git
-    git clone git://github.com/guns/vim-clojure-static.git
 
 Once help tags have been generated, you can view the manual with
 `:help fireplace`.
@@ -46,6 +47,7 @@ class path based on your Leiningen or Maven config.  It's a bit slow, but a
 two-second delay is vastly preferable to being forced out of my flow for a
 single command, in my book.
 
+[cider-nrepl]: https://github.com/clojure-emacs/cider-nrepl
 [Piggieback]: https://github.com/cemerick/piggieback
 [classpath.vim]: https://github.com/tpope/vim-classpath
 
