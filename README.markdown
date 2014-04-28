@@ -9,8 +9,8 @@ developers wouldn't have to speak in hushed tones.
 
 ## Installation
 
-First, set up [cider-repl][].  (If you skip this step, fireplace.vim will make
-do with eval, which mostly works.) Next, fireplace.vim doesn't provide
+First, set up [cider-nrepl][].  (If you skip this step, fireplace.vim will
+make do with eval, which mostly works.) Next, fireplace.vim doesn't provide
 indenting or syntax highlighting, so you'll want [a set of Clojure runtime
 files](https://github.com/guns/vim-clojure-static) if you're on a version of
 Vim earlier than 7.4.  You might also want [classpath.vim][] to run code when
