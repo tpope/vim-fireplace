@@ -1121,19 +1121,9 @@ function! s:Require(bang, echo, ns) abort
   endtry
 endfunction
 
-function! s:cpr() abort
-  let echo = "(require ".fireplace#ns().' :reload) (clojure.test/run-tests)'
-  try
-    call s:Require(0, 0, '')
-  catch /^Fireplace: no live REPL connection$/
-  endtry
-  call s:RunTests(0, 0)
-  echo echo
-endfunction
-
 function! s:setup_require() abort
   command! -buffer -bar -bang -complete=customlist,fireplace#ns_complete -nargs=? Require :exe s:Require(<bang>0, 1, <q-args>)
-  nnoremap <silent><buffer> cpr :if expand('%:e') ==# 'cljs'<Bar>Require<Bar>else<Bar>call <SID>cpr()<Bar>endif<CR>
+  nnoremap <silent><buffer> cpr :if expand('%:e') ==# 'cljs'<Bar>Require<Bar>else<Bar>RunTests<Bar>endif<CR>
 endfunction
 
 augroup fireplace_require
@@ -1413,6 +1403,7 @@ function! fireplace#capture_test_run(expr) abort
   let qflist = []
   let response = s:eval(expr, {'session': 0})
   if !has_key(response, 'out')
+    call setqflist(fireplace#quickfix_for(get(response, 'stacktrace', [])))
     return s:output_response(response)
   endif
   for line in split(response.out, "\n")
@@ -1438,14 +1429,17 @@ function! fireplace#capture_test_run(expr) abort
 endfunction
 
 function! s:RunTests(bang, echo, ...) abort
+  let pre = ''
   if a:bang && a:0
     let expr = '(clojure.test/run-all-tests #"'.join(a:000, '|').'")'
   elseif a:bang
     let expr = '(clojure.test/run-all-tests)'
   else
-    let expr = '(' .join(['clojure.test/run-tests'] + map(copy(a:000), '"''".v:val'), ' ').')'
+    let reqs = map(copy(a:000), '"''".v:val')
+    let pre = '(clojure.core/require '.join(empty(a:000) ? ["'".fireplace#ns()] : reqs, ' ').' :reload) '
+    let expr = join(['(clojure.test/run-tests'] + reqs, ' ').')'
   endif
-  call fireplace#capture_test_run(expr)
+  call fireplace#capture_test_run(pre.expr)
   cwindow
   if a:echo
     echo expr
