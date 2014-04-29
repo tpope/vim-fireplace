@@ -23,8 +23,8 @@ you can connect by hand.
                         REPL server.
 
 The REPL is used for the commands below. If no REPL is found for the current
-buffer and classpath.vim is installed, java (or $JAVA_CMD) is invoked
-directly, which can be quite slow depending on your setup.
+buffer and 'path' contains at least one jar file, java (or $JAVA_CMD) is
+invoked directly, which can be quite slow depending on your setup.
 
 The only adapter shipped with fireplace.vim is for nREPL.  You need either
 |if_pyth| or the python command in your PATH.
@@ -44,13 +44,6 @@ properly, and that not all operations are supported.
 
 :Piggieback!            Terminate the most recently created piggieback
                         session.
-
-LEININGEN                                       *fireplace-leiningen*
-
-In addition to automatic repl connection, Clojure buffers in a Leiningen
-project will automatically have their 'makeprg' set to lein and 'efm' set to
-"%+G,fireplace".  This combination enables `:make test` to run `lein test` and
-parse the stacktraces in the results.
 
 DOCUMENTATION                                   *fireplace-documentation*
 
