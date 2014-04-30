@@ -76,7 +76,7 @@ kicks off `(clojure.test/run-tests)` and loads the results into the quickfix
 list.
 
 There's a `cp` operator that evaluates a given motion (`cpp` for the
-outermost form under the cursor). `cm` and `c1m` are similar, but they only
+innermost form under the cursor). `cm` and `c1m` are similar, but they only
 run `clojure.walk/macroexpand-all` and `macroexpand-1` instead of evaluating
 the form entirely.
 
