@@ -1454,7 +1454,7 @@ augroup fireplace_command
 augroup END
 
 " }}}1
-" Alternate {{{1
+" Legacy {{{1
 
 if !empty(findfile('plugin/leiningen.vim', escape(&rtp, ' ')))
   finish
@@ -1462,149 +1462,18 @@ endif
 
 augroup fireplace_alternate
   autocmd!
-  autocmd FileType clojure command! -buffer -bar -bang A :exe s:Alternate('edit<bang>')
-  autocmd FileType clojure command! -buffer -bar AS :exe s:Alternate('split')
-  autocmd FileType clojure command! -buffer -bar AV :exe s:Alternate('vsplit')
-  autocmd FileType clojure command! -buffer -bar AT :exe s:Alternate('tabedit')
+  autocmd FileType clojure call s:define_alternates()
 augroup END
 
-function! fireplace#alternates() abort
-  let ns = fireplace#ns()
-  if ns =~# '-test$'
-    let alt = [ns[0:-6]]
-  elseif ns =~# '\.test\.'
-    let alt = [substitute(ns, '\.test\.', '.', '')]
-  elseif ns =~# '-spec$'
-    let alt = [ns[0:-6], ns . '-test']
-  elseif ns =~# '\.t-[^\.]*$'
-    let alt = [substitute(ns, '\.t-\([^\.]*\)$', '\.\1', '')]
-  else
-    let alt = [ns . '-test', substitute(ns, '\.', '.test.', ''), ns . '-spec',
-             \ substitute(ns, '\.\([^\.]*\)$', '.t-\1', '')]
-  endif
-  return map(alt, 'tr(v:val, ".-", "/_") . "." . expand("%:e")')
-endfunction
-
-function! s:Alternate(cmd) abort
-  let alternates = fireplace#alternates()
-  for file in alternates
-    let path = fireplace#findresource(file)
-    if !empty(path)
-      return a:cmd . ' ' . fnameescape(path)
-    endif
-  endfor
-  return 'echoerr '.string("Couldn't find " . alternates[0] . " in class path")
-endfunction
-
-" }}}1
-" Leiningen {{{1
-
-function! s:hunt(start, anchor, pattern) abort
-  let root = simplify(fnamemodify(a:start, ':p:s?[\/]$??'))
-  if !isdirectory(fnamemodify(root, ':h'))
-    return ''
-  endif
-  let previous = ""
-  while root !=# previous
-    if filereadable(root . '/' . a:anchor) && join(readfile(root . '/' . a:anchor, '', 50)) =~# a:pattern
-      return root
-    endif
-    let previous = root
-    let root = fnamemodify(root, ':h')
-  endwhile
-  return ''
-endfunction
-
-if !exists('s:leiningen_paths')
-  let s:leiningen_paths = {}
-endif
-
-function! s:leiningen_portfile() abort
-  if !exists('b:leiningen_root')
-    return ''
-  endif
-
-  let root = b:leiningen_root
-  let portfiles = [root.'/.nrepl-port', root.'/target/repl-port', root.'/target/repl/repl-port']
-
-  for f in portfiles
-    if filereadable(f)
-      return f
-    endif
-  endfor
-  return ''
-endfunction
-
-function! s:leiningen_connect(auto) abort
-  if !exists('b:leiningen_root')
-    return {}
-  endif
-  let portfile = s:leiningen_portfile()
-  if a:auto && empty(portfile) && exists(':Start') ==# 2
-
-    let cd = exists('*haslocaldir') && haslocaldir() ? 'lcd' : 'cd'
-    let cwd = getcwd()
-    try
-      execute cd fnameescape(b:leiningen_root)
-      execute 'Start! -title='
-            \ . escape(fnamemodify(b:leiningen_root, ':t') . ' repl', ' ')
-            \ 'lein repl'
-      if get(get(g:, 'dispatch_last_start', {}), 'handler', 'headless') ==# 'headless'
-        return {}
-      endif
-    finally
-      execute cd fnameescape(cwd)
-    endtry
-
-    let i = 0
-    while empty(portfile) && i < 300 && !getchar(0)
-      let i += 1
-      sleep 100m
-      let portfile = s:leiningen_portfile()
-    endwhile
-  endif
-  if empty(portfile)
-    return {}
-  endif
-  return fireplace#register_port_file(portfile, b:leiningen_root)
-endfunction
-
-function! s:leiningen_init() abort
-
-  if !exists('b:leiningen_root')
-    let root = s:hunt(expand('%:p'), 'project.clj', '(\s*defproject')
-    if root !=# ''
-      let b:leiningen_root = root
-    endif
-  endif
-  if !exists('b:leiningen_root')
+function! s:define_alternates() abort
+  if exists(':A') == 2
     return
   endif
-
-  let b:java_root = b:leiningen_root
-
-  let conn = s:leiningen_connect(0)
-  if has_key(conn, 'path')
-    let s:leiningen_paths[b:leiningen_root] = conn.path()
-  endif
-
-  let path = s:path_extract(&path)
-  if !empty(path)
-    let s:leiningen_paths[b:leiningen_root] = path
-  endif
-
-  compiler lein
-  if has_key(s:leiningen_paths, b:leiningen_root)
-    let &l:errorformat .= ',' . escape('classpath,'.join(s:leiningen_paths[b:leiningen_root], ','), '\,%')
-  endif
-
+  command! -buffer -bar -bang A  echoerr 'Install leiningen.vim to continue using :A'
+  command! -buffer -bar -bang AS echoerr 'Install leiningen.vim to continue using :A'
+  command! -buffer -bar -bang AV echoerr 'Install leiningen.vim to continue using :A'
+  command! -buffer -bar -bang AT echoerr 'Install leiningen.vim to continue using :A'
 endfunction
-
-augroup fireplace_leiningen
-  autocmd!
-  autocmd User FireplacePreConnect call s:leiningen_connect(1)
-  autocmd FileType clojure call s:leiningen_init()
-augroup END
 
 " }}}1
 
