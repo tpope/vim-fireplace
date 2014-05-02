@@ -399,7 +399,7 @@ function! s:spawning_eval(classpath, expr, ns) abort
         \   '(binding [*out* (java.io.FileWriter. '.s:str(s:oneoff_out).')' .
         \   '          *err* (java.io.FileWriter. '.s:str(s:oneoff_err).')]' .
         \   '  (try' .
-        \   '    (require ''clojure.repl) '.ns.'(spit '.s:str(s:oneoff_pr).' (pr-str (eval (read-string (slurp '.s:str(s:oneoff_in).')))))' .
+        \   '    (require ''clojure.repl ''clojure.java.javadoc) '.ns.'(spit '.s:str(s:oneoff_pr).' (pr-str (eval (read-string (slurp '.s:str(s:oneoff_in).')))))' .
         \   '    (catch Exception e' .
         \   '      (spit *err* (.toString e))' .
         \   '      (spit '.s:str(s:oneoff_ex).' (class e))' .
@@ -1308,13 +1308,7 @@ endfunction
 
 function! s:Lookup(ns, macro, arg) abort
   try
-    if has_key(fireplace#client(), 'connection') && fireplace#client().connection.describe.versions.clojure.minor > 2
-      call fireplace#client().preload(a:ns)
-      let response = s:eval('('.a:ns.'/'.a:macro.' '.a:arg.')', {'session': 0})
-    else
-      " doc is in clojure.core in older Clojure versions
-      let response = s:eval("(clojure.core/require '".a:ns.") (clojure.core/eval (clojure.core/list (if (ns-resolve 'clojure.core '".a:macro.") 'clojure.core/".a:macro." '".a:ns.'/'.a:macro.") '".a:arg.'))', {'session': 0})
-    endif
+    let response = s:eval('('.a:ns.'/'.a:macro.' '.a:arg.')', {'session': 0})
     call s:output_response(response)
   catch /^Clojure:/
   catch /.*/
@@ -1358,6 +1352,20 @@ function! s:Apropos(pattern) abort
   endif
 endfunction
 
+function! s:Doc(symbol) abort
+  let info = fireplace#info(a:symbol)
+  if has_key(info, 'ns') && has_key(info, 'name')
+    echo info.ns . '/' . info.name
+  endif
+  if get(info, 'arglists-str', 'nil') !=# 'nil'
+    echo info['arglists-str']
+  endif
+  if !empty(get(info, 'doc', ''))
+    echo '  ' . info.doc
+  endif
+  return ''
+endfunction
+
 function! s:K() abort
   let word = expand('<cword>')
   let java_candidate = matchstr(word, '^\%(\w\+\.\)*\u\l\w*\ze\%(\.\|\/\w\+\)\=$')
@@ -1379,7 +1387,7 @@ augroup fireplace_doc
   autocmd FileType clojure command! -buffer -nargs=1 Apropos :exe s:Apropos(<q-args>)
   autocmd FileType clojure command! -buffer -nargs=1 FindDoc :exe s:Lookup('clojure.repl', 'find-doc', printf('#"%s"', <q-args>))
   autocmd FileType clojure command! -buffer -bar -nargs=1 Javadoc :exe s:Lookup('clojure.java.javadoc', 'javadoc', <q-args>)
-  autocmd FileType clojure command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Doc     :exe s:Lookup('clojure.repl', 'doc', <q-args>)
+  autocmd FileType clojure command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Doc     :exe s:Doc(<q-args>)
   autocmd FileType clojure command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Source  :exe s:Lookup('clojure.repl', 'source', <q-args>)
 augroup END
 
