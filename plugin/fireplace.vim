@@ -1105,6 +1105,9 @@ augroup END
 " :Require {{{1
 
 function! s:Require(bang, echo, ns) abort
+  if &autowrite || &autowriteall
+    silent! wall
+  endif
   if expand('%:e') ==# 'cljs'
     let cmd = '(load-file '.s:str(tr(a:ns ==# '' ? fireplace#ns() : a:ns, '-.', '_/').'.cljs').')'
   else
@@ -1437,6 +1440,9 @@ function! fireplace#capture_test_run(expr) abort
 endfunction
 
 function! s:RunTests(bang, echo, ...) abort
+  if &autowrite || &autowriteall
+    silent! wall
+  endif
   let pre = ''
   if a:bang && a:0
     let expr = '(clojure.test/run-all-tests #"'.join(a:000, '|').'")'
