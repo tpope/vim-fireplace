@@ -1436,10 +1436,9 @@ function! fireplace#capture_test_run(expr) abort
     call add(qflist, entry)
   endfor
   call setqflist(qflist)
-  cwindow
 endfunction
 
-function! s:RunTests(bang, echo, ...) abort
+function! s:RunTests(bang, ...) abort
   if &autowrite || &autowriteall
     silent! wall
   endif
@@ -1454,17 +1453,25 @@ function! s:RunTests(bang, echo, ...) abort
     let expr = join(['(clojure.test/run-tests'] + reqs, ' ').')'
   endif
   call fireplace#capture_test_run(pre.expr)
-  cwindow
-  if a:echo
-    echo expr
+  let was_qf = &buftype ==# 'quickfix'
+  botright cwindow
+  if &buftype ==# 'quickfix' && !was_qf
+    wincmd p
   endif
+  for winnr in range(1, winnr('$'))
+    if getwinvar(winnr, '&buftype') ==# 'quickfix'
+      call setwinvar(winnr, 'quickfix_title', expr)
+      return
+    endif
+  endfor
+  echo expr
 endfunction
 
 augroup fireplace_command
   autocmd!
   autocmd FileType clojure command! -buffer -bar -bang -nargs=*
         \ -complete=customlist,fireplace#ns_complete RunTests
-        \ call s:RunTests(<bang>0, 1, <f-args>)
+        \ call s:RunTests(<bang>0, <f-args>)
 augroup END
 
 " }}}1
