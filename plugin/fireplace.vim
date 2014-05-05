@@ -1406,7 +1406,7 @@ augroup END
 " }}}1
 " Tests {{{1
 
-function! fireplace#capture_test_run(expr) abort
+function! fireplace#capture_test_run(expr, ...) abort
   let expr = '(require ''clojure.test) '
         \ . '(try '
         \ . '(binding [clojure.test/report (fn [m]'
@@ -1420,7 +1420,7 @@ function! fireplace#capture_test_run(expr) abort
         \ .        ' (println "expected:" (pr-str (:expected m)))'
         \ .        ' (println "  actual:" (pr-str (:actual m)))))'
         \ .    ' ((.getRawRoot #''clojure.test/report) m)))]'
-        \ . ' ' . a:expr . ')'
+        \ . ' ' . (a:0 ? a:1 : '') . a:expr . ')'
         \ . ' (catch Exception e'
         \ . '   (println (str e))'
         \ . '   (println (clojure.string/join "\n" (.getStackTrace e)))))'
@@ -1451,6 +1451,17 @@ function! fireplace#capture_test_run(expr) abort
     call add(qflist, entry)
   endfor
   call setqflist(qflist)
+  let was_qf = &buftype ==# 'quickfix'
+  botright cwindow
+  if &buftype ==# 'quickfix' && !was_qf
+    wincmd p
+  endif
+  for winnr in range(1, winnr('$'))
+    if getwinvar(winnr, '&buftype') ==# 'quickfix'
+      call setwinvar(winnr, 'quickfix_title', a:expr)
+      return
+    endif
+  endfor
 endfunction
 
 function! s:RunTests(bang, ...) abort
@@ -1467,18 +1478,7 @@ function! s:RunTests(bang, ...) abort
     let pre = '(clojure.core/require '.join(empty(a:000) ? ["'".fireplace#ns()] : reqs, ' ').' :reload) '
     let expr = join(['(clojure.test/run-tests'] + reqs, ' ').')'
   endif
-  call fireplace#capture_test_run(pre.expr)
-  let was_qf = &buftype ==# 'quickfix'
-  botright cwindow
-  if &buftype ==# 'quickfix' && !was_qf
-    wincmd p
-  endif
-  for winnr in range(1, winnr('$'))
-    if getwinvar(winnr, '&buftype') ==# 'quickfix'
-      call setwinvar(winnr, 'quickfix_title', expr)
-      return
-    endif
-  endfor
+  call fireplace#capture_test_run(expr, pre)
   echo expr
 endfunction
 
