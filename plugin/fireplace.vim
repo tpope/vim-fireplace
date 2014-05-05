@@ -1408,6 +1408,7 @@ augroup END
 
 function! fireplace#capture_test_run(expr) abort
   let expr = '(require ''clojure.test) '
+        \ . '(try '
         \ . '(binding [clojure.test/report (fn [m]'
         \ .  ' (case (:type m)'
         \ .    ' (:fail :error)'
@@ -1420,6 +1421,9 @@ function! fireplace#capture_test_run(expr) abort
         \ .        ' (println "  actual:" (pr-str (:actual m)))))'
         \ .    ' ((.getRawRoot #''clojure.test/report) m)))]'
         \ . ' ' . a:expr . ')'
+        \ . ' (catch Exception e'
+        \ . '   (println (str e))'
+        \ . '   (println (clojure.string/join "\n" (.getStackTrace e)))))'
   let qflist = []
   let response = s:eval(expr, {'session': 0})
   if !has_key(response, 'out')
@@ -1427,8 +1431,8 @@ function! fireplace#capture_test_run(expr) abort
     return s:output_response(response)
   endif
   for line in split(response.out, "\n")
-    let entry = {'text': line}
     if line =~# '\t.*\t.*\t'
+      let entry = {'text': line}
       let [resource, lnum, type, name] = split(line, "\t", 1)
       let entry.lnum = lnum
       let entry.type = (type ==# 'fail' ? 'W' : 'E')
@@ -1441,6 +1445,8 @@ function! fireplace#capture_test_run(expr) abort
       if empty(entry.filename)
         let entry.lnum = 0
       endif
+    else
+      let entry = s:qfmassage(line, fireplace#path())
     endif
     call add(qflist, entry)
   endfor
