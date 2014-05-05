@@ -412,6 +412,11 @@ function! s:spawning_eval(classpath, expr, ns) abort
   let result.err   = join(readfile(s:oneoff_err, 'b'), "\n")
   let result.ex    = join(readfile(s:oneoff_ex, 'b'), "\n")
   let result.stacktrace = readfile(s:oneoff_stk)
+  if empty(result.ex)
+    let result.status = ['done']
+  else
+    let result.status = ['eval-error', 'done']
+  endif
   call filter(result, '!empty(v:val)')
   if v:shell_error && get(result, 'ex', '') ==# ''
     throw 'Error running Java: '.get(split(captured, "\n"), -1, '')
@@ -434,8 +439,12 @@ function! s:oneoff.eval(expr, options) dict abort
   if !empty(get(a:options, 'session', 1))
     throw 'Fireplace: no live REPL connection'
   endif
-  return s:spawning_eval(join(self.path(), has('win32') ? ';' : ':'),
-        \                a:expr, get(a:options, 'ns', self.user_ns()))
+  let result = s:spawning_eval(join(self.path(), has('win32') ? ';' : ':'),
+        \ a:expr, get(a:options, 'ns', self.user_ns()))
+  if has_key(a:options, 'id')
+    let result.id = a:options.id
+  endif
+  return result
 endfunction
 
 function! s:oneoff.message(...) abort

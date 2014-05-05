@@ -128,7 +128,11 @@ function! s:nrepl_eval(expr, ...) dict abort
   if has_key(options, 'session')
     let msg.session = options.session
   endif
-  let msg.id = fireplace#nrepl#next_id()
+  if has_key(options, 'id')
+    let msg.id = options.id
+  else
+    let msg.id = fireplace#nrepl#next_id()
+  endif
   if has_key(options, 'file_path')
     let msg.op = 'load-file'
     let msg['file-path'] = options.file_path
