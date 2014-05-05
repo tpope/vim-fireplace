@@ -59,9 +59,6 @@ K                       Look up docs for keyword under cursor.
                                                 *fireplace-:FindDoc*
 :FindDoc {arg}          Wrapper around (clojure.repl/find-doc ...).
 
-                                                *fireplace-:Apropos*
-:Apropos {arg}          Wrapper around (clojure.repl/apropos ...).
-
                                                 *fireplace-:Source*
 :Source {symbol}        Show the source for the given symbol.
 

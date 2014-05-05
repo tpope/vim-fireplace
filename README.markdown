@@ -88,7 +88,7 @@ can be easily accessed with `:lopen`.
 I was brand new to Clojure when I started this plugin, so stuff that helped me
 understand code was a top priority.
 
-* `:Source`, `:Doc`, `:FindDoc`, and `:Apropos`, which map to the underlying
+* `:Source`, `:Doc`, and `:FindDoc`, which map to the underlying
   `clojure.repl` macro (with tab complete, of course).
 
 * `K` is mapped to look up the symbol under the cursor with `doc`.

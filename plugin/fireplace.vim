@@ -1344,26 +1344,6 @@ function! s:inputlist(label, entries) abort
   endif
 endfunction
 
-function! s:Apropos(pattern) abort
-  if a:pattern =~# '^#\="'
-    let pattern = a:pattern
-  elseif a:pattern =~# '^^'
-    let pattern = '#"' . a:pattern . '"'
-  else
-    let pattern = '"' . a:pattern . '"'
-  endif
-  let matches = fireplace#evalparse('(clojure.repl/apropos '.pattern.')')
-  if empty(matches)
-    return ''
-  endif
-  let choice = s:inputlist('Look up docs for:', matches)
-  if choice !=# ''
-    return 'echo "\n"|Doc '.choice
-  else
-    return ''
-  endif
-endfunction
-
 function! s:Doc(symbol) abort
   let info = fireplace#info(a:symbol)
   if has_key(info, 'ns') && has_key(info, 'name')
@@ -1396,7 +1376,6 @@ augroup fireplace_doc
   autocmd FileType clojure nmap <buffer> K  <Plug>FireplaceK
   autocmd FileType clojure nmap <buffer> [d <Plug>FireplaceSource
   autocmd FileType clojure nmap <buffer> ]d <Plug>FireplaceSource
-  autocmd FileType clojure command! -buffer -nargs=1 Apropos :exe s:Apropos(<q-args>)
   autocmd FileType clojure command! -buffer -nargs=1 FindDoc :exe s:Lookup('clojure.repl', 'find-doc', printf('#"%s"', <q-args>))
   autocmd FileType clojure command! -buffer -bar -nargs=1 Javadoc :exe s:Lookup('clojure.java.javadoc', 'javadoc', <q-args>)
   autocmd FileType clojure command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Doc     :exe s:Doc(<q-args>)
