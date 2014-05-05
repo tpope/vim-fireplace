@@ -200,7 +200,7 @@ endfunction
 
 function! fireplace#nrepl#callback(body, type, fn)
   let response = {'body': a:body, 'type': a:type}
-  if has_key(a:body, 'session')
+  if has_key(g:fireplace_nrepl_sessions, get(a:body, 'session'))
     let response.session = g:fireplace_nrepl_sessions[a:body.session]
   endif
   call call(a:fn, [response])
