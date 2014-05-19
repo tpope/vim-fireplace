@@ -1471,7 +1471,7 @@ augroup END
 " }}}1
 " Legacy {{{1
 
-if !empty(findfile('plugin/leiningen.vim', escape(&rtp, ' ')))
+if !empty(findfile('plugin/leiningen.vim', escape(&rtp, ' '))) && !empty(findfile('plugin/projectionist.vim', escape(&rtp, ' ')))
   finish
 endif
 
@@ -1484,10 +1484,10 @@ function! s:define_alternates() abort
   if exists(':A') == 2
     return
   endif
-  command! -buffer -bar -bang A  echoerr 'Install leiningen.vim to continue using :A'
-  command! -buffer -bar -bang AS echoerr 'Install leiningen.vim to continue using :A'
-  command! -buffer -bar -bang AV echoerr 'Install leiningen.vim to continue using :A'
-  command! -buffer -bar -bang AT echoerr 'Install leiningen.vim to continue using :A'
+  command! -buffer -bar -bang A  echoerr 'Install leiningen.vim and projectionist.vim to continue using :A'
+  command! -buffer -bar -bang AS echoerr 'Install leiningen.vim and projectionist.vim to continue using :A'
+  command! -buffer -bar -bang AV echoerr 'Install leiningen.vim and projectionist.vim to continue using :A'
+  command! -buffer -bar -bang AT echoerr 'Install leiningen.vim and projectionist.vim to continue using :A'
 endfunction
 
 " }}}1
