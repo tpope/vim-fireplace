@@ -878,7 +878,7 @@ function! s:print_last() abort
 endfunction
 
 function! s:editop(type) abort
-  call feedkeys(&cedit . "\<Home>", 'n')
+  call feedkeys(eval('"\'.&cedit.'"') . "\<Home>", 'n')
   let input = s:input(substitute(substitute(substitute(
         \ s:opfunc(a:type), "\s*;[^\n\"]*\\%(\n\\@=\\|$\\)", '', 'g'),
         \ '\n\+\s*', ' ', 'g'),
