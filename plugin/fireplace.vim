@@ -212,12 +212,17 @@ function! s:repl.piggieback(arg, ...) abort
     endif
     return {}
   endif
+
+  let connection = s:conn_try(self.connection, 'clone')
   if empty(a:arg)
     let arg = ''
+  elseif a:arg =~# '^\d\{1,5}$'
+    call connection.eval("(require 'cljs.repl.browser)")
+    let port = matchstr(a:arg, '^\d\{1,5}$')
+    let arg = ' :repl-env (cljs.repl.browser/repl-env :port '.port.')'
   else
     let arg = ' :repl-env ' . a:arg
   endif
-  let connection = s:conn_try(self.connection, 'clone')
   let response = connection.eval('(cemerick.piggieback/cljs-repl'.arg.')')
 
   if empty(get(response, 'ex'))
