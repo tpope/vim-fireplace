@@ -57,7 +57,7 @@ DOCUMENTATION                                   *fireplace-documentation*
 :Javadoc {class}        Open the java docs for the given class in a browser.
 
                                                 *fireplace-K*
-K                       Look up docs for keyword under cursor.
+K                       Look up docs for symbol under cursor.
 
                                                 *fireplace-:FindDoc*
 :FindDoc {arg}          Wrapper around (clojure.repl/find-doc ...).
@@ -66,7 +66,7 @@ K                       Look up docs for keyword under cursor.
 :Source {symbol}        Show the source for the given symbol.
 
                                                 *fireplace-[d*
-[d                      Show source for keyword under cursor.
+[d                      Show source for symbol under cursor.
 ]d
 
 NAVIGATING                                      *fireplace-navigating*
@@ -75,11 +75,11 @@ These commands will never use a remote REPL, only a local one, as file paths
 on a remote server wouldn't be very useful locally.
 
                                                 *fireplace-[_CTRL-D*
-[<C-D>                  Jump to the source of the keyword under the cursor.
+[<C-D>                  Jump to the source of the symbol under the cursor.
 ]<C-D>
 
                                                 *fireplace-CTRL-W_CTRL-D*
-<C-W><C-D>              Jump to the source of the keyword under the cursor in
+<C-W><C-D>              Jump to the source of the symbol under the cursor in
 <C-W>d                  a split.
 
                                                 *fireplace-gf*
