@@ -49,12 +49,12 @@ def bdecode(f, char=None):
       key = bdecode(f, char)
       d[key] = bdecode(f)
   elif char == 'i':
-    i = 0
+    i = ''
     while True:
       char = f.read(1)
       if char == 'e':
-        return i
-      i = 10 * i + int(char)
+        return int(i)
+      i += char
   elif char.isdigit():
     i = int(char)
     while True:
