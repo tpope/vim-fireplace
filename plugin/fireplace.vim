@@ -1378,7 +1378,10 @@ nnoremap <Plug>FireplaceSource :Source <C-R><C-W><CR>
 
 augroup fireplace_doc
   autocmd!
-  autocmd FileType clojure nmap <buffer> K  <Plug>FireplaceK
+  autocmd FileType clojure setlocal keywordprg=:Doc |
+        \ if empty(mapcheck('K', 'n')) |
+        \   nmap <buffer> K <Plug>FireplaceK|
+        \ endif
   autocmd FileType clojure nmap <buffer> [d <Plug>FireplaceSource
   autocmd FileType clojure nmap <buffer> ]d <Plug>FireplaceSource
   autocmd FileType clojure command! -buffer -nargs=1 FindDoc :exe s:Lookup('clojure.repl', 'find-doc', printf('#"%s"', <q-args>))
