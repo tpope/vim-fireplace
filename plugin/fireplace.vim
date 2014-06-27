@@ -187,8 +187,16 @@ function! s:repl.preload(lib) dict abort
     let reload = has_key(self.requires, a:lib) ? ' :reload' : ''
     let self.requires[a:lib] = 0
     let clone = s:conn_try(self.connection, 'clone')
+    if self.user_ns() ==# 'user'
+      let qsym = s:qsym(a:lib)
+      let expr = '(when-not (find-ns '.qsym.') (try'
+            \ . ' (#''clojure.core/load-one '.qsym.' true true)'
+            \ . ' (catch Exception e (when-not (find-ns '.qsym.') (throw e)))))'
+    else
+      let expr = '(ns '.self.user_ns().' (:require '.a:lib.reload.'))'
+    endif
     try
-      let result = clone.eval('(ns '.self.user_ns().' (:require '.a:lib.reload.'))', {'ns': self.user_ns()})
+      let result = clone.eval(expr, {'ns': self.user_ns()})
     finally
       call clone.close()
     endtry
