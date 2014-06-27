@@ -14,15 +14,15 @@ endfunction
 
 " Bencode {{{1
 
-function! nrepl#fireplace_connection#bencode(value) abort
+function! fireplace#nrepl_connection#bencode(value) abort
   if type(a:value) == type(0)
     return 'i'.a:value.'e'
   elseif type(a:value) == type('')
     return strlen(a:value).':'.a:value
   elseif type(a:value) == type([])
-    return 'l'.join(map(copy(a:value),'nrepl#fireplace_connection#bencode(v:val)'),'').'e'
+    return 'l'.join(map(copy(a:value),'fireplace#nrepl_connection#bencode(v:val)'),'').'e'
   elseif type(a:value) == type({})
-    return 'd'.join(values(map(copy(a:value),'nrepl#fireplace_connection#bencode(v:key).nrepl#fireplace_connection#bencode(v:val)')),'').'e'
+    return 'd'.join(values(map(copy(a:value),'fireplace#nrepl_connection#bencode(v:key).fireplace#nrepl_connection#bencode(v:val)')),'').'e'
   else
     throw "Can't bencode ".string(a:value)
   endif
@@ -54,11 +54,11 @@ function! s:id() abort
   return 'fireplace-'.hostname().'-'.s:vim_id.'-'.s:id
 endfunction
 
-function! nrepl#fireplace_connection#prompt() abort
+function! fireplace#nrepl_connection#prompt() abort
   return fireplace#input_host_port()
 endfunction
 
-function! nrepl#fireplace_connection#open(arg) abort
+function! fireplace#nrepl_connection#open(arg) abort
   if a:arg =~# '^\d\+$'
     let host = 'localhost'
     let port = a:arg
@@ -88,7 +88,7 @@ function! s:nrepl_transport_command(cmd, args) dict abort
         \ . ' ' . s:shellesc(self.port)
         \ . ' ' . s:shellesc(s:keepalive)
         \ . ' ' . s:shellesc(a:cmd)
-        \ . ' ' . join(map(copy(a:args), 's:shellesc(nrepl#fireplace_connection#bencode(v:val))'), ' ')
+        \ . ' ' . join(map(copy(a:args), 's:shellesc(fireplace#nrepl_connection#bencode(v:val))'), ' ')
 endfunction
 
 function! s:nrepl_transport_dispatch(cmd, ...) dict abort
@@ -101,7 +101,7 @@ function! s:nrepl_transport_dispatch(cmd, ...) dict abort
 endfunction
 
 function! s:nrepl_transport_call(msg, terms, sels, ...) dict abort
-  let payload = nrepl#fireplace_connection#bencode(a:msg)
+  let payload = fireplace#nrepl_connection#bencode(a:msg)
   let response = self.dispatch('call', payload, a:terms, a:sels)
   if !a:0
     return response

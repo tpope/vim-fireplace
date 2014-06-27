@@ -266,7 +266,7 @@ function! fireplace#register_port_file(portfile, ...) abort
     let port = matchstr(readfile(a:portfile, 'b', 1)[0], '\d\+')
     let s:repl_portfiles[a:portfile] = {'time': getftime(a:portfile)}
     try
-      let conn = nrepl#fireplace_connection#open(port)
+      let conn = fireplace#nrepl_connection#open(port)
       let s:repl_portfiles[a:portfile].connection = conn
       call s:register_connection(conn, a:0 ? a:1 : '')
       return conn
@@ -312,7 +312,7 @@ function! s:connect_complete(A, L, P) abort
   else
     let rest = matchstr(a:A, '://\zs.*')
     try
-      let options = {proto}#fireplace_connection#complete(rest)
+      let options = fireplace#{proto}_connection#complete(rest)
     catch /^Vim(let):E117/
       let options = ['localhost:']
     endtry
