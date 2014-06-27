@@ -1477,27 +1477,5 @@ augroup fireplace_command
 augroup END
 
 " }}}1
-" Legacy {{{1
-
-if !empty(findfile('plugin/leiningen.vim', escape(&rtp, ' '))) && !empty(findfile('plugin/projectionist.vim', escape(&rtp, ' ')))
-  finish
-endif
-
-augroup fireplace_alternate
-  autocmd!
-  autocmd FileType clojure call s:define_alternates()
-augroup END
-
-function! s:define_alternates() abort
-  if exists(':A') == 2
-    return
-  endif
-  command! -buffer -bar -bang A  echoerr 'Install leiningen.vim and projectionist.vim to continue using :A'
-  command! -buffer -bar -bang AS echoerr 'Install leiningen.vim and projectionist.vim to continue using :A'
-  command! -buffer -bar -bang AV echoerr 'Install leiningen.vim and projectionist.vim to continue using :A'
-  command! -buffer -bar -bang AT echoerr 'Install leiningen.vim and projectionist.vim to continue using :A'
-endfunction
-
-" }}}1
 
 " vim:set et sw=2:
