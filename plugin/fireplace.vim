@@ -335,6 +335,8 @@ endfunction
 function! s:Connect(...) abort
   if (a:0 ? a:1 : '') =~# '^\w\+://'
     let [proto, arg] = split(a:1, '://')
+  elseif (a:0 ? a:1 : '') =~# '^\%([[:alnum:].-]\+:\)\=\d\+$'
+    let [proto, arg] = ['nrepl', a:1]
   elseif a:0
     return 'echoerr '.string('Usage: :Connect proto://...')
   else
