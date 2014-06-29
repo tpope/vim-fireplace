@@ -349,10 +349,10 @@ function! s:Connect(...) abort
     redraw!
     echo ':Connect'
     echo 'Protocol> '.proto
-    let arg = {proto}#fireplace_connection#prompt()
+    let arg = fireplace#{proto}_connection#prompt()
   endif
   try
-    let connection = {proto}#fireplace_connection#open(arg)
+    let connection = fireplace#{proto}_connection#open(arg)
   catch /.*/
     return 'echoerr '.string(v:exception)
   endtry
