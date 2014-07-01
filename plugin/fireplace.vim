@@ -310,7 +310,7 @@ function! fireplace#input_host_port() abort
 endfunction
 
 function! s:protos() abort
-  return map(split(globpath(&runtimepath, 'autoload/*/fireplace_connection.vim'), "\n"), 'fnamemodify(v:val, ":h:t")')
+  return map(split(globpath(&runtimepath, 'autoload/fireplace/*_connection.vim'), "\n"), 'fnamemodify(v:val, ":t")[0:-16]')
 endfunction
 
 function! s:connect_complete(A, L, P) abort
