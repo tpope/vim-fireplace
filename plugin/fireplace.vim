@@ -1281,11 +1281,15 @@ function! s:GF(cmd, file) abort
         \ '| let &l:path = ' . string(&l:path)
 endfunction
 
+nnoremap <silent> <Plug>FireplaceEditFile    :<C-U>exe <SID>GF('edit', expand('<cfile>'))<CR>
+nnoremap <silent> <Plug>FireplaceSplitFile   :<C-U>exe <SID>GF('split', expand('<cfile>'))<CR>
+nnoremap <silent> <Plug>FireplaceTabeditFile :<C-U>exe <SID>GF('tabedit', expand('<cfile>'))<CR>
+
 function! s:set_up_go_to_file() abort
-  nnoremap <silent><buffer> gf         :<C-U>exe <SID>GF('edit', expand('<cfile>'))<CR>
-  nnoremap <silent><buffer> <C-W>f     :<C-U>exe <SID>GF('split', expand('<cfile>'))<CR>
-  nnoremap <silent><buffer> <C-W><C-F> :<C-U>exe <SID>GF('split', expand('<cfile>'))<CR>
-  nnoremap <silent><buffer> <C-W>gf    :<C-U>exe <SID>GF('tabedit', expand('<cfile>'))<CR>
+  nmap <buffer> gf         <Plug>FireplaceEditFile
+  nmap <buffer> <C-W>f     <Plug>FireplaceSplitFile
+  nmap <buffer> <C-W><C-F> <Plug>FireplaceSplitFile
+  nmap <buffer> <C-W>gf    <Plug>FireplaceTabeditFile
 endfunction
 
 augroup fireplace_go_to_file
