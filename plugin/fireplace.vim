@@ -1072,7 +1072,7 @@ function! s:Last(bang, count) abort
   return ''
 endfunction
 
-function! s:setup_eval() abort
+function! s:set_up_eval() abort
   command! -buffer -bang -range=0 -nargs=? -complete=customlist,fireplace#eval_complete Eval :exe s:Eval(<bang>0, <line1>, <line2>, <count>, <q-args>)
   command! -buffer -bang -bar -count=1 Last exe s:Last(<bang>0, <count>)
 
@@ -1096,7 +1096,7 @@ function! s:setup_eval() abort
   map! <buffer> <C-R>( <Plug>FireplaceRecall
 endfunction
 
-function! s:setup_historical() abort
+function! s:set_up_historical() abort
   setlocal readonly nomodifiable
   nnoremap <buffer><silent>q :bdelete<CR>
 endfunction
@@ -1111,9 +1111,9 @@ endfunction
 
 augroup fireplace_eval
   autocmd!
-  autocmd FileType clojure call s:setup_eval()
+  autocmd FileType clojure call s:set_up_eval()
   autocmd BufReadPost * if has_key(s:qffiles, expand('<amatch>:p')) |
-        \   call s:setup_historical() |
+        \   call s:set_up_historical() |
         \ endif
   autocmd CmdWinEnter @ if exists('s:input') | call s:cmdwinenter() | endif
   autocmd CmdWinLeave @ if exists('s:input') | call s:cmdwinleave() | endif
@@ -1141,14 +1141,14 @@ function! s:Require(bang, echo, ns) abort
   endtry
 endfunction
 
-function! s:setup_require() abort
+function! s:set_up_require() abort
   command! -buffer -bar -bang -complete=customlist,fireplace#ns_complete -nargs=? Require :exe s:Require(<bang>0, 1, <q-args>)
   nnoremap <silent><buffer> cpr :if expand('%:e') ==# 'cljs'<Bar>Require<Bar>else<Bar>RunTests<Bar>endif<CR>
 endfunction
 
 augroup fireplace_require
   autocmd!
-  autocmd FileType clojure call s:setup_require()
+  autocmd FileType clojure call s:set_up_require()
 augroup END
 
 " Section: Go to source
@@ -1277,6 +1277,8 @@ function! s:GF(cmd, file) abort
         \ ' ' . fnameescape(file) .
         \ '| let &l:path = ' . string(&l:path)
 endfunction
+
+funct
 
 augroup fireplace_go_to_file
   autocmd!
