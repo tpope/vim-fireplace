@@ -1216,23 +1216,26 @@ nnoremap <silent> <Plug>FireplaceDjump :<C-U>exe <SID>Edit('edit', expand('<cwor
 nnoremap <silent> <Plug>FireplaceDsplit :<C-U>exe <SID>Edit('split', expand('<cword>'))<CR>
 nnoremap <silent> <Plug>FireplaceDtabjump :<C-U>exe <SID>Edit('tabedit', expand('<cword>'))<CR>
 
+function! s:set_up_source() abort
+  setlocal includeexpr=tr(v:fname,'.-','/_')
+  if expand('%:e') ==# 'cljs'
+    setlocal suffixesadd=.cljs,.cljx,.clj,.java
+  else
+    setlocal suffixesadd=.clj,.cljx,.cljs,.java
+  endif
+  setlocal define=^\\s*(def\\w*
+  command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Djump  :exe s:Edit('edit', <q-args>)
+  command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Dsplit :exe s:Edit('split', <q-args>)
+  nmap <buffer> [<C-D>     <Plug>FireplaceDjump
+  nmap <buffer> ]<C-D>     <Plug>FireplaceDjump
+  nmap <buffer> <C-W><C-D> <Plug>FireplaceDsplit
+  nmap <buffer> <C-W>d     <Plug>FireplaceDsplit
+  nmap <buffer> <C-W>gd    <Plug>FireplaceDtabjump
+endfunction
+
 augroup fireplace_source
   autocmd!
-  autocmd FileType clojure setlocal includeexpr=tr(v:fname,'.-','/_')
-  autocmd FileType clojure
-        \ if expand('%:e') ==# 'cljs' |
-        \   setlocal suffixesadd=.cljs,.cljx,.clj,.java |
-        \ else |
-        \   setlocal suffixesadd=.clj,.cljx,.cljs,.java |
-        \ endif
-  autocmd FileType clojure setlocal define=^\\s*(def\\w*
-  autocmd FileType clojure command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Djump  :exe s:Edit('edit', <q-args>)
-  autocmd FileType clojure command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Dsplit :exe s:Edit('split', <q-args>)
-  autocmd FileType clojure nmap <buffer> [<C-D>     <Plug>FireplaceDjump
-  autocmd FileType clojure nmap <buffer> ]<C-D>     <Plug>FireplaceDjump
-  autocmd FileType clojure nmap <buffer> <C-W><C-D> <Plug>FireplaceDsplit
-  autocmd FileType clojure nmap <buffer> <C-W>d     <Plug>FireplaceDsplit
-  autocmd FileType clojure nmap <buffer> <C-W>gd    <Plug>FireplaceDtabjump
+  autocmd FileType clojure call s:set_up_source()
 augroup END
 
 " Section: Go to file
@@ -1278,14 +1281,16 @@ function! s:GF(cmd, file) abort
         \ '| let &l:path = ' . string(&l:path)
 endfunction
 
-funct
+function! s:set_up_go_to_file() abort
+  nnoremap <silent><buffer> gf         :<C-U>exe <SID>GF('edit', expand('<cfile>'))<CR>
+  nnoremap <silent><buffer> <C-W>f     :<C-U>exe <SID>GF('split', expand('<cfile>'))<CR>
+  nnoremap <silent><buffer> <C-W><C-F> :<C-U>exe <SID>GF('split', expand('<cfile>'))<CR>
+  nnoremap <silent><buffer> <C-W>gf    :<C-U>exe <SID>GF('tabedit', expand('<cfile>'))<CR>
+endfunction
 
 augroup fireplace_go_to_file
   autocmd!
-  autocmd FileType clojure nnoremap <silent><buffer> gf         :<C-U>exe <SID>GF('edit', expand('<cfile>'))<CR>
-  autocmd FileType clojure nnoremap <silent><buffer> <C-W>f     :<C-U>exe <SID>GF('split', expand('<cfile>'))<CR>
-  autocmd FileType clojure nnoremap <silent><buffer> <C-W><C-F> :<C-U>exe <SID>GF('split', expand('<cfile>'))<CR>
-  autocmd FileType clojure nnoremap <silent><buffer> <C-W>gf    :<C-U>exe <SID>GF('tabedit', expand('<cfile>'))<CR>
+  autocmd FileType clojure call s:set_up_go_to_file()
 augroup END
 
 " Section: Documentation
@@ -1378,18 +1383,22 @@ endfunction
 nnoremap <Plug>FireplaceK :<C-R>=<SID>K()<CR><CR>
 nnoremap <Plug>FireplaceSource :Source <C-R><C-W><CR>
 
+function! s:set_up_doc() abort
+  command! -buffer -nargs=1 FindDoc :exe s:Lookup('clojure.repl', 'find-doc', printf('#"%s"', <q-args>))
+  command! -buffer -bar -nargs=1 Javadoc :exe s:Lookup('clojure.java.javadoc', 'javadoc', <q-args>)
+  command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Doc     :exe s:Doc(<q-args>)
+  command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Source  :exe s:Lookup('clojure.repl', 'source', <q-args>)
+  setlocal keywordprg=:Doc
+  if empty(mapcheck('K', 'n'))
+    nmap <buffer> K <Plug>FireplaceK
+  endif
+  nmap <buffer> [d <Plug>FireplaceSource
+  nmap <buffer> ]d <Plug>FireplaceSource
+endfunction
+
 augroup fireplace_doc
   autocmd!
-  autocmd FileType clojure setlocal keywordprg=:Doc |
-        \ if empty(mapcheck('K', 'n')) |
-        \   nmap <buffer> K <Plug>FireplaceK|
-        \ endif
-  autocmd FileType clojure nmap <buffer> [d <Plug>FireplaceSource
-  autocmd FileType clojure nmap <buffer> ]d <Plug>FireplaceSource
-  autocmd FileType clojure command! -buffer -nargs=1 FindDoc :exe s:Lookup('clojure.repl', 'find-doc', printf('#"%s"', <q-args>))
-  autocmd FileType clojure command! -buffer -bar -nargs=1 Javadoc :exe s:Lookup('clojure.java.javadoc', 'javadoc', <q-args>)
-  autocmd FileType clojure command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Doc     :exe s:Doc(<q-args>)
-  autocmd FileType clojure command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Source  :exe s:Lookup('clojure.repl', 'source', <q-args>)
+  autocmd FileType clojure call s:set_up_doc()
 augroup END
 
 " Section: Tests
