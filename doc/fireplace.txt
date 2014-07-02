@@ -123,7 +123,7 @@ stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
 :RunTests [ns] [...]    Call clojure.test/run-tests on the given namespaces
                         and load the results into the quickfix list.
 
-:RunTests! [pattern]    Call clojure.test/run-all-tests with the given pattern
+:RunAllTests [pattern]  Call clojure.test/run-all-tests with the given pattern
                         and load the results into the quickfix list.
 
                                                 *fireplace-cp*
