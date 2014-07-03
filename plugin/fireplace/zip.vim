@@ -1,7 +1,7 @@
 " fireplace/zip.vim: zip.vim monkey patch to allow access from quickfix
 " Maintainer:   Tim Pope <http://tpo.pe>
 
-if exists("g:loaded_zip") || &cp
+if exists("g:loaded_zip") || &cp || v:version >= 704
   finish
 endif
 
