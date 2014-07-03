@@ -1217,12 +1217,6 @@ nnoremap <silent> <Plug>FireplaceDsplit :<C-U>exe <SID>Edit('split', expand('<cw
 nnoremap <silent> <Plug>FireplaceDtabjump :<C-U>exe <SID>Edit('tabedit', expand('<cword>'))<CR>
 
 function! s:set_up_source() abort
-  setlocal includeexpr=tr(v:fname,'.-','/_')
-  if expand('%:e') ==# 'cljs'
-    setlocal suffixesadd=.cljs,.cljx,.clj,.java
-  else
-    setlocal suffixesadd=.clj,.cljx,.cljs,.java
-  endif
   setlocal define=^\\s*(def\\w*
   command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Djump  :exe s:Edit('edit', <q-args>)
   command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Dsplit :exe s:Edit('split', <q-args>)
@@ -1286,6 +1280,12 @@ nnoremap <silent> <Plug>FireplaceSplitFile   :<C-U>exe <SID>GF('split', expand('
 nnoremap <silent> <Plug>FireplaceTabeditFile :<C-U>exe <SID>GF('tabedit', expand('<cfile>'))<CR>
 
 function! s:set_up_go_to_file() abort
+  setlocal includeexpr=tr(v:fname,'.-','/_')
+  if expand('%:e') ==# 'cljs'
+    setlocal suffixesadd=.cljs,.cljx,.clj,.java
+  else
+    setlocal suffixesadd=.clj,.cljx,.cljs,.java
+  endif
   nmap <buffer> gf         <Plug>FireplaceEditFile
   nmap <buffer> <C-W>f     <Plug>FireplaceSplitFile
   nmap <buffer> <C-W><C-F> <Plug>FireplaceSplitFile
