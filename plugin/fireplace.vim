@@ -1259,7 +1259,10 @@ function! fireplace#findfile(path) abort
 endfunction
 
 function! s:GF(cmd, file) abort
-  if a:file =~# '^[^/]*/[^/.]*$' && a:file =~# '^\k\+$'
+  if a:file =~# '^\w[[:alnum:]_/]*$' &&
+        \ synIDattr(synID(line("."),col("."),1),"name") =~# 'String'
+    let file = substitute(expand('%:p'), '[^\/:]*$', '', '').a:file.'.'.expand('%:e')
+  elseif a:file =~# '^[^/]*/[^/.]*$' && a:file =~# '^\k\+$'
     let [file, jump] = split(a:file, "/")
     if file !~# '\.'
       try
@@ -1267,10 +1270,10 @@ function! s:GF(cmd, file) abort
       catch /^Clojure:/
       endtry
     endif
+    let file = fireplace#findfile(file)
   else
-    let file = a:file
+    let file = fireplace#findfile(a:file)
   endif
-  let file = fireplace#findfile(file)
   if file ==# ''
     let v:errmsg = "Couldn't find file for ".a:file
     return 'echoerr v:errmsg'
