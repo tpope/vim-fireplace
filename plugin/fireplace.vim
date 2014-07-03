@@ -1280,7 +1280,6 @@ nnoremap <silent> <Plug>FireplaceSplitFile   :<C-U>exe <SID>GF('split', expand('
 nnoremap <silent> <Plug>FireplaceTabeditFile :<C-U>exe <SID>GF('tabedit', expand('<cfile>'))<CR>
 
 function! s:set_up_go_to_file() abort
-  setlocal includeexpr=fireplace#findfile(tr(substitute(v:fname,'/[^/.]*$','',''),'.-','/_'))
   if expand('%:e') ==# 'cljs'
     setlocal suffixesadd=.cljs,.cljx,.clj,.java
   else
