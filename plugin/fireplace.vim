@@ -1076,6 +1076,8 @@ function! s:set_up_eval() abort
   command! -buffer -bang -range=0 -nargs=? -complete=customlist,fireplace#eval_complete Eval :exe s:Eval(<bang>0, <line1>, <line2>, <count>, <q-args>)
   command! -buffer -bang -bar -count=1 Last exe s:Last(<bang>0, <count>)
 
+  if get(g:, 'fireplace_no_maps') | return | endif
+
   nmap <buffer> cp <Plug>FireplacePrint
   nmap <buffer> cpp <Plug>FireplaceCountPrint
 
@@ -1143,6 +1145,8 @@ endfunction
 
 function! s:set_up_require() abort
   command! -buffer -bar -bang -complete=customlist,fireplace#ns_complete -nargs=? Require :exe s:Require(<bang>0, 1, <q-args>)
+
+  if get(g:, 'fireplace_no_maps') | return | endif
   nnoremap <silent><buffer> cpr :if expand('%:e') ==# 'cljs'<Bar>Require<Bar>else<Bar>RunTests<Bar>endif<CR>
 endfunction
 
@@ -1220,6 +1224,8 @@ function! s:set_up_source() abort
   setlocal define=^\\s*(def\\w*
   command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Djump  :exe s:Edit('edit', <q-args>)
   command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Dsplit :exe s:Edit('split', <q-args>)
+
+  if get(g:, 'fireplace_no_maps') | return | endif
   nmap <buffer> [<C-D>     <Plug>FireplaceDjump
   nmap <buffer> ]<C-D>     <Plug>FireplaceDjump
   nmap <buffer> <C-W><C-D> <Plug>FireplaceDsplit
@@ -1285,6 +1291,8 @@ function! s:set_up_go_to_file() abort
   else
     setlocal suffixesadd=.clj,.cljx,.cljs,.java
   endif
+
+  if get(g:, 'fireplace_no_maps') | return | endif
   nmap <buffer> gf         <Plug>FireplaceEditFile
   nmap <buffer> <C-W>f     <Plug>FireplaceSplitFile
   nmap <buffer> <C-W><C-F> <Plug>FireplaceSplitFile
@@ -1392,6 +1400,8 @@ function! s:set_up_doc() abort
   command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Doc     :exe s:Doc(<q-args>)
   command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Source  :exe s:Lookup('clojure.repl', 'source', <q-args>)
   setlocal keywordprg=:Doc
+
+  if get(g:, 'fireplace_no_maps') | return | endif
   if empty(mapcheck('K', 'n'))
     nmap <buffer> K <Plug>FireplaceK
   endif
