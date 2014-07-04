@@ -755,6 +755,10 @@ function! fireplace#evalparse(expr, ...) abort
   throw err
 endfunction
 
+function! fireplace#query(expr, ...) abort
+  return firepalce#evalparse(a:expr, a:0 ? a:1 : {})
+endfunction
+
 " Section: Quickfix
 
 function! s:qfmassage(line, path) abort
