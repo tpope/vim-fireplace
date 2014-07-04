@@ -4,9 +4,6 @@ There's a REPL in fireplace, but you probably wouldn't have noticed if I hadn't
 told you.  Such is the way with fireplace.vim.  By the way, this plugin is for
 Clojure.
 
-Fireplace.vim used to be called foreplay.vim, but it was renamed so Java
-developers wouldn't have to speak in hushed tones.
-
 ## Installation
 
 First, set up [cider-nrepl][].  (If you skip this step, fireplace.vim will
