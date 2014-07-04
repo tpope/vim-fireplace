@@ -1,4 +1,4 @@
-" fireplace/zip.vim: zip.vim monkey patch to allow access from quickfix
+" plugin/fireplace/zip.vim
 " Maintainer:   Tim Pope <http://tpo.pe>
 
 if exists("g:loaded_zip") || &cp || v:version >= 704
@@ -7,7 +7,8 @@ endif
 
 runtime! autoload/zip.vim
 
-" Copied and pasted verbatim from autoload/zip.vim.
+" Patched to allow loading from the quickfix list.  The version that ships
+" with Vim 7.4 already has this change.
 
 fun! zip#Read(fname,mode)
 "  call Dfunc("zip#Read(fname<".a:fname.">,mode=".a:mode.")")
