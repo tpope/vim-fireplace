@@ -1,4 +1,4 @@
-*fireplace.txt*  Clojure REPL tease
+*fireplace.txt*  Clojure REPL support
 
 Author:  Tim Pope <http://tpo.pe/>
 License: Same terms as Vim itself (see |license|)

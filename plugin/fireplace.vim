@@ -1,4 +1,4 @@
-" fireplace.vim - Clojure REPL tease
+" fireplace.vim - Clojure REPL support
 " Maintainer:   Tim Pope <http://tpo.pe/>
 
 if exists("g:loaded_fireplace") || v:version < 700 || &cp
