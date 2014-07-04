@@ -1,5 +1,4 @@
-" autoload/nrepl/fireplace_connection.vim
-" Maintainer:   Tim Pope <http://tpo.pe/>
+" Location:     autoload/nrepl/fireplace_connection.vim
 
 if exists("g:autoloaded_nrepl_fireplace_connection") || &cp
   finish

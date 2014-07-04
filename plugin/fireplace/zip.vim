@@ -1,5 +1,4 @@
-" plugin/fireplace/zip.vim
-" Maintainer:   Tim Pope <http://tpo.pe>
+" Location:     plugin/fireplace/zip.vim
 
 if exists("g:loaded_zip") || &cp || v:version >= 704
   finish

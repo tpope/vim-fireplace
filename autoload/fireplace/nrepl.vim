@@ -1,4 +1,4 @@
-" Fireplace nREPL session
+" Location:     autoload/nrepl/fireplace.vim
 
 if exists("g:autoloaded_fireplace_nrepl")
   finish
