@@ -43,9 +43,9 @@ compiled in, or `python` in your path.
 
 Oh, and if you don't have an nREPL connection, installing [leiningen.vim][]
 lets it fall back to using `java clojure.main` for some of the basics, using a
-class path based on your Leiningen or Maven config.  It's a bit slow, but a
-two-second delay is vastly preferable to being forced out of my flow for a
-single command, in my book.
+class path based on your Leiningen config.  It's a bit slow, but a two-second
+delay is vastly preferable to being forced out of my flow for a single
+command, in my book.
 
 [cider-nrepl]: https://github.com/clojure-emacs/cider-nrepl
 [Piggieback]: https://github.com/cemerick/piggieback
