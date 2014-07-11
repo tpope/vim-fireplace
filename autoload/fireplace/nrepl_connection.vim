@@ -105,7 +105,7 @@ function! s:nrepl_transport_call(msg, terms, sels, ...) dict abort
   if !a:0
     return response
   elseif a:1 !=# 'ignore'
-    return map(response, 'fireplace#nrepl#callback(v:val, "synchronous", a:1)')
+    return map(response, 'fireplace#nrepl#callback(v:val, "synchronous", a:000)')
   endif
 endfunction
 
