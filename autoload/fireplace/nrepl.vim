@@ -198,12 +198,15 @@ function! s:nrepl_prepare(msg) dict abort
   return msg
 endfunction
 
-function! fireplace#nrepl#callback(body, type, callback)
-  let response = {'body': a:body, 'type': a:type}
-  if has_key(g:fireplace_nrepl_sessions, get(a:body, 'session'))
-    let response.session = g:fireplace_nrepl_sessions[a:body.session]
-  endif
-  call call(a:callback[0], [response] + a:callback[1:-1])
+function! fireplace#nrepl#callback(body, type, callback) abort
+  try
+    let response = {'body': a:body, 'type': a:type}
+    if has_key(g:fireplace_nrepl_sessions, get(a:body, 'session'))
+      let response.session = g:fireplace_nrepl_sessions[a:body.session]
+    endif
+    call call(a:callback[0], [response] + a:callback[1:-1])
+  catch
+  endtry
 endfunction
 
 function! s:nrepl_call(msg, ...) dict abort
