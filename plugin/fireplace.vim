@@ -1426,9 +1426,9 @@ augroup END
 " Section: Tests
 
 function! fireplace#capture_test_run(expr, ...) abort
-  let expr = '(require ''clojure.test) '
-        \ . '(try '
-        \ . '(binding [clojure.test/report (fn [m]'
+  let expr = '(try'
+        \ . ' (require ''clojure.test)'
+        \ . ' (binding [clojure.test/report (fn [m]'
         \ .  ' (case (:type m)'
         \ .    ' (:fail :error)'
         \ .    ' (let [{file :file line :line test :name} (meta (last clojure.test/*testing-vars*))]'
