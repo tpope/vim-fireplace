@@ -274,10 +274,11 @@ function! fireplace#register_port_file(portfile, ...) abort
   endif
   if empty(old) && getfsize(a:portfile) > 0
     let port = matchstr(readfile(a:portfile, 'b', 1)[0], '\d\+')
-    let s:repl_portfiles[a:portfile] = {'time': getftime(a:portfile)}
     try
       let conn = fireplace#nrepl_connection#open(port)
-      let s:repl_portfiles[a:portfile].connection = conn
+      let s:repl_portfiles[a:portfile] = {
+            \ 'time': getftime(a:portfile),
+            \ 'connection': conn}
       call s:register_connection(conn, a:0 ? a:1 : '')
       return conn
     catch /^nREPL Connection Error:/
