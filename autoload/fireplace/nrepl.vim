@@ -41,7 +41,7 @@ function! fireplace#nrepl#for(transport) abort
   if client.has_op('classpath')
     let response = client.message({'op': 'classpath'})[0]
     if type(get(response, 'value')) == type([])
-      let client._path = response.value
+      let client._path = map(response.value, 'substitute(v:val, "%\\(\\x\\x\\)", "\\=nr2char(\"0x\".submatch(1))", "g")')
     endif
   endif
   if !has_key(client, '_path')
