@@ -34,7 +34,7 @@ function! fireplace#nrepl#for(transport) abort
   let client.transport = a:transport
   let client.session = client.process({'op': 'clone', 'session': 0})['new-session']
   let client.describe = client.process({'op': 'describe', 'verbose?': 1})
-  if client.describe.versions.nrepl.major == 0 &&
+  if get(client.describe.versions.nrepl, 'major', -1) == 0 &&
         \ client.describe.versions.nrepl.minor < 2
     throw 'nREPL: 0.2.0 or higher required'
   endif
