@@ -90,11 +90,12 @@ function! fireplace#omnicomplete(findstart, base) abort
 
       if fireplace#op_available('complete')
         let response = fireplace#message({'op': 'complete', 'symbol': a:base})
+        let trans = '(v:val =~# ''\.'' ? "" : matchstr(a:base, ''^.\+/'')) . v:val'
         if type(get(response[0], 'value')) == type([])
           if type(get(response[0].value, 0)) == type([])
-            return map(response[0].value[0], '{"word": v:val}')
+            return map(response[0].value[0], trans)
           elseif type(get(response[0].value, 0)) == type('')
-            return map(response[0].value, '{"word": v:val}')
+            return map(response[0].value, trans)
           else
             return []
           endif
