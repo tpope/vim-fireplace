@@ -758,7 +758,7 @@ function! fireplace#evalparse(expr, ...) abort
 endfunction
 
 function! fireplace#query(expr, ...) abort
-  return firepalce#evalparse(a:expr, a:0 ? a:1 : {})
+  return fireplace#evalparse(a:expr, a:0 ? a:1 : {})
 endfunction
 
 " Section: Quickfix
