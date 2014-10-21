@@ -125,8 +125,8 @@ function! s:nrepl_eval(expr, ...) dict abort
   elseif has_key(self, 'ns')
     let msg.ns = self.ns
   endif
-  if has_key(options, 'session')
-    let msg.session = options.session
+  if has_key(self, 'session')
+    let msg.session = self.session
   endif
   if has_key(options, 'id')
     let msg.id = options.id
@@ -147,11 +147,14 @@ function! s:nrepl_eval(expr, ...) dict abort
   endif
   try
     let response = self.process(msg)
-  catch /^Vim:Interrupt$/
-    if has_key(msg, 'session')
-      call self.message({'op': 'interrupt', 'session': msg.session, 'interrupt-id': msg.id}, 'ignore')
+    let success = 1
+  finally
+    if !exists("success")
+      if has_key(msg, 'session')
+        call self.message({'op': 'interrupt', 'session': msg.session, 'interrupt-id': msg.id}, 'ignore')
+      endif
+      throw 'Clojure: Interrupt'
     endif
-    throw 'Clojure: Interrupt'
   endtry
   if has_key(response, 'ns') && !has_key(options, 'ns')
     let self.ns = response.ns
