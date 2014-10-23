@@ -156,7 +156,7 @@ function! s:nrepl_eval(expr, ...) dict abort
       throw 'Clojure: Interrupt'
     endif
   endtry
-  if has_key(response, 'ns') && !has_key(options, 'ns')
+  if has_key(response, 'ns') && empty(get(options, 'ns'))
     let self.ns = response.ns
   endif
 
@@ -197,6 +197,9 @@ function! s:nrepl_prepare(msg) dict abort
   let msg = copy(a:msg)
   if !has_key(msg, 'id')
     let msg.id = fireplace#nrepl#next_id()
+  endif
+  if empty(get(msg, 'ns', 1))
+    unlet msg.ns
   endif
   if empty(get(msg, 'session', 1))
     unlet msg.session
