@@ -1170,6 +1170,8 @@ function! fireplace#info(symbol) abort
     let response = fireplace#message({'op': 'info', 'symbol': a:symbol})[0]
     if type(get(response, 'value')) == type({})
       return response.value
+    elseif has_key(response, 'file')
+      return response
     endif
   endif
   let cmd =
