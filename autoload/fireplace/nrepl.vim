@@ -40,8 +40,8 @@ function! fireplace#nrepl#for(transport) abort
   endif
   if client.has_op('classpath')
     let response = client.message({'op': 'classpath'})[0]
-    if type(get(response, 'value')) == type([])
-      let client._path = response.value
+    if type(get(response, 'classpath')) == type([])
+      let client._path = response.classpath
     endif
   endif
   if !has_key(client, '_path')
