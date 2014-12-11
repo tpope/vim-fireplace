@@ -812,7 +812,7 @@ augroup END
 
 " Section: Eval
 
-let fireplace#skip = 'synIDattr(synID(line("."),col("."),1),"name") =~? "comment\\|string\\|char"'
+let fireplace#skip = 'synIDattr(synID(line("."),col("."),1),"name") =~? "comment\\|string\\|char\\|regexp"'
 
 function! s:opfunc(type) abort
   let sel_save = &selection
