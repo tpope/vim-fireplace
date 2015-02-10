@@ -154,6 +154,10 @@ c1mm                    Macroexpand the innermost form at the cursor once.
                                                 *fireplace-cqp*
 cqp                     Bring up a prompt for code to eval/print.
 
+                                                *fireplace-cqq*
+cqq                     Bring up a |command-line-window| with innermost form
+                        at the cursor prepopulated.
+
                                                 *fireplace-cqc*
 cqc                     Bring up a |command-line-window| for code to
                         eval/print.  Equivalent to cqp<C-F>i.
