@@ -38,7 +38,17 @@ function! fireplace#nrepl#for(transport) abort
         \ client.describe.versions.nrepl.minor < 2
     throw 'nREPL: 0.2.0 or higher required'
   endif
-  if client.has_op('classpath')
+  " Handle boot, which sets a fake.class.path entry
+  let response = client.process({'op': 'eval', 'code':
+        \ '[(System/getProperty "path.separator") (System/getProperty "fake.class.path")]', 'session': ''})
+  let cpath = response.value[-1][5:-2]
+  if cpath !=# 'nil'
+    let cpath = eval(cpath)
+    if !empty(cpath)
+      let client._path = split(cpath, response.value[-1][2])
+    endif
+  endif
+  if !has_key(client, '_path') && client.has_op('classpath')
     let response = client.message({'op': 'classpath'})[0]
     if type(get(response, 'classpath')) == type([])
       let client._path = response.classpath
