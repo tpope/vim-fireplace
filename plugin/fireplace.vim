@@ -228,9 +228,9 @@ function! s:repl.piggieback(arg, ...) abort
   elseif a:arg =~# '^\d\{1,5}$'
     call connection.eval("(require 'cljs.repl.browser)")
     let port = matchstr(a:arg, '^\d\{1,5}$')
-    let arg = ' :repl-env (cljs.repl.browser/repl-env :port '.port.')'
+    let arg = ' (cljs.repl.browser/repl-env :port '.port.')'
   else
-    let arg = ' :repl-env ' . a:arg
+    let arg = ' ' . a:arg
   endif
   let response = connection.eval('(cemerick.piggieback/cljs-repl'.arg.')')
 
