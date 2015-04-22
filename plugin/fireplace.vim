@@ -95,6 +95,9 @@ function! fireplace#omnicomplete(findstart, base) abort
         if type(value) == type([])
           if type(get(value, 0)) == type([])
             return map(value[0], trans)
+          elseif type(get(value, 0)) == type({})
+            let dict_trans = 'get(v:val, "candidate", "")'
+            return map(map(value, dict_trans), trans)
           elseif type(get(value, 0)) == type('')
             return map(value, trans)
           else
