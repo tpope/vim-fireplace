@@ -90,13 +90,26 @@ function! fireplace#omnicomplete(findstart, base) abort
 
       if fireplace#op_available('complete')
         let response = fireplace#message({'op': 'complete', 'symbol': a:base})
-        let trans = '{"word": (v:val =~# ''[./]'' ? "" : matchstr(a:base, ''^.\+/'')) . v:val}'
+        let kind_map = {
+                    \ "var":           "v",
+                    \ "function":      "f",
+                    \ "method":        "f",
+                    \ "static-method": "f",
+                    \ "field":         "m",
+                    \ "static-field":  "m",
+                    \ "class":         "t",
+                    \ "macro":         "d"}
+        let dict_trans = '{"word": (get(v:val, "candidate") =~# ''[./]'' ? "" : matchstr(a:base, ''^.\+/'')) . get(v:val, "candidate"),' .
+              \ '"kind": get(kind_map, get(v:val, "type"))}'
+        let str_trans = '{"word": (v:val =~# ''[./]'' ? "" : matchstr(a:base, ''^.\+/'')) . v:val}'
         let value = get(response[0], 'value', get(response[0], 'completions'))
         if type(value) == type([])
-          if type(get(value, 0)) == type([])
-            return map(value[0], trans)
+          if type(get(value, 0)) == type({})
+            return map(value, dict_trans)
+          elseif type(get(value, 0)) == type([])
+            return map(value[0], str_trans)
           elseif type(get(value, 0)) == type('')
-            return map(value, trans)
+            return map(value, str_trans)
           else
             return []
           endif
