@@ -91,9 +91,12 @@ let s:short_types = {
 
 function! s:candidate(val) abort
   let type = get(a:val, 'type', '')
+  let arglists = get(a:val, 'arglists', [])
   return {
         \ 'word': get(a:val, 'candidate'),
-        \ 'kind': get(s:short_types, type, type)
+        \ 'kind': get(s:short_types, type, type),
+        \ 'info': get(a:val, 'doc', ''),
+        \ 'menu': empty(arglists) ? '' : '(' . join(arglists, ' ') . ')'
         \ }
 endfunction
 
@@ -105,7 +108,7 @@ function! fireplace#omnicomplete(findstart, base) abort
     try
 
       if fireplace#op_available('complete')
-        let response = fireplace#message({'op': 'complete', 'symbol': a:base})
+        let response = fireplace#message({'op': 'complete', 'symbol': a:base, 'extra-metadata': ['arglists', 'doc']})
         let trans = '{"word": (v:val =~# ''[./]'' ? "" : matchstr(a:base, ''^.\+/'')) . v:val}'
         let value = get(response[0], 'value', get(response[0], 'completions'))
         if type(value) == type([])
