@@ -81,6 +81,25 @@ function! fireplace#ns_complete(A, L, P) abort
   return filter(map(matches, 's:to_ns(v:val)'), 'a:A ==# "" || a:A ==# v:val[0 : strlen(a:A)-1]')
 endfunction
 
+let s:short_types = {
+      \ 'function': 'f',
+      \ 'macro': 'm',
+      \ 'var': 'v',
+      \ 'special-form': 's',
+      \ 'class': 'c'
+      \ }
+
+function! s:candidate(val) abort
+  let type = get(a:val, 'type', '')
+  let arglists = get(a:val, 'arglists', [])
+  return {
+        \ 'word': get(a:val, 'candidate'),
+        \ 'kind': get(s:short_types, type, type),
+        \ 'info': get(a:val, 'doc', ''),
+        \ 'menu': empty(arglists) ? '' : '(' . join(arglists, ' ') . ')'
+        \ }
+endfunction
+
 function! fireplace#omnicomplete(findstart, base) abort
   if a:findstart
     let line = getline('.')[0 : col('.')-2]
@@ -89,11 +108,13 @@ function! fireplace#omnicomplete(findstart, base) abort
     try
 
       if fireplace#op_available('complete')
-        let response = fireplace#message({'op': 'complete', 'symbol': a:base})
+        let response = fireplace#message({'op': 'complete', 'symbol': a:base, 'extra-metadata': ['arglists', 'doc']})
         let trans = '{"word": (v:val =~# ''[./]'' ? "" : matchstr(a:base, ''^.\+/'')) . v:val}'
         let value = get(response[0], 'value', get(response[0], 'completions'))
         if type(value) == type([])
-          if type(get(value, 0)) == type([])
+          if type(get(value, 0)) == type({})
+            return map(value, 's:candidate(v:val)')
+          elseif type(get(value, 0)) == type([])
             return map(value[0], trans)
           elseif type(get(value, 0)) == type('')
             return map(value, trans)
