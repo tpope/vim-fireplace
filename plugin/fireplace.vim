@@ -86,7 +86,15 @@ let s:short_types = {
       \ 'macro': 'm',
       \ 'var': 'v',
       \ 'special-form': 's',
-      \ 'class': 'c'
+      \ 'class': 'c',
+      \ 'keyword': 'k',
+      \ 'local': 'l',
+      \ 'namespace': 'n',
+      \ 'field': 'i',
+      \ 'method': 'f',
+      \ 'static-field': 'i',
+      \ 'static-method': 'f',
+      \ 'resource': 'r'
       \ }
 
 function! s:candidate(val) abort
