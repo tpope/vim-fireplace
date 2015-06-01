@@ -40,7 +40,8 @@ function! fireplace#nrepl#for(transport) abort
   endif
   " Handle boot, which sets a fake.class.path entry
   let response = client.process({'op': 'eval', 'code':
-        \ '[(System/getProperty "path.separator") (System/getProperty "fake.class.path")]', 'session': ''})
+        \ '[(System/getProperty "path.separator") (System/getProperty "fake.class.path")]', 'session': '',
+        \ 'ns': 'user'})
   let cpath = response.value[-1][5:-2]
   if cpath !=# 'nil'
     let cpath = eval(cpath)

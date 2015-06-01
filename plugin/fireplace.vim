@@ -175,7 +175,8 @@ function! fireplace#omnicomplete(findstart, base) abort
 
       let [aliases, namespaces, maps] = fireplace#evalparse(
             \ '[(ns-aliases '.s:qsym(ns).') (all-ns) '.
-            \ '(sort-by :word (map '.omnifier.' (ns-map '.s:qsym(ns).')))]')
+            \ '(sort-by :word (map '.omnifier.' (ns-map '.s:qsym(ns).')))]',
+            \ {'ns': 'user'})
 
       if a:base =~# '^[^/]*/[^/]*$'
         let ns = matchstr(a:base, '^.*\ze/')
@@ -183,7 +184,7 @@ function! fireplace#omnicomplete(findstart, base) abort
         let ns = get(aliases, ns, ns)
         let keyword = matchstr(a:base, '.*/\zs.*')
         let results = fireplace#evalparse(
-              \ '(sort-by :word (map '.omnifier.' (ns-publics '.s:qsym(ns).')))')
+              \ '(sort-by :word (map '.omnifier.' (ns-publics '.s:qsym(ns).')))', {'ns': 'user'})
         for r in results
           let r.word = prefix . r.word
         endfor
@@ -1232,8 +1233,9 @@ augroup END
 " Section: Go to source
 
 function! fireplace#info(symbol) abort
+  let ns = fireplace#ns()
   if fireplace#op_available('info')
-    let response = fireplace#message({'op': 'info', 'symbol': a:symbol})[0]
+    let response = fireplace#message({'op': 'info', 'symbol': a:symbol, 'ns': ns})[0]
     if type(get(response, 'value')) == type({})
       return response.value
     elseif has_key(response, 'file')
@@ -1241,7 +1243,7 @@ function! fireplace#info(symbol) abort
     endif
   endif
   let cmd =
-        \ '(if-let [m (meta (resolve ' . s:qsym(a:symbol) .'))]'
+        \ '(if-let [m (meta (ns-resolve '.s:qsym(ns).' '. s:qsym(a:symbol) .'))]'
         \ . ' {:name (:name m)'
         \ .  ' :ns (:ns m)'
         \ .  ' :resource (:file m)'
@@ -1249,7 +1251,7 @@ function! fireplace#info(symbol) abort
         \ .  ' :doc (:doc m)'
         \ .  ' :arglists-str (str (:arglists m))}'
         \ . ' {})'
-  return fireplace#evalparse(cmd)
+  return fireplace#evalparse(cmd, {'ns': 'user'})
 endfunction
 
 function! fireplace#source(symbol) abort
@@ -1342,7 +1344,8 @@ function! s:GF(cmd, file) abort
     let [file, jump] = split(a:file, "/")
     if file !~# '\.'
       try
-        let file = fireplace#evalparse('((ns-aliases *ns*) '.s:qsym(file).' '.s:qsym(file).')')
+        let file = fireplace#evalparse('((ns-aliases '.s:qsym(fireplace#ns()).') '.s:qsym(file).' '.s:qsym(file).')',
+                                      \ {'ns': 'user'})
       catch /^Clojure:/
       endtry
     endif
@@ -1515,7 +1518,7 @@ function! fireplace#capture_test_run(expr, ...) abort
         \ . '   (println (str e))'
         \ . '   (println (clojure.string/join "\n" (.getStackTrace e)))))'
   let qflist = []
-  let response = s:eval(expr, {'session': 0})
+  let response = s:eval(expr, {'session': 0, 'ns': 'user'})
   if !has_key(response, 'out')
     call setqflist(fireplace#quickfix_for(get(response, 'stacktrace', [])))
     return s:output_response(response)
@@ -1559,8 +1562,9 @@ function! s:RunTests(bang, ...) abort
     silent! wall
   endif
   let reqs = map(copy(a:000), '"''".v:val')
-  let pre = '(clojure.core/require '.join(empty(a:000) ? ["'".fireplace#ns()] : reqs, ' ').' :reload) '
-  let expr = join(['(clojure.test/run-tests'] + reqs, ' ').')'
+  let qns = s:qsym(fireplace#ns())
+  let pre = '(clojure.core/require '.join(empty(a:000) ? [qns] : reqs, ' ').' :reload) '
+  let expr = join(["(clojure.test/run-tests", qns] + reqs, ' ').')'
   call fireplace#capture_test_run(expr, pre)
   echo expr
 endfunction
