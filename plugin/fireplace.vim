@@ -1336,35 +1336,51 @@ function! fireplace#findfile(path) abort
   return ''
 endfunction
 
-function! s:GF(cmd, file) abort
-  if a:file =~# '^\w[[:alnum:]_/]*$' &&
+function! fireplace#cfile() abort
+  let file = expand('<cfile>')
+  if file =~# '^\w[[:alnum:]_/]*$' &&
         \ synIDattr(synID(line("."),col("."),1),"name") =~# 'String'
     let file = substitute(expand('%:p'), '[^\/:]*$', '', '').a:file.'.'.expand('%:e')
-  elseif a:file =~# '^[^/]*/[^/.]*$' && a:file =~# '^\k\+$'
-    let [file, jump] = split(a:file, "/")
+  elseif file =~# '^[^/]*/[^/.]*$' && file =~# '^\k\+$'
+    let [file, jump] = split(file, "/")
     if file !~# '\.'
       try
-        let file = fireplace#evalparse('((ns-aliases *ns*) '.s:qsym(file).' '.s:qsym(file).')')
+        let file = tr(fireplace#evalparse('((ns-aliases *ns*) '.s:qsym(file).' '.s:qsym(file).')'), '.', '/')
       catch /^Clojure:/
       endtry
     endif
-    let file = fireplace#findfile(file)
+  elseif file =~# '^\w[[:alnum:]-]\+\.[[:alnum:].-]\+$'
+    let file = tr(file, '.', '/')
+  endif
+  if exists('jump')
+    return '+sil!dj\ ' . jump . ' ' . fnameescape(file)
   else
-    let file = fireplace#findfile(a:file)
+    return fnameescape(file)
   endif
-  if file ==# ''
-    let v:errmsg = "Couldn't find file for ".a:file
-    return 'echoerr v:errmsg'
-  endif
-  return a:cmd .
-        \ (exists('jump') ? ' +sil!\ djump\ ' . jump : '') .
-        \ ' ' . fnameescape(file) .
-        \ '| let &l:path = ' . string(&l:path)
 endfunction
 
-nnoremap <silent> <Plug>FireplaceEditFile    :<C-U>exe <SID>GF('edit', expand('<cfile>'))<CR>
-nnoremap <silent> <Plug>FireplaceSplitFile   :<C-U>exe <SID>GF('split', expand('<cfile>'))<CR>
-nnoremap <silent> <Plug>FireplaceTabeditFile :<C-U>exe <SID>GF('tabedit', expand('<cfile>'))<CR>
+function! s:Find(find, edit) abort
+  let cfile = fireplace#cfile()
+  let prefix = matchstr(cfile, '^\%(+\%(\\.\|\S\)*\s\+\)')
+  let file = fireplace#findfile(expand(strpart(cfile, len(prefix))))
+  if file =~# '^zipfile:'
+    let setpath = 'let\ &l:path=getbufvar('.bufnr('').",'&path')"
+    if prefix =~# '^+[^+]'
+      let prefix = substitute(prefix, '+', '\="+".setpath."\\|"', '')
+    else
+      let prefix = '+'.setpath.' '.prefix
+    endif
+  endif
+  if len(file)
+    return (len(a:edit) ? a:edit . ' ' : '') . prefix . fnameescape(file)
+  else
+    return len(a:find) ? a:find . ' ' . cfile : "\<C-R>\<C-P>"
+  endif
+endfunction
+
+nnoremap <silent> <Plug>FireplaceEditFile    :<C-U>exe <SID>Find('find','edit')<CR>
+nnoremap <silent> <Plug>FireplaceSplitFile   :<C-U>exe <SID>Find('sfind','split')<CR>
+nnoremap <silent> <Plug>FireplaceTabeditFile :<C-U>exe <SID>Find('tabfind','tabedit')<CR>
 
 function! s:set_up_go_to_file() abort
   if expand('%:e') ==# 'cljs'
@@ -1373,11 +1389,23 @@ function! s:set_up_go_to_file() abort
     setlocal suffixesadd=.clj,.cljc,.cljx,.cljs,.java
   endif
 
+  cmap <buffer><script><expr> <Plug><cfile> substitute(fireplace#cfile(),'^$',"\022\006",'')
+  cmap <buffer><script><expr> <Plug><cpath> <SID>Find('','')
   if get(g:, 'fireplace_no_maps') | return | endif
-  nmap <buffer> gf         <Plug>FireplaceEditFile
-  nmap <buffer> <C-W>f     <Plug>FireplaceSplitFile
-  nmap <buffer> <C-W><C-F> <Plug>FireplaceSplitFile
-  nmap <buffer> <C-W>gf    <Plug>FireplaceTabeditFile
+  cmap <buffer> <C-R><C-F> <Plug><cfile>
+  cmap <buffer> <C-R><C-P> <Plug><cpath>
+  if empty(mapcheck('gf', 'n'))
+    nmap <buffer> gf         <Plug>FireplaceEditFile
+  endif
+  if empty(mapcheck('<C-W>f', 'n'))
+    nmap <buffer> <C-W>f     <Plug>FireplaceSplitFile
+  endif
+  if empty(mapcheck('<C-W><C-F>', 'n'))
+    nmap <buffer> <C-W><C-F> <Plug>FireplaceSplitFile
+  endif
+  if empty(mapcheck('<C-W>gf', 'n'))
+    nmap <buffer> <C-W>gf    <Plug>FireplaceTabeditFile
+  endif
 endfunction
 
 augroup fireplace_go_to_file
