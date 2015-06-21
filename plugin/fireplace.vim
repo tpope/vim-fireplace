@@ -41,6 +41,8 @@ function! fireplace#jar_contents(path) abort
   if !exists('s:zipinfo')
     if executable('zipinfo')
       let s:zipinfo = 'zipinfo -1 '
+    elseif executable('jar')
+      let s:zipinfo = 'jar tf '
     elseif executable('python')
       let s:zipinfo = 'python -c '.shellescape('import zipfile, sys; print chr(10).join(zipfile.ZipFile(sys.argv[1]).namelist())').' '
     else
