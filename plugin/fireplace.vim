@@ -1368,9 +1368,9 @@ nnoremap <silent> <Plug>FireplaceTabeditFile :<C-U>exe <SID>GF('tabedit', expand
 
 function! s:set_up_go_to_file() abort
   if expand('%:e') ==# 'cljs'
-    setlocal suffixesadd=.cljs,.cljx,.clj,.java
+    setlocal suffixesadd=.cljs,.cljc,.cljx,.clj,.java
   else
-    setlocal suffixesadd=.clj,.cljx,.cljs,.java
+    setlocal suffixesadd=.clj,.cljc,.cljx,.cljs,.java
   endif
 
   if get(g:, 'fireplace_no_maps') | return | endif
