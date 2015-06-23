@@ -612,7 +612,7 @@ function! fireplace#platform(...) abort
     endif
   endfor
   let path = s:path_extract(getbufvar(buf, '&path'))
-  if !empty(path) && fnamemodify(bufname(buf), ':e') =~# '^cljx\=$'
+  if !empty(path) && fnamemodify(bufname(buf), ':e') =~# '^clj[cx]\=$'
     return extend({'_path': path, 'nr': bufnr(buf)}, s:oneoff)
   endif
   throw 'Fireplace: :Connect to a REPL or install classpath.vim'
