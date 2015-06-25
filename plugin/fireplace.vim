@@ -1596,11 +1596,33 @@ function! s:RunTests(bang, count, ...) abort
       let expr = '(clojure.test/run-all-tests)'
     endif
   else
-    let reqs = map(copy(a:000), '"''".v:val')
-    let pre = '(clojure.core/require '.join(empty(a:000) ? ["'".fireplace#ns()] : reqs, ' ').' :reload) '
-    let expr = join(['(clojure.test/run-tests'] + reqs, ' ').')'
+    if a:0 && a:000 !=# [fireplace#ns()]
+      let args = a:000
+    else
+      let args = [fireplace#ns()]
+      if a:count
+        let pattern = '^\s*(def\k*\s\+\zs\h\k*'
+        let line = search(pattern, 'bWn')
+        if line
+          let args[0] .= '/' . matchstr(getline(line), pattern)
+        endif
+      endif
+    endif
+    let reqs = map(copy(args), '"''".v:val')
+    let pre = '(clojure.core/require '.substitute(join(reqs, ' '), '/\k\+', '', 'g').' :reload) '
+    let expr = []
+    let vars = filter(copy(reqs), 'v:val =~# "/"')
+    let nses = filter(copy(reqs), 'v:val !~# "/"')
+    if len(vars) == 1
+      call add(expr, '(clojure.test/test-var #' . vars[0] . ')')
+    elseif !empty(vars)
+      call add(expr, join(['(clojure.test/test-vars'] + map(vars, '"#".v:val'), ' ').')')
+    endif
+    if !empty(nses)
+      call add(expr, join(['(clojure.test/run-tests'] + nses, ' ').')')
+    endif
   endif
-  call fireplace#capture_test_run(expr, pre)
+  call fireplace#capture_test_run(join(expr, ' '), pre)
   echo expr
 endfunction
 

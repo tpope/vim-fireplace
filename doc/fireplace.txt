@@ -123,8 +123,13 @@ stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
 :RunTests [ns] [...]    Call clojure.test/run-tests on the given namespaces
                         and load the results into the quickfix list.
 
-:RunAllTests [pattern]  Call clojure.test/run-all-tests with the given pattern
-:0RunTests [pattern]    and load the results into the quickfix list.
+:[range]RunTests        Call clojure.test/test-var on the var defined at or
+                        above the specicied line and load the results into the
+                        quickfix list.  Typically invoked as :.RunTests to run
+                        the test under the cursor.
+
+:0RunTests [pattern]    Call clojure.test/run-all-tests with the given pattern
+                        and load the results into the quickfix list.
 
                                                 *fireplace-cp*
 cp{motion}              Eval/print the code indicated by {motion}.
