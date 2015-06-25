@@ -124,7 +124,7 @@ stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
                         and load the results into the quickfix list.
 
 :RunAllTests [pattern]  Call clojure.test/run-all-tests with the given pattern
-                        and load the results into the quickfix list.
+:0RunTests [pattern]    and load the results into the quickfix list.
 
                                                 *fireplace-cp*
 cp{motion}              Eval/print the code indicated by {motion}.

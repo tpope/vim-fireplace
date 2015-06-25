@@ -1584,33 +1584,32 @@ function! fireplace#capture_test_run(expr, ...) abort
   endfor
 endfunction
 
-function! s:RunTests(bang, ...) abort
+function! s:RunTests(bang, count, ...) abort
   if &autowrite || &autowriteall
     silent! wall
   endif
-  let reqs = map(copy(a:000), '"''".v:val')
-  let pre = '(clojure.core/require '.join(empty(a:000) ? ["'".fireplace#ns()] : reqs, ' ').' :reload) '
-  let expr = join(['(clojure.test/run-tests'] + reqs, ' ').')'
+  if a:count < 0
+    let pre = ''
+    if a:0
+      let expr = '(clojure.test/run-all-tests #"'.join(a:000, '|').'")'
+    else
+      let expr = '(clojure.test/run-all-tests)'
+    endif
+  else
+    let reqs = map(copy(a:000), '"''".v:val')
+    let pre = '(clojure.core/require '.join(empty(a:000) ? ["'".fireplace#ns()] : reqs, ' ').' :reload) '
+    let expr = join(['(clojure.test/run-tests'] + reqs, ' ').')'
+  endif
   call fireplace#capture_test_run(expr, pre)
   echo expr
 endfunction
 
-function! s:RunAllTests(bang, ...) abort
-  if a:0
-    let expr = '(clojure.test/run-all-tests #"'.join(a:000, '|').'")'
-  else
-    let expr = '(clojure.test/run-all-tests)'
-  endif
-  call fireplace#capture_test_run(expr)
-  echo expr
-endfunction
-
 function! s:set_up_tests() abort
-  command! -buffer -bar -bang -nargs=*
+  command! -buffer -bar -bang -range=0 -nargs=*
         \ -complete=customlist,fireplace#ns_complete RunTests
-        \ call s:RunTests(<bang>0, <f-args>)
+        \ call s:RunTests(<bang>0, <line1> == 0 ? -1 : <count>, <f-args>)
   command! -buffer -bang -nargs=* RunAllTests
-        \ call s:RunAllTests(<bang>0, <f-args>)
+        \ call s:RunTests(<bang>0, -1, <f-args>)
 endfunction
 
 augroup fireplace_tests
