@@ -1340,17 +1340,17 @@ function! fireplace#cfile() abort
   let file = expand('<cfile>')
   if file =~# '^\w[[:alnum:]_/]*$' &&
         \ synIDattr(synID(line("."),col("."),1),"name") =~# 'String'
-    let file = substitute(expand('%:p'), '[^\/:]*$', '', '').a:file.'.'.expand('%:e')
+    let file = substitute(expand('%:p'), '[^\/:]*$', '', '').a:file
   elseif file =~# '^[^/]*/[^/.]*$' && file =~# '^\k\+$'
     let [file, jump] = split(file, "/")
     if file !~# '\.'
       try
-        let file = tr(fireplace#evalparse('((ns-aliases *ns*) '.s:qsym(file).' '.s:qsym(file).')'), '.', '/')
+        let file = tr(fireplace#evalparse('((ns-aliases *ns*) '.s:qsym(file).' '.s:qsym(file).')'), '.-', '/_')
       catch /^Clojure:/
       endtry
     endif
   elseif file =~# '^\w[[:alnum:]-]\+\.[[:alnum:].-]\+$'
-    let file = tr(file, '.', '/')
+    let file = tr(file, '.-', '/_')
   endif
   if exists('jump')
     return '+sil!dj\ ' . jump . ' ' . fnameescape(file)
