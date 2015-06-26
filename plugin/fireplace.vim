@@ -1223,7 +1223,7 @@ function! s:set_up_require() abort
   command! -buffer -bar -bang -complete=customlist,fireplace#ns_complete -nargs=? Require :exe s:Require(<bang>0, 1, <q-args>)
 
   if get(g:, 'fireplace_no_maps') | return | endif
-  nnoremap <silent><buffer> cpr :if expand('%:e') ==# 'cljs'<Bar>Require<Bar>else<Bar>RunTests<Bar>endif<CR>
+  nnoremap <silent><buffer> cpr :<C-R>=expand('%:e') ==# 'cljs' ? 'Require' : 'RunTests'<CR><CR>
 endfunction
 
 augroup fireplace_require
@@ -1601,10 +1601,10 @@ function! s:RunTests(bang, count, ...) abort
     else
       let args = [fireplace#ns()]
       if a:count
-        let pattern = '^\s*(def\k*\s\+\zs\h\k*'
-        let line = search(pattern, 'bWn')
+        let pattern = '^\s*(def\k*\s\+\(\h\k*\)'
+        let line = search(pattern, 'bcWn')
         if line
-          let args[0] .= '/' . matchstr(getline(line), pattern)
+          let args[0] .= '/' . matchlist(getline(line), pattern)[1]
         endif
       endif
     endif
@@ -1623,7 +1623,7 @@ function! s:RunTests(bang, count, ...) abort
     endif
   endif
   call fireplace#capture_test_run(join(expr, ' '), pre)
-  echo expr
+  echo join(expr, ' ')
 endfunction
 
 function! s:set_up_tests() abort
