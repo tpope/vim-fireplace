@@ -881,7 +881,7 @@ augroup END
 
 let fireplace#skip = 'synIDattr(synID(line("."),col("."),1),"name") =~? "comment\\|string\\|char\\|regexp"'
 
-function! s:opfunc(type) abort
+function! fireplace#opfunc(type) abort
   let sel_save = &selection
   let cb_save = &clipboard
   let reg_save = @@
@@ -930,7 +930,7 @@ function! s:filterop(type) abort
   let cb_save = &clipboard
   try
     set selection=inclusive clipboard-=unnamed clipboard-=unnamedplus
-    let expr = s:opfunc(a:type)
+    let expr = fireplace#opfunc(a:type)
     let @@ = fireplace#session_eval(matchstr(expr, '^\n\+').expr).matchstr(expr, '\n\+$')
     if @@ !~# '^\n*$'
       normal! gvp
@@ -945,15 +945,15 @@ function! s:filterop(type) abort
 endfunction
 
 function! s:macroexpandop(type) abort
-  call fireplace#macroexpand("clojure.walk/macroexpand-all", s:opfunc(a:type))
+  call fireplace#macroexpand("clojure.walk/macroexpand-all", fireplace#opfunc(a:type))
 endfunction
 
 function! s:macroexpand1op(type) abort
-  call fireplace#macroexpand("macroexpand-1", s:opfunc(a:type))
+  call fireplace#macroexpand("macroexpand-1", fireplace#opfunc(a:type))
 endfunction
 
 function! s:printop(type) abort
-  let s:todo = s:opfunc(a:type)
+  let s:todo = fireplace#opfunc(a:type)
   call feedkeys("\<Plug>FireplacePrintLast")
 endfunction
 
@@ -965,7 +965,7 @@ endfunction
 function! s:editop(type) abort
   call feedkeys(eval('"\'.&cedit.'"') . "\<Home>", 'n')
   let input = s:input(substitute(substitute(substitute(
-        \ s:opfunc(a:type), "\s*;[^\n\"]*\\%(\n\\@=\\|$\\)", '', 'g'),
+        \ fireplace#opfunc(a:type), "\s*;[^\n\"]*\\%(\n\\@=\\|$\\)", '', 'g'),
         \ '\n\+\s*', ' ', 'g'),
         \ '^\s*', '', ''))
   if input !=# ''
