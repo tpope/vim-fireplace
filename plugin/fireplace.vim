@@ -219,10 +219,6 @@ if !exists('s:repls')
   let s:repl_portfiles = {}
 endif
 
-function! s:repl.user_ns() abort
-  return 'user'
-endfunction
-
 function! s:repl.path() dict abort
   return self.connection.path()
 endfunction
@@ -234,16 +230,6 @@ function! s:conn_try(connection, function, ...) abort
     call s:unregister_connection(a:connection)
     throw v:exception
   endtry
-endfunction
-
-function! s:repl.eval(expr, options) dict abort
-  if has_key(a:options, 'ns') && a:options.ns !=# self.user_ns()
-    let error = self.preload(a:options.ns)
-    if !empty(error)
-      return error
-    endif
-  endif
-  return s:conn_try(self.connection, 'eval', a:expr, a:options)
 endfunction
 
 function! s:repl.message(payload, ...) dict abort
@@ -319,6 +305,20 @@ function! s:piggieback.eval(expr, options) abort
     call remove(options, 'file_path')
   endif
   return call(s:repl.eval, [a:expr, options], self)
+endfunction
+
+function! s:repl.user_ns() abort
+  return 'user'
+endfunction
+
+function! s:repl.eval(expr, options) dict abort
+  if has_key(a:options, 'ns') && a:options.ns !=# self.user_ns()
+    let error = self.preload(a:options.ns)
+    if !empty(error)
+      return error
+    endif
+  endif
+  return s:conn_try(self.connection, 'eval', a:expr, a:options)
 endfunction
 
 function! s:register_connection(conn, ...) abort
