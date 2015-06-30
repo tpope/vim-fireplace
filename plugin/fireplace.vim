@@ -1,6 +1,6 @@
 " fireplace.vim - Clojure REPL support
 " Maintainer:   Tim Pope <http://tpo.pe/>
-" Version:      1.0
+" Version:      1.1
 " GetLatestVimScripts: 4978 1 :AutoInstall: fireplace.vim
 
 if exists("g:loaded_fireplace") || v:version < 700 || &cp
