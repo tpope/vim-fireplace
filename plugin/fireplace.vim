@@ -916,7 +916,11 @@ function! s:opfunc(type) abort
       silent exe "normal! `[v`]y"
     endif
     redraw
-    return repeat("\n", line("'<")-1) . repeat(" ", col("'<")-1) . @@
+    if fireplace#client().user_ns() ==# 'user'
+      return repeat("\n", line("'<")-1) . repeat(" ", col("'<")-1) . @@
+    else
+      return @@
+    endif
   finally
     let @@ = reg_save
     let &selection = sel_save
