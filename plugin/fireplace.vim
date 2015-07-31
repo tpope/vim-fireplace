@@ -1618,7 +1618,7 @@ function! s:RunTests(bang, count, ...) abort
     let vars = filter(copy(reqs), 'v:val =~# "/"')
     let nses = filter(copy(reqs), 'v:val !~# "/"')
     if len(vars) == 1
-      call add(expr, '(clojure.test/test-var #' . vars[0] . ')')
+      call add(expr, '(clojure.test/test-vars [#' . vars[0] . '])')
     elseif !empty(vars)
       call add(expr, join(['(clojure.test/test-vars'] + map(vars, '"#".v:val'), ' ').')')
     endif
