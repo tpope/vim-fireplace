@@ -1595,9 +1595,9 @@ function! s:RunTests(bang, count, ...) abort
   if a:count < 0
     let pre = ''
     if a:0
-      let expr = '(clojure.test/run-all-tests #"'.join(a:000, '|').'")'
+      let expr = ['(clojure.test/run-all-tests #"'.join(a:000, '|').'")']
     else
-      let expr = '(clojure.test/run-all-tests)'
+      let expr = ['(clojure.test/run-all-tests)']
     endif
   else
     if a:0 && a:000 !=# [fireplace#ns()]
