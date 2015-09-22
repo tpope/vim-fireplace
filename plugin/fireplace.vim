@@ -628,7 +628,7 @@ function! fireplace#client(...) abort
     if empty(client.piggiebacks)
       let result = client.piggieback('')
       if has_key(result, 'ex')
-        return result
+        throw 'Fireplace: '.result.ex
       endif
     endif
     return client.piggiebacks[0]
