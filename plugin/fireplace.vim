@@ -1349,7 +1349,7 @@ function! fireplace#cfile() abort
     let [file, jump] = split(file, "/")
     if fireplace#op_available('info')
       let res = fireplace#message({'op': 'info', 'symbol': file})
-      let file = res[0].resource
+      let file = get(get(res, 0, {}), 'ns', file)
     else
       if file !~# '\.'
         try
