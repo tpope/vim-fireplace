@@ -1347,11 +1347,11 @@ function! fireplace#cfile() abort
     let file = substitute(expand('%:p'), '[^\/:]*$', '', '').a:file
   elseif file =~# '^[^/]*/[^/.]*$' && file =~# '^\k\+$'
     let [file, jump] = split(file, "/")
-    if fireplace#op_available('info')
-      let res = fireplace#message({'op': 'info', 'symbol': file})
-      let file = get(get(res, 0, {}), 'ns', file)
-    else
-      if file !~# '\.'
+    if file !~# '\.'
+      if fireplace#op_available('info')
+        let res = fireplace#message({'op': 'info', 'symbol': file})
+        let file = get(get(res, 0, {}), 'ns', file)
+      else
         try
           let file = tr(fireplace#evalparse('((ns-aliases *ns*) '.s:qsym(file).' '.s:qsym(file).')'), '.-', '/_')
         catch /^Clojure:/
