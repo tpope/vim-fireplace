@@ -539,6 +539,41 @@ let s:oneoff.piggieback = s:oneoff.message
 
 " Section: Client
 
+function! s:buffer_path(...) abort
+  let buffer = a:0 ? a:1 : s:buf()
+  if getbufvar(buffer, '&buftype') =~# '^no'
+    return ''
+  endif
+  let path = substitute(fnamemodify(bufname(buffer), ':p'), '\C^zipfile:\(.*\)::', '\1/', '')
+  for dir in fireplace#path(buffer)
+    if dir !=# '' && path[0 : strlen(dir)-1] ==# dir && path[strlen(dir)] =~# '[\/]'
+      return path[strlen(dir)+1:-1]
+    endif
+  endfor
+  return ''
+endfunction
+
+function! fireplace#ns(...) abort
+  let buffer = a:0 ? a:1 : s:buf()
+  if !empty(getbufvar(buffer, 'fireplace_ns'))
+    return getbufvar(buffer, 'fireplace_ns')
+  endif
+  let head = getbufline(buffer, 1, 500)
+  let blank = '^\s*\%(;.*\)\=$'
+  call filter(head, 'v:val !~# blank')
+  let keyword_group = '[A-Za-z0-9_?*!+/=<>.-]'
+  let lines = join(head[0:49], ' ')
+  let lines = substitute(lines, '"\%(\\.\|[^"]\)*"\|\\.', '', 'g')
+  let lines = substitute(lines, '\^\={[^{}]*}', '', '')
+  let lines = substitute(lines, '\^:'.keyword_group.'\+', '', 'g')
+  let ns = matchstr(lines, '\C^(\s*\%(in-ns\s*''\|ns\s\+\)\zs'.keyword_group.'\+\ze')
+  if ns !=# ''
+    return ns
+  endif
+  let path = s:buffer_path(buffer)
+  return s:to_ns(path ==# '' ? fireplace#client(buffer).user_ns() : path)
+endfunction
+
 function! s:buf() abort
   if exists('s:input')
     return s:input
@@ -1423,41 +1458,6 @@ augroup fireplace_go_to_file
 augroup END
 
 " Section: Documentation
-
-function! s:buffer_path(...) abort
-  let buffer = a:0 ? a:1 : s:buf()
-  if getbufvar(buffer, '&buftype') =~# '^no'
-    return ''
-  endif
-  let path = substitute(fnamemodify(bufname(buffer), ':p'), '\C^zipfile:\(.*\)::', '\1/', '')
-  for dir in fireplace#path(buffer)
-    if dir !=# '' && path[0 : strlen(dir)-1] ==# dir && path[strlen(dir)] =~# '[\/]'
-      return path[strlen(dir)+1:-1]
-    endif
-  endfor
-  return ''
-endfunction
-
-function! fireplace#ns(...) abort
-  let buffer = a:0 ? a:1 : s:buf()
-  if !empty(getbufvar(buffer, 'fireplace_ns'))
-    return getbufvar(buffer, 'fireplace_ns')
-  endif
-  let head = getbufline(buffer, 1, 500)
-  let blank = '^\s*\%(;.*\)\=$'
-  call filter(head, 'v:val !~# blank')
-  let keyword_group = '[A-Za-z0-9_?*!+/=<>.-]'
-  let lines = join(head[0:49], ' ')
-  let lines = substitute(lines, '"\%(\\.\|[^"]\)*"\|\\.', '', 'g')
-  let lines = substitute(lines, '\^\={[^{}]*}', '', '')
-  let lines = substitute(lines, '\^:'.keyword_group.'\+', '', 'g')
-  let ns = matchstr(lines, '\C^(\s*\%(in-ns\s*''\|ns\s\+\)\zs'.keyword_group.'\+\ze')
-  if ns !=# ''
-    return ns
-  endif
-  let path = s:buffer_path(buffer)
-  return s:to_ns(path ==# '' ? fireplace#client(buffer).user_ns() : path)
-endfunction
 
 function! s:Lookup(ns, macro, arg) abort
   try
