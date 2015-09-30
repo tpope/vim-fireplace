@@ -1375,26 +1375,107 @@ function! fireplace#findfile(path) abort
   return ''
 endfunction
 
+let s:iskeyword = '[[:alnum:]_=?!#$%&*+|./<>:-]'
+let s:token = '^\%(#"\%(\\\@<!\%(\\\\\)*\\"\|[^"]\)*"\|"\%(\\.\|[^"]\)*"\|[[:space:],]\+\|\%(;\|#!\)[^'."\n".']*\|\~@\|#[[:punct:]]\|'.s:iskeyword.'\+\|\\\%(space\|tab\|newline\|return\|.\)\|.\)'
+function! s:read_token(str, pos) abort
+  let pos = a:pos
+  let match = ' '
+  while match =~# '^[[:space:],;]'
+    let match = matchstr(a:str, s:token, pos)
+    let pos += len(match)
+  endwhile
+  if empty(match)
+    throw 'fireplace: Clojure parse error'
+  endif
+  return [match, pos]
+endfunction
+
+function! s:read(str, pos) abort
+  let [token, pos] = s:read_token(a:str, a:pos)
+  if token =~# '^#\=[[{(]'
+    let list = []
+    while index([')', ']', '}', ''], get(list, -1)) < 0
+      unlet token
+      let [token, pos] = s:read(a:str, pos)
+      call add(list, token)
+    endwhile
+    call remove(list, -1)
+    return [list, pos]
+  elseif token ==# '#_'
+    let pos = s:read(a:str, pos)[1]
+    return s:read(a:str, pos)
+  else
+    return [token, pos]
+  endif
+endfunction
+
+function! s:ns(...) abort
+  let buffer = a:0 ? a:1 : s:buf()
+  let head = getbufline(buffer, 1, 1000)
+  let blank = '^\s*\%(;.*\)\=$'
+  call filter(head, 'v:val !~# blank')
+  let keyword_group = '[A-Za-z0-9_?*!+/=<>.-]'
+  let lines = join(head, "\n")
+  let match = matchstr(lines, '\C^(\s*ns\s\+.*')
+  if len(match)
+    try
+      return s:read(match, 0)[0]
+    catch /^fireplace: Clojure parse error$/
+    endtry
+  endif
+  return []
+endfunction
+
+function! fireplace#resolve_alias(name) abort
+  if a:name =~# '\.'
+    return a:name
+  endif
+  let _ = {}
+  for refs in filter(copy(s:ns()), 'type(v:val) == type([])')
+    if a:name =~# '^\u' && refs[0] is# ':import'
+      for _.ref in refs
+        if type(_.ref) == type([]) && index(_.ref, a:name) > 0
+          return _.ref[0] . '.' . a:name
+        elseif type(_.ref) == type('') && _.ref =~# '\.'.a:name.'$'
+          return _.ref
+        endif
+      endfor
+    endif
+    if refs[0] is# ':require'
+      for _.ref in refs
+        if type(_.ref) == type([])
+          let i = index(_.ref, ':as')
+          if i > 0 && get(_.ref, i+1) ==# a:name
+            return _.ref[0]
+          endif
+          for nref in filter(copy(_.ref), 'type(v:val) == type([])')
+            let i = index(nref, ':as')
+            if i > 0 && get(nref, i+1) ==# a:name
+              return _.ref[0].'.'.nref[0]
+            endif
+          endfor
+        endif
+      endfor
+    endif
+  endfor
+  return a:name
+endfunction
+
 function! fireplace#cfile() abort
   let file = expand('<cfile>')
   if file =~# '^\w[[:alnum:]_/]*$' &&
         \ synIDattr(synID(line("."),col("."),1),"name") =~# 'String'
-    let file = substitute(expand('%:p'), '[^\/:]*$', '', '').a:file
+    let file = substitute(expand('%:p'), '[^\/:]*$', '', '').file
   elseif file =~# '^[^/]*/[^/.]*$' && file =~# '^\k\+$'
     let [file, jump] = split(file, "/")
-    if file !~# '\.'
-      if fireplace#op_available('info')
-        let res = fireplace#message({'op': 'info', 'symbol': file})
-        let file = get(get(res, 0, {}), 'ns', file)
-      else
-        try
-          let file = tr(fireplace#evalparse('((ns-aliases *ns*) '.s:qsym(file).' '.s:qsym(file).')'), '.-', '/_')
-        catch /^Clojure:/
-        endtry
-      endif
+    let file = fireplace#resolve_alias(file)
+    if file !~# '\.' && fireplace#op_available('info')
+      let res = fireplace#message({'op': 'info', 'symbol': file})
+      let file = get(get(res, 0, {}), 'ns', file)
     endif
-  elseif file =~# '^\w[[:alnum:]-]\+\.[[:alnum:].-]\+$'
     let file = tr(file, '.-', '/_')
+  elseif file =~# '^\w[[:alnum:].-]*$'
+    let file = tr(fireplace#resolve_alias(file), '.-', '/_')
   endif
   if exists('jump')
     return '+sil!dj\ ' . jump . ' ' . fnameescape(file)
