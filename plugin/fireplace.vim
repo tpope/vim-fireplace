@@ -1432,7 +1432,7 @@ function! fireplace#resolve_alias(name) abort
   endif
   let _ = {}
   for refs in filter(copy(s:ns()), 'type(v:val) == type([])')
-    if a:name =~# '^\u' && refs[0] is# ':import'
+    if a:name =~# '^\u' && get(refs, 0) is# ':import'
       for _.ref in refs
         if type(_.ref) == type([]) && index(_.ref, a:name) > 0
           return _.ref[0] . '.' . a:name
@@ -1441,7 +1441,7 @@ function! fireplace#resolve_alias(name) abort
         endif
       endfor
     endif
-    if refs[0] is# ':require'
+    if get(refs, 0) is# ':require'
       for _.ref in refs
         if type(_.ref) == type([])
           let i = index(_.ref, ':as')
