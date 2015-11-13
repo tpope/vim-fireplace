@@ -802,6 +802,14 @@ function! fireplace#session_eval(expr, ...) abort
     endif
   endif
 
+  try
+    silent doautocmd User FireplaceEvalPost
+  catch
+    echohl ErrorMSG
+    echomsg v:exception
+    echohl NONE
+  endtry
+
   call s:output_response(response)
 
   if get(response, 'ex', '') !=# ''
