@@ -1652,7 +1652,7 @@ function! fireplace#capture_test_run(expr, ...) abort
     call setqflist(fireplace#quickfix_for(get(response, 'stacktrace', [])))
     return s:output_response(response)
   endif
-  for line in split(response.out, "\n")
+  for line in split(response.out, "\r\\=\n")
     if line =~# '\t.*\t.*\t'
       let entry = {'text': line}
       let [resource, lnum, type, name] = split(line, "\t", 1)
