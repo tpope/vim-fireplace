@@ -171,7 +171,7 @@ function! s:nrepl_eval(expr, ...) dict abort
   endif
 
   if has_key(response, 'ex') && !empty(get(msg, 'session', 1))
-    let response.stacktrace = s:extract_last_stacktrace(self, get(msg, 'session', self.session))
+    let response.stacktrace = s:extract_last_stacktrace(response.err, self, get(msg, 'session', self.session))
   endif
 
   if has_key(response, 'value')
@@ -180,11 +180,36 @@ function! s:nrepl_eval(expr, ...) dict abort
   return response
 endfunction
 
-function! s:extract_last_stacktrace(nrepl, session) abort
+function! s:build_frame(prefix, error, frame) abort
+  if a:prefix == ''
+    let exception = a:error
+  else
+    let exception = a:prefix . a:frame.class . ': ' . a:frame.message
+    if has_key(a:frame, 'file')
+      let exception = exception . ' (' . a:frame.file . ':' . a:frame.line . ')'
+    endif
+  endif
+  call filter(a:frame.stacktrace, 'has_key(v:val, "file")')
+  let stacktrace = map(a:frame.stacktrace, '"    ".v:val.class.".".v:val.method." (".v:val.file.":".v:val.line.")"')
+  return [exception, ' at ' . stacktrace[0][4:]] + stacktrace[1:]
+endfunction
+
+function! s:build_causes(error, stackframes) abort
+  let causes  = []
+  let prefix = ''
+  call filter(a:stackframes, 'has_key(v:val, "stacktrace")')
+  for frame in a:stackframes
+    let causes = causes + s:build_frame(prefix, a:error, frame)
+    let prefix = 'Caused by: '
+  endfor
+  return causes
+endfunction
+
+function! s:extract_last_stacktrace(error, nrepl, session) abort
   if a:nrepl.has_op('stacktrace')
     let stacktrace = a:nrepl.message({'op': 'stacktrace', 'session': a:session})
-    if len(stacktrace) > 0 && has_key(stacktrace[0], 'stacktrace')
-      let stacktrace = stacktrace[0].stacktrace
+    if !empty(stacktrace) && has_key(stacktrace[0], 'stacktrace')
+      return s:build_causes(a:error, stacktrace)
     endif
 
     call filter(stacktrace, 'has_key(v:val, "file")')
@@ -192,7 +217,7 @@ function! s:extract_last_stacktrace(nrepl, session) abort
       return map(stacktrace, 'v:val.class.".".v:val.method."(".v:val.file.":".v:val.line.")"')
     endif
   endif
-  let format_st = '(symbol (str "\n\b" (apply str (interleave (repeat "\n") (map str (.getStackTrace *e)))) "\n\b\n"))'
+  let format_st = '(symbol (str "\n\b\n" (with-out-str (clojure.stacktrace/print-cause-trace *e)) "\b\n"))'
   let response = a:nrepl.process({'op': 'eval', 'code': '['.format_st.' *3 *2 *1]', 'ns': 'user', 'session': a:session})
   try
     let stacktrace = split(get(split(response.value[0], "\n\b\n"), 1, ""), "\n")
