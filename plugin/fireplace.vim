@@ -588,6 +588,15 @@ function! s:buf() abort
   endif
 endfunction
 
+function! s:repl_ns() abort
+  let buf = a:0 ? a:1 : s:buf()
+  if fnamemodify(bufname(buf), ':e') ==# 'cljs'
+    return 'cljs.repl'
+  endif
+    return 'clojure.repl'
+  endif
+endfunction
+
 function! s:includes_file(file, path) abort
   let file = substitute(a:file, '\C^zipfile:\(.*\)::', '\1/', '')
   let file = substitute(file, '\C^fugitive:[\/][\/]\(.*\)\.git[\/][\/][^\/]\+[\/]', '\1', '')
@@ -1554,7 +1563,7 @@ augroup END
 
 function! s:Lookup(ns, macro, arg) abort
   try
-    let response = s:eval('('.a:ns.'/'.a:macro.' '.a:arg.')', {'session': 0})
+    let response = s:eval('('.a:ns.'/'.a:macro.' '.a:arg.')')
     call s:output_response(response)
   catch /^Clojure:/
   catch /.*/
@@ -1606,10 +1615,10 @@ nnoremap <Plug>FireplaceK :<C-R>=<SID>K()<CR><CR>
 nnoremap <Plug>FireplaceSource :Source <C-R><C-W><CR>
 
 function! s:set_up_doc() abort
-  command! -buffer -nargs=1 FindDoc :exe s:Lookup('clojure.repl', 'find-doc', printf('#"%s"', <q-args>))
+  command! -buffer -nargs=1 FindDoc :exe s:Lookup(s:repl_ns(), 'find-doc', printf('#"%s"', <q-args>))
   command! -buffer -bar -nargs=1 Javadoc :exe s:Lookup('clojure.java.javadoc', 'javadoc', <q-args>)
   command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Doc     :exe s:Doc(<q-args>)
-  command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Source  :exe s:Lookup('clojure.repl', 'source', <q-args>)
+  command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Source  :exe s:Lookup(s:repl_ns(), 'source', <q-args>)
   setlocal keywordprg=:Doc
 
   if get(g:, 'fireplace_no_maps') | return | endif
