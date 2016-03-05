@@ -597,6 +597,10 @@ function! s:repl_ns() abort
   endif
 endfunction
 
+function! s:slash() abort
+  return exists('+shellslash') && !&shellslash ? '\' : '/'
+endfunction
+
 function! s:includes_file(file, path) abort
   let file = substitute(a:file, '\C^zipfile:\(.*\)::', '\1/', '')
   let file = substitute(file, '\C^fugitive:[\/][\/]\(.*\)\.git[\/][\/][^\/]\+[\/]', '\1', '')
@@ -720,7 +724,7 @@ function! fireplace#findresource(resource, ...) abort
       if fnamemodify(dir, ':e') ==# 'jar' && index(fireplace#jar_contents(dir), resource . suffix) >= 0
         return 'zipfile:' . dir . '::' . resource . suffix
       elseif filereadable(dir . '/' . resource . suffix)
-        return dir . (exists('+shellslash') && !&shellslash ? '\' : '/') . resource . suffix
+        return dir . s:slash() . resource . suffix
       endif
     endfor
   endfor
@@ -1320,8 +1324,17 @@ function! fireplace#source(symbol) abort
   let file = ''
   if !empty(get(info, 'resource'))
     let file = fireplace#findresource(info.resource)
-  elseif get(info, 'file') =~# '^/\|^\w:\\' && filereadable(info.file)
-    let file = info.file
+  else
+    let fpath = ''
+    if get(info, 'file') =~# '^/\|^\w:\\'
+      let file = info.file
+    elseif get(info, 'file') =~# '^file:'
+      let file = substitute(strpart(info.file,5), '/', s:slash(), 'g')
+    end
+
+    if !empty(fpath) && filereadable(fpath)
+      let file = fpath
+    end
   endif
 
   if !empty(file) && !empty(get(info, 'line'))
