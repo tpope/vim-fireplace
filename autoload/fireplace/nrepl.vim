@@ -182,14 +182,10 @@ endfunction
 
 function! s:extract_last_stacktrace(nrepl, session) abort
   if a:nrepl.has_op('stacktrace')
-    let stacktrace = a:nrepl.message({'op': 'stacktrace', 'session': a:session})
-    if len(stacktrace) > 0 && has_key(stacktrace[0], 'stacktrace')
-      let stacktrace = stacktrace[0].stacktrace
-    endif
-
-    call filter(stacktrace, 'has_key(v:val, "file")')
-    if !empty(stacktrace)
-      return map(stacktrace, 'v:val.class.".".v:val.method."(".v:val.file.":".v:val.line.")"')
+    let stacktrace = filter(a:nrepl.message({'op': 'stacktrace', 'session': a:session}), 'has_key(v:val, "file")')
+    let fixed_stacktrace = get(stacktrace[0], "stacktrace")
+    if !empty(fixed_stacktrace)
+        return map(fixed_stacktrace, 'v:val.class.".".v:val.method."(".v:val.file.":".v:val.line.")"')
     endif
   endif
   let format_st = '(symbol (str "\n\b" (apply str (interleave (repeat "\n") (map str (.getStackTrace *e)))) "\n\b\n"))'
