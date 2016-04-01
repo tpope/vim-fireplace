@@ -19,6 +19,7 @@ then simply copy and paste:
 
     cd ~/.vim/bundle
     git clone git://github.com/tpope/vim-fireplace.git
+    vim -u NONE -c "helptags vim-fireplace/doc" -c q
 
 Once help tags have been generated, you can view the manual with
 `:help fireplace`.
