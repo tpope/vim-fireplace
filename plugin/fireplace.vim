@@ -1651,6 +1651,7 @@ augroup END
 
 function! fireplace#capture_test_run(expr, ...) abort
   let expr = '(try'
+        \ . ' ' . (a:0 ? a:1 : '')
         \ . ' (require ''clojure.test)'
         \ . ' (binding [clojure.test/report (fn [m]'
         \ .  ' (case (:type m)'
@@ -1664,7 +1665,7 @@ function! fireplace#capture_test_run(expr, ...) abort
         \ .        ' (println "expected:" (pr-str (:expected m)))'
         \ .        ' (println "  actual:" (pr-str (:actual m)))))'
         \ .    ' ((.getRawRoot #''clojure.test/report) m)))]'
-        \ . ' ' . (a:0 ? a:1 : '') . a:expr . ')'
+        \ . ' ' . a:expr . ')'
         \ . ' (catch Exception e'
         \ . '   (println (str e))'
         \ . '   (println (clojure.string/join "\n" (.getStackTrace e)))))'
