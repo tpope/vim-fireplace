@@ -1064,7 +1064,12 @@ function! s:Eval(bang, line1, line2, count, args) abort
       return ''
     endif
     let options.file_path = s:buffer_path()
-    let expr = repeat("\n", line1-1).repeat(" ", col1-1)
+    if expand('%:e') ==# 'cljs'
+      "leading line feed don't work on cljs repl
+      let expr = ''
+    else
+      let expr = repeat("\n", line1-1).repeat(" ", col1-1)
+    endif
     if line1 == line2
       let expr .= getline(line1)[col1-1 : col2-1]
     else
