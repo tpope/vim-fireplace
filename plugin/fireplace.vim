@@ -270,6 +270,7 @@ let s:piggieback = copy(s:repl)
 function! s:repl.piggieback(arg, ...) abort
   if a:0 && a:1
     if len(self.piggiebacks)
+      let result = fireplace#session_eval(':cljs/quit', {})
       call remove(self.piggiebacks, 0)
     endif
     return {}
