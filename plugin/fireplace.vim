@@ -1242,6 +1242,8 @@ function! s:set_up_eval() abort
   exe 'nmap <buffer> cqc <Plug>FireplacePrompt' . &cedit . 'i'
 
   map! <buffer> <C-R>( <Plug>FireplaceRecall
+
+  setlocal formatexpr=fireplace#Format()
 endfunction
 
 function! s:set_up_historical() abort
@@ -1816,3 +1818,26 @@ augroup fireplace_tests
   autocmd!
   autocmd FileType clojure call s:set_up_tests()
 augroup END
+
+" Section: Format
+
+function! fireplace#Format() abort
+  let reg_save = @@
+  let sel_save = &selection
+  let cb_save = &clipboard
+  try
+    set selection=inclusive clipboard-=unnamed clipboard-=unnamedplus
+    silent exe "normal! " . string(v:lnum) . "ggV" . string(v:count-1) . "jy"
+    let response = fireplace#message({'op': 'format-code', 'code': @@})[0]
+    if !empty(get(response, 'formatted-code'))
+      let @@ = substitute(get(response, 'formatted-code'), '^\n\+', '', 'g')
+      if @@ !~# '^\n*$'
+        normal! gvp
+      endif
+    endif
+  finally
+    let @@ = reg_save
+    let &selection = sel_save
+    let &clipboard = cb_save
+  endtry
+endfunction
