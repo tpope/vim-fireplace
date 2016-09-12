@@ -1313,14 +1313,42 @@ function! fireplace#info(symbol) abort
     endif
   endif
   let cmd =
-        \ '(if-let [m (meta (resolve ' . s:qsym(a:symbol) .'))]'
-        \ . ' {:name (:name m)'
-        \ .  ' :ns (:ns m)'
-        \ .  ' :resource (:file m)'
-        \ .  ' :line (:line m)'
-        \ .  ' :doc (:doc m)'
-        \ .  ' :arglists-str (str (:arglists m))}'
-        \ . ' {})'
+        \ '(cond'
+        \ . '(not (symbol? ' . s:qsym(a:symbol) . '))'
+        \ . '(let [s ' . s:qsym(a:symbol) . ']'
+        \ .   '{:name (str s)'
+        \ .   ' :doc (str s)})'
+        \ . '(special-symbol? ' . s:qsym(a:symbol) . ')'
+        \ . "(if-let [m (#'clojure.repl/special-doc " . s:qsym(a:symbol) . ")]"
+        \ .   ' {:name (:name m)'
+        \ .    ' :ns ""'
+        \ .    ' :special-text "Special Form"'
+        \ .    ' :resource ""'
+        \ .    ' :line ""'
+        \ .    ' :doc (:doc m)'
+        \ .    ' :arglists-str (str (:forms m))}'
+        \ .   ' {})'
+        \ . '(find-ns ' . s:qsym(a:symbol) . ')'
+        \ . "(if-let [m (#'clojure.repl/namespace-doc (find-ns " . s:qsym(a:symbol) . "))]"
+        \ .   ' {:name (:name m)'
+        \ .    ' :ns ""'
+        \ .    ' :special-text "Namespace"'
+        \ .    ' :resource ""'
+        \ .    ' :line ""'
+        \ .    ' :doc (:doc m)'
+        \ .    ' :arglists-str ""}'
+        \ .   ' {})'
+        \ . ':else'
+        \ . '(if-let [m (meta (resolve ' . s:qsym(a:symbol) .'))]'
+        \ .   ' {:name (:name m)'
+        \ .    ' :ns (:ns m)'
+        \ .    ' :special-text (if (:macro m) "Macro" "nil")'
+        \ .    ' :resource (:file m)'
+        \ .    ' :line (:line m)'
+        \ .    ' :doc (:doc m)'
+        \ .    ' :arglists-str (str (:arglists m))}'
+        \ .   ' {})'
+        \ . ' )'
   return fireplace#evalparse(cmd)
 endfunction
 
@@ -1609,7 +1637,15 @@ endfunction
 function! s:Doc(symbol) abort
   let info = fireplace#info(a:symbol)
   if has_key(info, 'ns') && has_key(info, 'name')
-    echo info.ns . '/' . info.name
+    if get(info, 'special-text', 'nil') ==# 'Special Form'
+          \ || get(info, 'special-text', 'nil') ==# 'Namespace'
+      echo info.name
+    else
+      echo info.ns . '/' . info.name
+    endif
+  endif
+  if get(info, 'special-text', 'nil') !=# 'nil'
+    echo info['special-text']
   endif
   if get(info, 'arglists-str', 'nil') !=# 'nil'
     echo info['arglists-str']
