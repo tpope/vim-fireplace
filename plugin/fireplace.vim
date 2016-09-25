@@ -1308,19 +1308,40 @@ function! fireplace#info(symbol) abort
     let response = fireplace#message({'op': 'info', 'symbol': a:symbol})[0]
     if type(get(response, 'value')) == type({})
       return response.value
-    elseif has_key(response, 'file')
+    elseif has_key(response, 'file') || has_key(response, 'doc')
       return response
     endif
   endif
+
+  let sym = s:qsym(a:symbol)
   let cmd =
-        \ '(if-let [m (meta (resolve ' . s:qsym(a:symbol) .'))]'
-        \ . ' {:name (:name m)'
-        \ .  ' :ns (:ns m)'
-        \ .  ' :resource (:file m)'
-        \ .  ' :line (:line m)'
-        \ .  ' :doc (:doc m)'
-        \ .  ' :arglists-str (str (:arglists m))}'
-        \ . ' {})'
+        \ '(cond'
+        \ . '(not (symbol? ' . sym . '))'
+        \ . '{}'
+        \ . '(special-symbol? ' . sym . ')'
+        \ . "(if-let [m (#'clojure.repl/special-doc " . sym . ")]"
+        \ .   ' {:name (:name m)'
+        \ .    ' :special-form "true"'
+        \ .    ' :doc (:doc m)'
+        \ .    ' :url (:url m)'
+        \ .    ' :forms-str (str "  " (:forms m))}'
+        \ .   ' {})'
+        \ . '(find-ns ' . sym . ')'
+        \ . "(if-let [m (#'clojure.repl/namespace-doc (find-ns " . sym . "))]"
+        \ .   ' {:ns (:name m)'
+        \ .   '  :doc (:doc m)}'
+        \ .   ' {})'
+        \ . ':else'
+        \ . '(if-let [m (meta (resolve ' . sym .'))]'
+        \ .   ' {:name (:name m)'
+        \ .    ' :ns (:ns m)'
+        \ .    ' :macro (when (:macro m) true)'
+        \ .    ' :resource (:file m)'
+        \ .    ' :line (:line m)'
+        \ .    ' :doc (:doc m)'
+        \ .    ' :arglists-str (str (:arglists m))}'
+        \ .   ' {})'
+        \ . ' )'
   return fireplace#evalparse(cmd)
 endfunction
 
@@ -1330,7 +1351,7 @@ function! fireplace#source(symbol) abort
   let file = ''
   if !empty(get(info, 'resource'))
     let file = fireplace#findresource(info.resource)
-  else
+  elseif has_key(info, 'file')
     let fpath = ''
     if get(info, 'file') =~# '^/\|^\w:\\'
       let file = info.file
@@ -1343,7 +1364,7 @@ function! fireplace#source(symbol) abort
     end
   endif
 
-  if !empty(file) && !empty(get(info, 'line'))
+  if !empty(file) && !empty(get(info, 'line', ''))
     return '+' . info.line . ' ' . fnameescape(file)
   endif
   return ''
@@ -1610,13 +1631,39 @@ function! s:Doc(symbol) abort
   let info = fireplace#info(a:symbol)
   if has_key(info, 'ns') && has_key(info, 'name')
     echo info.ns . '/' . info.name
+  elseif has_key(info, 'ns')
+    echo info.ns
+  elseif has_key(info, 'name')
+    echo info.name
   endif
+
+  if get(info, 'forms-str', 'nil') !=# 'nil'
+    echo info['forms-str']
+  endif
+
   if get(info, 'arglists-str', 'nil') !=# 'nil'
     echo info['arglists-str']
   endif
+
+  if get(info, 'special-form', 'nil') !=# 'nil'
+    echo "Special Form"
+
+    if has_key(info, 'url')
+      if !empty(get(info, 'url', ''))
+        echo '  Please see http://clojure.org/' . info.url
+      else
+        echo '  Please see http://clojure.org/special_forms#' . info.name
+      endif
+    endif
+
+  elseif get(info, 'macro', 'nil') !=# 'nil'
+    echo "Macro"
+  endif
+
   if !empty(get(info, 'doc', ''))
     echo '  ' . info.doc
   endif
+
   return ''
 endfunction
 
