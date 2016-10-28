@@ -1683,7 +1683,7 @@ function! s:Doc(symbol) abort
     echo info['forms-str']
   endif
 
-  if get(info, 'arglists-str', 'nil') !=# 'nil'
+  if get(info, 'arglists-str', '') !=# ''
     echo info['arglists-str']
   endif
 
@@ -1698,7 +1698,7 @@ function! s:Doc(symbol) abort
       endif
     endif
 
-  elseif get(info, 'macro', 'nil') !=# 'nil'
+  elseif get(info, 'macro', '') !=# ''
     echo "Macro"
   endif
 
