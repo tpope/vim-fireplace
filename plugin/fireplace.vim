@@ -1276,7 +1276,7 @@ function! s:Require(bang, echo, ns) abort
   if expand('%:e') ==# 'cljs'
     let cmd = '(load-file '.s:str(tr(a:ns ==# '' ? fireplace#ns() : a:ns, '-.', '_/').'.cljs').')'
   else
-    let cmd = ('(require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
+    let cmd = ('(clojure.core/require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
   endif
   if a:echo
     echo cmd
@@ -1705,23 +1705,23 @@ augroup END
 function! fireplace#capture_test_run(expr, ...) abort
   let expr = '(try'
         \ . ' ' . (a:0 ? a:1 : '')
-        \ . ' (require ''clojure.test)'
-        \ . ' (binding [clojure.test/report (fn [m]'
-        \ .  ' (case (:type m)'
+        \ . ' (clojure.core/require ''clojure.test)'
+        \ . ' (clojure.core/binding [clojure.test/report (fn [m]'
+        \ .  ' (clojure.core/case (:type m)'
         \ .    ' (:fail :error)'
-        \ .    ' (let [{file :file line :line test :name} (meta (last clojure.test/*testing-vars*))]'
+        \ .    ' (clojure.core/let [{file :file line :line test :name} (clojure.core/meta (clojure.core/last clojure.test/*testing-vars*))]'
         \ .      ' (clojure.test/with-test-out'
         \ .        ' (clojure.test/inc-report-counter (:type m))'
-        \ .        ' (println (clojure.string/join "\t" [file line (name (:type m)) test]))'
-        \ .        ' (when (seq clojure.test/*testing-contexts*) (println (clojure.test/testing-contexts-str)))'
-        \ .        ' (when-let [message (:message m)] (println message))'
-        \ .        ' (println "expected:" (pr-str (:expected m)))'
-        \ .        ' (println "  actual:" (pr-str (:actual m)))))'
+        \ .        ' (clojure.core/println (clojure.string/join "\t" [file line (name (:type m)) test]))'
+        \ .        ' (clojure.core/when (seq clojure.test/*testing-contexts*) (clojure.core/println (clojure.test/testing-contexts-str)))'
+        \ .        ' (clojure.core/when-let [message (:message m)] (clojure.core/println message))'
+        \ .        ' (clojure.core/println "expected:" (clojure.core/pr-str (:expected m)))'
+        \ .        ' (clojure.core/println "  actual:" (clojure.core/pr-str (:actual m)))))'
         \ .    ' ((.getRawRoot #''clojure.test/report) m)))]'
         \ . ' ' . a:expr . ')'
         \ . ' (catch Exception e'
-        \ . '   (println (str e))'
-        \ . '   (println (clojure.string/join "\n" (.getStackTrace e)))))'
+        \ . '   (clojure.core/println (str e))'
+        \ . '   (clojure.core/println (clojure.string/join "\n" (.getStackTrace e)))))'
   let qflist = []
   let response = s:eval(expr, {'session': 0})
   if !has_key(response, 'out')
