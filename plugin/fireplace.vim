@@ -1712,15 +1712,15 @@ function! fireplace#capture_test_run(expr, ...) abort
         \ .    ' (clojure.core/let [{file :file line :line test :name} (clojure.core/meta (clojure.core/last clojure.test/*testing-vars*))]'
         \ .      ' (clojure.test/with-test-out'
         \ .        ' (clojure.test/inc-report-counter (:type m))'
-        \ .        ' (clojure.core/println (clojure.string/join "\t" [file line (name (:type m)) test]))'
-        \ .        ' (clojure.core/when (seq clojure.test/*testing-contexts*) (clojure.core/println (clojure.test/testing-contexts-str)))'
+        \ .        ' (clojure.core/println (clojure.string/join "\t" [file line (clojure.core/name (:type m)) test]))'
+        \ .        ' (clojure.core/when (clojure.core/seq clojure.test/*testing-contexts*) (clojure.core/println (clojure.test/testing-contexts-str)))'
         \ .        ' (clojure.core/when-let [message (:message m)] (clojure.core/println message))'
         \ .        ' (clojure.core/println "expected:" (clojure.core/pr-str (:expected m)))'
         \ .        ' (clojure.core/println "  actual:" (clojure.core/pr-str (:actual m)))))'
         \ .    ' ((.getRawRoot #''clojure.test/report) m)))]'
         \ . ' ' . a:expr . ')'
         \ . ' (catch Exception e'
-        \ . '   (clojure.core/println (str e))'
+        \ . '   (clojure.core/println (clojure.core/str e))'
         \ . '   (clojure.core/println (clojure.string/join "\n" (.getStackTrace e)))))'
   let qflist = []
   let response = s:eval(expr, {'session': 0})
