@@ -138,7 +138,7 @@ function! s:get_complete_context() abort
           \ + col('.')
   endif
 
-  return strpart(expr, 0, p) . '__prefix__' . strpart(expr, p)
+  return strpart(expr, 0, p) . ' __prefix__ ' . strpart(expr, p)
 endfunction
 
 function! fireplace#omnicomplete(findstart, base) abort
