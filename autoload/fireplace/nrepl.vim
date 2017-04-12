@@ -187,7 +187,7 @@ function! s:extract_last_stacktrace(nrepl, session) abort
       let stacktrace = stacktrace[0].stacktrace
     endif
 
-    call filter(stacktrace, 'has_key(v:val, "file")')
+    call filter(stacktrace, 'type(get(v:val, "file")) == type("")')
     if !empty(stacktrace)
       return map(stacktrace, 'v:val.class.".".v:val.method."(".v:val.file.":".v:val.line.")"')
     endif
