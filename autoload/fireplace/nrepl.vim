@@ -180,6 +180,17 @@ function! s:nrepl_eval(expr, ...) dict abort
   return response
 endfunction
 
+function! s:process_stacktrace_entry(entry) abort
+  if !has_key(a:entry, 'class')
+    return ''
+  endif
+  let str = a:entry.class.'.'.a:entry.method
+  if !empty(get(a:entry, 'file'))
+    let str .= '('.a:entry.file.':'.a:entry.line.')'
+  endif
+  return str
+endfunction
+
 function! s:extract_last_stacktrace(nrepl, session) abort
   if a:nrepl.has_op('stacktrace')
     let stacktrace = a:nrepl.message({'op': 'stacktrace', 'session': a:session})
@@ -187,9 +198,10 @@ function! s:extract_last_stacktrace(nrepl, session) abort
       let stacktrace = stacktrace[0].stacktrace
     endif
 
-    call filter(stacktrace, 'type(get(v:val, "file")) == type("")')
+    call map(stacktrace, 's:process_stacktrace_entry(v:val)')
+    call filter(stacktrace, '!empty(v:val)')
     if !empty(stacktrace)
-      return map(stacktrace, 'v:val.class.".".v:val.method."(".v:val.file.":".v:val.line.")"')
+      return stacktrace
     endif
   endif
   let format_st = '(symbol (str "\n\b" (apply str (interleave (repeat "\n") (map str (.getStackTrace *e)))) "\n\b\n"))'
