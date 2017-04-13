@@ -80,6 +80,9 @@ the form entirely.
 Any failed evaluation loads the stack trace into the location list, which
 can be easily accessed with `:lopen`.
 
+Note that fireplace will `require` your current namespace on the first `:Eval`
+so your namespace and functions will be properly defined.
+
 ### Navigating and Comprehending
 
 I was brand new to Clojure when I started this plugin, so stuff that helped me
