@@ -204,7 +204,19 @@ function! s:extract_last_stacktrace(nrepl, session) abort
       return stacktrace
     endif
   endif
-  let format_st = '(symbol (str "\n\b" (apply str (interleave (repeat "\n") (map str (.getStackTrace *e)))) "\n\b\n"))'
+  let format_st =
+        \ '(let [st (or (when (= "#''cljs.core/str" (str #''str))' .
+        \               ' (.-stack *e))' .
+        \             ' (.getStackTrace *e))]' .
+        \  ' (symbol' .
+        \    ' (str "\n\b"' .
+        \         ' (if (string? st)' .
+        \           ' st' .
+        \           ' (let [parts (if (= "class [Ljava.lang.StackTraceElement;" (str (type st)))' .
+        \                         ' (map str st)' .
+        \                         ' (seq (amap st idx ret (str (aget st idx)))))]' .
+        \             ' (apply str (interleave (repeat "\n") parts))))' .
+        \         ' "\n\b\n")))'
   let response = a:nrepl.process({'op': 'eval', 'code': '['.format_st.' *3 *2 *1]', 'ns': 'user', 'session': a:session})
   try
     let stacktrace = split(get(split(response.value[0], "\n\b\n"), 1, ""), "\n")
