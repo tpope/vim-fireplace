@@ -29,10 +29,11 @@ This list isn't exhaustive; see the `:help` for details.
 
 ### Transparent setup
 
-Fireplace.vim talks to nREPL.  With Leiningen, it connects automatically based
-on `.nrepl-port`, otherwise it's just a `:Connect` away.  You can connect to
-multiple instances of nREPL for different projects, and it will use the right
-one automatically.  ClojureScript support is just as seamless with
+Fireplace.vim talks to nREPL.  With Leiningen, it connects automatically using
+the `.nrepl-port` file created when you run `lein repl`. If you are starting
+nREPL some other way, run `:Connect` and enter the host and port.  You can
+connect to multiple instances of nREPL for different projects, and it will use
+the right one automatically.  ClojureScript support is just as seamless with
 [Piggieback][].
 
 The only external dependency is that you have either a Vim with Python support
