@@ -1827,12 +1827,25 @@ function! fireplace#format(lnum, count, char) abort
   let cb_save = &clipboard
   try
     set selection=inclusive clipboard-=unnamed clipboard-=unnamedplus
-    silent exe "normal! " . string(a:lnum) . "ggV" . string(a:count-1) . "jy"
-    let response = fireplace#message({'op': 'format-code', 'code': @@})[0]
-    if !empty(get(response, 'formatted-code'))
-      let @@ = substitute(get(response, 'formatted-code'), '^\n\+', '', 'g')
-      if @@ !~# '^\n*$'
-        normal! gvp
+    " ignore leading empty lines
+    let l:lnum=a:lnum
+    let l:count=a:count
+    while l:count >= 0
+      if getline(l:lnum) =~# '^\s*$'
+        let l:lnum += 1
+        let l:count -= 1
+      else
+        break
+      endif
+    endwhile
+    if a:count
+      silent exe "normal! " . string(l:lnum) . "ggV" . string(l:count-1) . "jy"
+      let response = fireplace#message({'op': 'format-code', 'code': @@})[0]
+      if !empty(get(response, 'formatted-code'))
+        let @@ = substitute(get(response, 'formatted-code'), '^\n\+', '', 'g')
+        if @@ !~# '^\n*$'
+          normal! gvp
+        endif
       endif
     endif
   finally
