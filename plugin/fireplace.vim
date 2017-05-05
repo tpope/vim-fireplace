@@ -1618,7 +1618,7 @@ function! fireplace#format(lnum, count, char) abort
         break
       endif
     endwhile
-    if a:count
+    if l:count
       silent exe "normal! " . string(lnum) . "ggV" . string(l:count-1) . "jy"
       let response = fireplace#message({'op': 'format-code', 'code': @@})[0]
       if !empty(get(response, 'formatted-code'))
