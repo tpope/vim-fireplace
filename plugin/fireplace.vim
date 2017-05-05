@@ -1243,7 +1243,7 @@ function! s:set_up_eval() abort
 
   map! <buffer> <C-R>( <Plug>FireplaceRecall
 
-  setlocal formatexpr=fireplace#Format()
+  setlocal formatexpr=fireplace#format(v:lnum,v:count,v:char)
 endfunction
 
 function! s:set_up_historical() abort
@@ -1821,13 +1821,13 @@ augroup END
 
 " Section: Format
 
-function! fireplace#Format() abort
+function! fireplace#format(lnum, count, char) abort
   let reg_save = @@
   let sel_save = &selection
   let cb_save = &clipboard
   try
     set selection=inclusive clipboard-=unnamed clipboard-=unnamedplus
-    silent exe "normal! " . string(v:lnum) . "ggV" . string(v:count-1) . "jy"
+    silent exe "normal! " . string(a:lnum) . "ggV" . string(a:count-1) . "jy"
     let response = fireplace#message({'op': 'format-code', 'code': @@})[0]
     if !empty(get(response, 'formatted-code'))
       let @@ = substitute(get(response, 'formatted-code'), '^\n\+', '', 'g')
