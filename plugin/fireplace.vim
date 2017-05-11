@@ -176,8 +176,8 @@ function! fireplace#omnicomplete(findstart, base) abort
       let ns = fireplace#ns()
 
       let [aliases, namespaces, maps] = fireplace#evalparse(
-            \ '[(ns-aliases '.s:qsym(ns).') (all-ns) '.
-            \ '(sort-by :word (map '.omnifier.' (ns-map '.s:qsym(ns).')))]')
+            \ '[(clojure.core/ns-aliases '.s:qsym(ns).') (clojure.core/all-ns) '.
+            \ '(clojure.core/sort-by :word (clojure.core/map '.omnifier.' (clojure.core/ns-map '.s:qsym(ns).')))]')
 
       if a:base =~# '^[^/]*/[^/]*$'
         let ns = matchstr(a:base, '^.*\ze/')
@@ -185,7 +185,7 @@ function! fireplace#omnicomplete(findstart, base) abort
         let ns = get(aliases, ns, ns)
         let keyword = matchstr(a:base, '.*/\zs.*')
         let results = fireplace#evalparse(
-              \ '(sort-by :word (map '.omnifier.' (ns-publics '.s:qsym(ns).')))')
+              \ '(clojure.core/sort-by :word (clojure.core/map '.omnifier.' (clojure.core/ns-publics '.s:qsym(ns).')))')
         for r in results
           let r.word = prefix . r.word
         endfor
@@ -1315,27 +1315,27 @@ function! fireplace#info(symbol) abort
 
   let sym = s:qsym(a:symbol)
   let cmd =
-        \ '(cond'
-        \ . '(not (symbol? ' . sym . '))'
+        \ '(clojure.core/cond'
+        \ . '(clojure.core/not (clojure.core/symbol? ' . sym . '))'
         \ . '{}'
-        \ . '(special-symbol? ' . sym . ')'
-        \ . "(if-let [m (#'clojure.repl/special-doc " . sym . ")]"
+        \ . '(clojure.core/special-symbol? ' . sym . ')'
+        \ . "(clojure.core/if-let [m (#'clojure.repl/special-doc " . sym . ")]"
         \ .   ' {:name (:name m)'
         \ .    ' :special-form "true"'
         \ .    ' :doc (:doc m)'
         \ .    ' :url (:url m)'
-        \ .    ' :forms-str (str "  " (:forms m))}'
+        \ .    ' :forms-str (clojure.core/str "  " (:forms m))}'
         \ .   ' {})'
-        \ . '(find-ns ' . sym . ')'
-        \ . "(if-let [m (#'clojure.repl/namespace-doc (find-ns " . sym . "))]"
+        \ . '(clojure.core/find-ns ' . sym . ')'
+        \ . "(clojure.core/if-let [m (#'clojure.repl/namespace-doc (clojure.core/find-ns " . sym . "))]"
         \ .   ' {:ns (:name m)'
         \ .   '  :doc (:doc m)}'
         \ .   ' {})'
         \ . ':else'
-        \ . '(if-let [m (meta (resolve ' . sym .'))]'
+        \ . '(clojure.core/if-let [m (clojure.core/meta (clojure.core/resolve ' . sym .'))]'
         \ .   ' {:name (:name m)'
         \ .    ' :ns (:ns m)'
-        \ .    ' :macro (when (:macro m) true)'
+        \ .    ' :macro (clojure.core/when (:macro m) true)'
         \ .    ' :resource (:file m)'
         \ .    ' :line (:line m)'
         \ .    ' :doc (:doc m)'
