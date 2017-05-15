@@ -1602,6 +1602,9 @@ augroup END
 " Section: Formatting
 
 function! fireplace#format(lnum, count, char) abort
+  if mode() =~# '[iR]'
+    return -1
+  endif
   let reg_save = @@
   let sel_save = &selection
   let cb_save = &clipboard
