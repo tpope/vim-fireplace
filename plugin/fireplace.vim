@@ -268,7 +268,8 @@ endfunction
 let s:piggieback = copy(s:repl)
 
 function! s:repl.piggieback(arg, ...) abort
-  if a:0 && a:1
+  let isbang = a:0 && a:1
+  if empty(a:arg) && isbang
     if len(self.piggiebacks)
       let result = fireplace#session_eval(':cljs/quit', {})
       call remove(self.piggiebacks, 0)
@@ -277,20 +278,24 @@ function! s:repl.piggieback(arg, ...) abort
   endif
 
   let connection = s:conn_try(self.connection, 'clone')
-  if empty(a:arg)
-    let arg = '(cljs.repl.rhino/repl-env)'
-  elseif a:arg =~# '^\d\{1,5}$'
-    let replns = 'weasel.repl.websocket'
-    if has_key(connection.eval("(require '" . replns . ")"), 'ex')
-      let replns = 'cljs.repl.browser'
-      call connection.eval("(require '" . replns . ")")
-    endif
-    let port = matchstr(a:arg, '^\d\{1,5}$')
-    let arg = '('.replns.'/repl-env :port '.port.')'
+  if isbang
+    let response = connection.eval(a:arg)
   else
-    let arg = a:arg
+    if empty(a:arg)
+      let arg = '(cljs.repl.rhino/repl-env)'
+    elseif a:arg =~# '^\d\{1,5}$'
+      let replns = 'weasel.repl.websocket'
+      if has_key(connection.eval("(require '" . replns . ")"), 'ex')
+        let replns = 'cljs.repl.browser'
+        call connection.eval("(require '" . replns . ")")
+      endif
+      let port = matchstr(a:arg, '^\d\{1,5}$')
+      let arg = '('.replns.'/repl-env :port '.port.')'
+    else
+      let arg = a:arg
+    endif
+    let response = connection.eval('(cemerick.piggieback/cljs-repl'.' '.arg.')')
   endif
-  let response = connection.eval('(cemerick.piggieback/cljs-repl'.' '.arg.')')
 
   if empty(get(response, 'ex'))
     call insert(self.piggiebacks, extend({'connection': connection}, deepcopy(s:piggieback)))

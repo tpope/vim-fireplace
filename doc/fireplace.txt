@@ -45,8 +45,9 @@ properly, and that not all operations are supported.
                         (rather than a Rhino) env with the port set to the
                         number provided.
 
-:Piggieback!            Terminate the most recently created piggieback
-                        session.
+:Piggieback! [{sexpr}]  Without argument, terminate the most recently created
+                        piggieback session.  Given a {sexpr}, this will be
+                        used to create piggieback-ish session.
 
 DOCUMENTATION                                   *fireplace-documentation*
 
