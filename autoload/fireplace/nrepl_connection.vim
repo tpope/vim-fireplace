@@ -8,7 +8,7 @@ let g:autoloaded_nrepl_fireplace_connection = 1
 let s:python_dir = fnamemodify(expand("<sfile>"), ':p:h:h:h') . '/python'
 
 function! s:function(name) abort
-  return function(substitute(a:name,'^s:',matchstr(expand('<sfile>'), '<SNR>\d\+_'),''))
+  return function(substitute(a:name,'^s:',matchstr(expand('<sfile>'), '.*\zs<SNR>\d\+_'),''))
 endfunction
 
 " Bencode {{{1
