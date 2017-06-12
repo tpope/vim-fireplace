@@ -930,7 +930,7 @@ function! s:massage_quickfix() abort
   for entry in qflist
     call extend(entry, s:qfmassage(get(entry, 'text', ''), path))
   endfor
-  call setqflist(qflist, 'replace')
+  call setqflist(qflist, 'r')
 endfunction
 
 augroup fireplace_quickfix
