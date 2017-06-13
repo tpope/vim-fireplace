@@ -1387,7 +1387,8 @@ function! s:Edit(cmd, keyword) abort
       normal! m'
       return matchstr(location, '\d\+')
     else
-      return a:cmd.' '.location.'|let &l:path = '.string(&l:path)
+      return substitute(a:cmd, '^\%(<mods>\)\= ', '', '') . ' ' . location .
+            \ '|let &l:path = ' . string(&l:path)
     endif
   endif
   let v:errmsg = "Couldn't find source for ".a:keyword
@@ -1401,7 +1402,7 @@ nnoremap <silent> <Plug>FireplaceDtabjump :<C-U>exe <SID>Edit('tabedit', expand(
 function! s:set_up_source() abort
   setlocal define=^\\s*(def\\w*
   command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Djump  :exe s:Edit('edit', <q-args>)
-  command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Dsplit :exe s:Edit('split', <q-args>)
+  command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Dsplit :exe s:Edit('<mods> split', <q-args>)
 
   if get(g:, 'fireplace_no_maps') | return | endif
   nmap <buffer> [<C-D>     <Plug>FireplaceDjump
