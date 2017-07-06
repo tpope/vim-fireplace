@@ -15,6 +15,18 @@ augroup fireplace_file_type
   autocmd BufNewFile,BufReadPost *.clj setfiletype clojure
 augroup END
 
+" Section: Utilities
+
+function! s:map(mode, lhs, rhs, ...) abort
+  if get(g:, 'fireplace_no_maps')
+    return
+  endif
+  if flags =~# '<unique>' && !empty(mapcheck(a:lhs, a:mode))
+    return
+  endif
+  execute a:mode.'map <buffer>' flags a:lhs a:rhs
+endfunction
+
 " Section: Escaping
 
 function! s:str(string) abort
@@ -1224,29 +1236,31 @@ function! s:set_up_eval() abort
 
   if get(g:, 'fireplace_no_maps') | return | endif
 
-  nmap <buffer> cp <Plug>FireplacePrint
-  nmap <buffer> cpp <Plug>FireplaceCountPrint
+  call s:map('n', 'cp', '<Plug>FireplacePrint')
+  call s:map('n', 'cpp', '<Plug>FireplaceCountPrint')
 
-  nmap <buffer> c! <Plug>FireplaceFilter
-  nmap <buffer> c!! <Plug>FireplaceCountFilter
+  call s:map('n', 'c!', '<Plug>FireplaceFilter')
+  call s:map('n', 'c!!', '<Plug>FireplaceCountFilter')
 
-  nmap <buffer> cm <Plug>FireplaceMacroExpand
-  nmap <buffer> cmm <Plug>FireplaceCountMacroExpand
-  nmap <buffer> c1m <Plug>Fireplace1MacroExpand
-  nmap <buffer> c1mm <Plug>FireplaceCount1MacroExpand
+  call s:map('n', 'cm', '<Plug>FireplaceMacroExpand')
+  call s:map('n', 'cmm', '<Plug>FireplaceCountMacroExpand')
+  call s:map('n', 'c1m', '<Plug>Fireplace1MacroExpand')
+  call s:map('n', 'c1mm', '<Plug>FireplaceCount1MacroExpand')
 
-  nmap <buffer> cq <Plug>FireplaceEdit
-  nmap <buffer> cqq <Plug>FireplaceCountEdit
+  call s:map('n', 'cq', '<Plug>FireplaceEdit')
+  call s:map('n', 'cqq', '<Plug>FireplaceCountEdit')
 
-  nmap <buffer> cqp <Plug>FireplacePrompt
-  exe 'nmap <buffer> cqc <Plug>FireplacePrompt' . &cedit . 'i'
+  call s:map('n', 'cqp', '<Plug>FireplacePrompt')
+  call s:map('n', 'cqc', '<Plug>FireplacePrompt' . &cedit . 'i')
 
-  map! <buffer> <C-R>( <Plug>FireplaceRecall
+  call s:map('i', '<C-R>(', '<Plug>FireplaceRecall')
+  call s:map('c', '<C-R>(', '<Plug>FireplaceRecall')
+  call s:map('s', '<C-R>(', '<Plug>FireplaceRecall')
 endfunction
 
 function! s:set_up_historical() abort
   setlocal readonly nomodifiable
-  nnoremap <buffer><silent>q :bdelete<CR>
+  call s:map('n', 'q', ':bdelete<CR>', '<silent>')
 endfunction
 
 function! s:cmdwinenter() abort
@@ -1292,8 +1306,7 @@ endfunction
 function! s:set_up_require() abort
   command! -buffer -bar -bang -complete=customlist,fireplace#ns_complete -nargs=? Require :exe s:Require(<bang>0, 1, <q-args>)
 
-  if get(g:, 'fireplace_no_maps') | return | endif
-  nnoremap <silent><buffer> cpr :<C-R>=expand('%:e') ==# 'cljs' ? 'Require' : 'RunTests'<CR><CR>
+  call s:map('n', 'cpr', ":<C-R>=expand('%:e') ==# 'cljs' ? 'Require' : 'RunTests'<CR><CR>", '<silent>')
 endfunction
 
 augroup fireplace_require
@@ -1370,15 +1383,19 @@ function! fireplace#source(symbol) abort
   return ''
 endfunction
 
+function! fireplace#location(keyword) abort
+  if a:keyword =~# '^\k\+[/.]$'
+    return fireplace#findfile(a:keyword[0: -2])
+  elseif a:keyword =~# '^\k\+\.[^/.]\+$'
+    return fireplace#findfile(a:keyword)
+  else
+    return fireplace#source(a:keyword)
+  endif
+endfunction
+
 function! s:Edit(cmd, keyword) abort
   try
-    if a:keyword =~# '^\k\+[/.]$'
-      let location = fireplace#findfile(a:keyword[0: -2])
-    elseif a:keyword =~# '^\k\+\.[^/.]\+$'
-      let location = fireplace#findfile(a:keyword)
-    else
-      let location = fireplace#source(a:keyword)
-    endif
+    let location = fireplace#location(a:keyword)
   catch /^Clojure:/
     return ''
   endtry
@@ -1404,12 +1421,11 @@ function! s:set_up_source() abort
   command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Djump  :exe s:Edit('edit', <q-args>)
   command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Dsplit :exe s:Edit('<mods> split', <q-args>)
 
-  if get(g:, 'fireplace_no_maps') | return | endif
-  nmap <buffer> [<C-D>     <Plug>FireplaceDjump
-  nmap <buffer> ]<C-D>     <Plug>FireplaceDjump
-  nmap <buffer> <C-W><C-D> <Plug>FireplaceDsplit
-  nmap <buffer> <C-W>d     <Plug>FireplaceDsplit
-  nmap <buffer> <C-W>gd    <Plug>FireplaceDtabjump
+  call s:map('n', '[<C-D>',     '<Plug>FireplaceDjump')
+  call s:map('n', ']<C-D>',     '<Plug>FireplaceDjump')
+  call s:map('n', '<C-W><C-D>', '<Plug>FireplaceDsplit')
+  call s:map('n', '<C-W>d',     '<Plug>FireplaceDsplit')
+  call s:map('n', '<C-W>gd',    '<Plug>FireplaceDtabjump')
 endfunction
 
 augroup fireplace_source
@@ -1579,20 +1595,12 @@ function! s:set_up_go_to_file() abort
   cmap <buffer><script><expr> <Plug><cfile> substitute(fireplace#cfile(),'^$',"\022\006",'')
   cmap <buffer><script><expr> <Plug><cpath> <SID>Find('','')
   if get(g:, 'fireplace_no_maps') | return | endif
-  cmap <buffer> <C-R><C-F> <Plug><cfile>
-  cmap <buffer> <C-R><C-P> <Plug><cpath>
-  if empty(mapcheck('gf', 'n'))
-    nmap <buffer> gf         <Plug>FireplaceEditFile
-  endif
-  if empty(mapcheck('<C-W>f', 'n'))
-    nmap <buffer> <C-W>f     <Plug>FireplaceSplitFile
-  endif
-  if empty(mapcheck('<C-W><C-F>', 'n'))
-    nmap <buffer> <C-W><C-F> <Plug>FireplaceSplitFile
-  endif
-  if empty(mapcheck('<C-W>gf', 'n'))
-    nmap <buffer> <C-W>gf    <Plug>FireplaceTabeditFile
-  endif
+  call s:map('c', '<C-R><C-F>', '<Plug><cfile>')
+  call s:map('c', '<C-R><C-P>', '<Plug><cpath>')
+  call s:map('n', 'gf',         '<Plug>FireplaceEditFile',    '<unique>')
+  call s:map('n', '<C-W>f',     '<Plug>FireplaceSplitFile',   '<unique>')
+  call s:map('n', '<C-W><C-F>', '<Plug>FireplaceSplitFile',   '<unique>')
+  call s:map('n', '<C-W>gf',    '<Plug>FireplaceTabeditFile', '<unique>')
 endfunction
 
 augroup fireplace_go_to_file
@@ -1721,11 +1729,9 @@ function! s:set_up_doc() abort
   setlocal keywordprg=:Doc
 
   if get(g:, 'fireplace_no_maps') | return | endif
-  if empty(mapcheck('K', 'n'))
-    nmap <buffer> K <Plug>FireplaceK
-  endif
-  nmap <buffer> [d <Plug>FireplaceSource
-  nmap <buffer> ]d <Plug>FireplaceSource
+  call s:map('n', 'K', '<Plug>FireplaceK', '<unique>')
+  call s:map('n', '[d', '<Plug>FireplaceSource')
+  call s:map('n', ']d', '<Plug>FireplaceSource')
 endfunction
 
 augroup fireplace_doc
