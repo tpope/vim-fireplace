@@ -21,6 +21,7 @@ function! s:map(mode, lhs, rhs, ...) abort
   if get(g:, 'fireplace_no_maps')
     return
   endif
+  let flags = (a:0 ? a:1 : '') . (a:rhs =~# '^<Plug>' ? '' : '<script>')
   if flags =~# '<unique>' && !empty(mapcheck(a:lhs, a:mode))
     return
   endif
