@@ -98,6 +98,8 @@ function! fireplace#nrepl#combine(responses)
         let combined[key] = response[key]
       elseif key ==# 'value'
         let combined.value = extend(get(combined, 'value', []), [response.value])
+      elseif key ==# 'pprint-out'
+        let combined['pprint-out'] = extend(get(combined, 'pprint-out', []), [response['pprint-out']])
       elseif key ==# 'status'
         for entry in response[key]
           if index(combined[key], entry) < 0
@@ -143,6 +145,12 @@ function! s:nrepl_eval(expr, ...) dict abort
   else
     let msg.id = fireplace#nrepl#next_id()
   endif
+  let pprint_opts = ['pprint', 'pprint-fn', 'print-length', 'print-level', 'print-meta', 'print-right-margin']
+  for popt in pprint_opts
+    if has_key(options, popt)
+      let msg[popt] = options[popt]
+    endif
+  endfor
   if has_key(options, 'file_path')
     let msg.op = 'load-file'
     let msg['file-path'] = options.file_path
@@ -177,6 +185,13 @@ function! s:nrepl_eval(expr, ...) dict abort
   if has_key(response, 'value')
     let response.value = response.value[-1]
   endif
+  " If pretty print was requested, value won't be set, so replace it with
+  " this. Assume all downstream who ask for pprinted values can handle
+  " pprinted values.
+  if has_key(response, 'pprint-out')
+    let response.value = join(response['pprint-out'], '')
+  endif
+
   return response
 endfunction
 
