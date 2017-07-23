@@ -1043,17 +1043,17 @@ endfunction
 
 function! s:add_pprint_opts(msg)
   let a:msg.pprint = 1
-  let a:msg['pprint-fn'] = g:fireplace_pprint_fn
+  let a:msg.pprint_fn = g:fireplace_pprint_fn
   let l:max_right_margin = get(g:, 'fireplace_print_right_margin', &columns)
-  let a:msg['print-right-margin'] = min([l:max_right_margin, &columns])
+  let a:msg.print_right_margin = min([l:max_right_margin, &columns])
   if exists("g:fireplace_print_length")
-    let a:msg['print-length'] = g:fireplace_print_length
+    let a:msg.print_length = g:fireplace_print_length
   endif
   if exists("g:fireplace_print_level")
-    let a:msg['print-level'] = g:fireplace_print_level
+    let a:msg.print_level = g:fireplace_print_level
   endif
   if exists("g:fireplace_print_meta")
-    let a:msg['print-meta'] = g:fireplace_print_meta
+    let a:msg.print_meta = g:fireplace_print_meta
   endif
   return a:msg
 endfunction
