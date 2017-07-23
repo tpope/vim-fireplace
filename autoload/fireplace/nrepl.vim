@@ -132,25 +132,19 @@ function! s:nrepl_eval(expr, ...) dict abort
   let msg = {"op": "eval"}
   let msg.code = a:expr
   let options = a:0 ? a:1 : {}
-  if has_key(options, 'ns')
-    let msg.ns = options.ns
-  elseif has_key(self, 'ns')
+
+  for [k, v] in items(options)
+    let msg[tr(k, '_', '-')] = v
+  endfor
+
+  if !has_key(msg, 'ns') && has_key(self, 'ns')
     let msg.ns = self.ns
   endif
-  if has_key(options, 'session')
-    let msg.session = options.session
-  endif
-  if has_key(options, 'id')
-    let msg.id = options.id
-  else
+
+  if !has_key(msg, 'id')
     let msg.id = fireplace#nrepl#next_id()
   endif
-  let pprint_opts = ['pprint', 'pprint-fn', 'print-length', 'print-level', 'print-meta', 'print-right-margin']
-  for popt in pprint_opts
-    if has_key(options, popt)
-      let msg[popt] = options[popt]
-    endif
-  endfor
+
   if has_key(options, 'file_path')
     let msg.op = 'load-file'
     let msg['file-path'] = options.file_path
