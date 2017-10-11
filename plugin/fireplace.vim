@@ -798,7 +798,7 @@ function! s:temp_response(response) abort
     let output = map(split(a:response.out, "\n"), '";".v:val')
   endif
   if has_key(a:response, 'value')
-    let output += [a:response.value]
+    let output += split(a:response.value, "\n")
   endif
   let temp = tempname().'.clj'
   call writefile(output, temp)
@@ -1148,7 +1148,7 @@ function! s:Eval(bang, line1, line2, count, args) abort
     catch /^Clojure:/
     endtry
   else
-    call fireplace#echo_session_eval(expr, options)
+    call fireplace#echo_session_eval(expr, s:add_pprint_opts(options))
   endif
   return ''
 endfunction
