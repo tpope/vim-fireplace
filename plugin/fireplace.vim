@@ -934,7 +934,7 @@ function! fireplace#quickfix_for(stacktrace) abort
 endfunction
 
 function! s:massage_quickfix() abort
-  let p = substitute(matchstr(','.&errorformat, ',classpath\zs\%(\\.\|[^\,]\)*'), '\\\ze[\,%]', '', 'g')
+  let p = substitute(matchstr(','.&errorformat, '\C,\%(%\\&\)\=classpath\zs\%(\\.\|[^\,]\)*'), '\\\ze[\,%]', '', 'g')
   if empty(p)
     return
   endif
