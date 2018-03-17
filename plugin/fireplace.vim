@@ -63,7 +63,7 @@ function! fireplace#jar_contents(path) abort
     endif
   endif
 
-  if !has_key(s:jar_contents, a:path) && has('python')
+  if !has_key(s:jar_contents, a:path) && has('python') && !$FIREPLACE_NO_IF_PYTHON
     python import vim, zipfile
     python vim.command("let s:jar_contents[a:path] = split('" + "\n".join(zipfile.ZipFile(vim.eval('a:path')).namelist()) + "', \"\n\")")
   elseif !has_key(s:jar_contents, a:path) && !empty(s:zipinfo)
