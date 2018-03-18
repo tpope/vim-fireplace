@@ -25,6 +25,8 @@ function! s:map(mode, lhs, rhs, ...) abort
   if flags =~# '<unique>' && !empty(mapcheck(a:lhs, a:mode))
     return
   endif
+  let head = a:lhs
+  let tail = ''
   let keys = get(g:, a:mode.'remap', {})
   if type(keys) != type({})
     return
