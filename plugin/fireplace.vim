@@ -1638,10 +1638,11 @@ function! fireplace#format(lnum, count, char) abort
   try
     set selection=inclusive clipboard-=unnamed clipboard-=unnamedplus
     silent exe "normal! " . string(a:lnum) . "ggV" . string(a:count-1) . "jy"
-    let response = fireplace#message({'op': 'format-code', 'code': @@})[0]
+    let code = @@
+    let response = fireplace#message({'op': 'format-code', 'code': code})[0]
     if !empty(get(response, 'formatted-code'))
       let @@ = get(response, 'formatted-code')
-      if @@ !~# '^\n*$'
+      if @@ !~# '^\n*$' && @@ !=# code
         normal! gvp
       endif
     endif
