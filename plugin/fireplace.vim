@@ -965,7 +965,13 @@ function! s:massage_quickfix() abort
   for entry in qflist
     call extend(entry, s:qfmassage(get(entry, 'text', ''), path))
   endfor
+  if exists(':chistory')
+    let attrs = getqflist({'title': 1})
+  endif
   call setqflist(qflist, 'r')
+  if exists('l:attrs')
+    call setqflist(qflist, 'r', attrs)
+  endif
 endfunction
 
 augroup fireplace_quickfix
