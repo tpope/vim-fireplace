@@ -3,7 +3,7 @@
 " Version:      1.1
 " GetLatestVimScripts: 4978 1 :AutoInstall: fireplace.vim
 
-if exists("g:loaded_fireplace") || v:version < 700 || &cp
+if exists("g:loaded_fireplace") || v:version < 700 || &compatible
   finish
 endif
 let g:loaded_fireplace = 1
@@ -625,13 +625,12 @@ function! s:buf() abort
   endif
 endfunction
 
-function! s:repl_ns() abort
+function! s:repl_ns(...) abort
   let buf = a:0 ? a:1 : s:buf()
   if fnamemodify(bufname(buf), ':e') ==# 'cljs'
     return 'cljs.repl'
   endif
-    return 'clojure.repl'
-  endif
+  return 'clojure.repl'
 endfunction
 
 function! s:slash() abort
