@@ -179,9 +179,6 @@ function! s:nrepl_eval(expr, ...) dict abort
   if has_key(response, 'value')
     let response.value = response.value[-1]
   endif
-  " If pretty print was requested, value won't be set, so replace it with
-  " this. Assume all downstream who ask for pprinted values can handle
-  " pprinted values.
   if has_key(response, 'pprint-out')
     let response.value = join(response['pprint-out'], '')
   endif

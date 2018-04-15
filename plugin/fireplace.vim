@@ -8,12 +8,6 @@ if exists("g:loaded_fireplace") || v:version < 700 || &compatible
 endif
 let g:loaded_fireplace = 1
 
-" Available when using CIDER:
-" * clojure.pprint/pprint
-" * cider.nrepl.middleware.pprint/fipp-pprint
-" * cider.nrepl.middleware.pprint/puget-pprint
-let g:fireplace_pprint_fn = 'cider.nrepl.middleware.pprint/fipp-pprint'
-
 " Section: File type
 
 augroup fireplace_file_type
@@ -1063,10 +1057,11 @@ function! s:printop(type) abort
   call feedkeys("\<Plug>FireplacePrintLast")
 endfunction
 
-function! s:add_pprint_opts(msg)
+function! s:add_pprint_opts(msg) abort
   let a:msg.pprint = 1
-  let a:msg.pprint_fn = g:fireplace_pprint_fn
-  let l:max_right_margin = get(g:, 'fireplace_print_right_margin', &columns)
+
+  let a:msg.pprint_fn = get(g:, 'fireplace_pprint_fn', 'cider.nrepl.middleware.pprint/fipp-pprint')
+  let max_right_margin = get(g:, 'fireplace_print_right_margin', &columns)
   let a:msg.print_right_margin = min([l:max_right_margin, &columns])
   if exists("g:fireplace_print_length")
     let a:msg.print_length = g:fireplace_print_length
