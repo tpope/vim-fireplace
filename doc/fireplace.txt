@@ -37,12 +37,12 @@ properly, and that not all operations are supported.
 
                                                 *fireplace-:Piggieback*
 :Piggieback [{env}]     Create a new nREPL session and invoke
-                        cemerick.piggieback/cljs-repl with the given or
-                        default (Rhino) environment.  This will also happen
+                        cider.piggieback/cljs-repl with the given or
+                        default (Nashorn) environment.  This will also happen
                         automatically on first eval in a ClojureScript buffer
                         if not invoked explicitly. If {env} is a number, the
                         piggieback repl-env will will use a cljs.repl.browser
-                        (rather than a Rhino) env with the port set to the
+                        (rather than a Nashorn) env with the port set to the
                         number provided.
 
 :Piggieback!            Terminate the most recently created piggieback

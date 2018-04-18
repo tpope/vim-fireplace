@@ -308,7 +308,8 @@ function! s:repl.piggieback(arg, ...) abort
 
   let connection = s:conn_try(self.connection, 'clone')
   if empty(a:arg)
-    let arg = '(cljs.repl.rhino/repl-env)'
+    call connection.eval("(require 'cljs.repl.nashorn)")
+    let arg = '(cljs.repl.nashorn/repl-env)'
   elseif a:arg =~# '^\d\{1,5}$'
     let replns = 'weasel.repl.websocket'
     if has_key(connection.eval("(require '" . replns . ")"), 'ex')
@@ -320,7 +321,9 @@ function! s:repl.piggieback(arg, ...) abort
   else
     let arg = a:arg
   endif
-  let response = connection.eval('(cemerick.piggieback/cljs-repl'.' '.arg.')')
+  let response = connection.eval("((or (resolve 'cider.piggieback/cljs-repl)"
+        \ ."(resolve 'cemerick.piggieback/cljs-repl))"
+        \ .' '.arg.')')
 
   if empty(get(response, 'ex'))
     call insert(self.piggiebacks, extend({'connection': connection}, deepcopy(s:piggieback)))
