@@ -105,10 +105,16 @@ endfunction
 
 function! s:nrepl_transport_call(msg, terms, sels, ...) dict abort
   let payload = fireplace#nrepl_connection#bencode(a:msg)
+
+  if a:0 && a:1 ==# 'ignore'
+    call self.dispatch('send', payload)
+    return
+  endif
+
   let response = self.dispatch('call', payload, a:terms, a:sels)
   if !a:0
     return response
-  elseif a:1 !=# 'ignore'
+  else
     return map(response, 'fireplace#nrepl#callback(v:val, "synchronous", a:000)')
   endif
 endfunction
