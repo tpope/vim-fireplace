@@ -22,9 +22,6 @@ function! s:map(mode, lhs, rhs, ...) abort
     return
   endif
   let flags = (a:0 ? a:1 : '') . (a:rhs =~# '^<Plug>' ? '' : '<script>')
-  if flags =~# '<unique>' && !empty(mapcheck(a:lhs, a:mode))
-    return
-  endif
   let head = a:lhs
   let tail = ''
   let keys = get(g:, a:mode.'remap', {})
@@ -42,7 +39,9 @@ function! s:map(mode, lhs, rhs, ...) abort
     let tail = matchstr(head, '<[^<>]*>$\|.$') . tail
     let head = substitute(head, '<[^<>]*>$\|.$', '', '')
   endwhile
-  exe a:mode.'map <buffer>' flags head.tail a:rhs
+  if flags =~# '<unique>' && !empty(mapcheck(head.tail, a:mode))
+    exe a:mode.'map <buffer>' flags head.tail a:rhs
+  endif
 endfunction
 
 " Section: Escaping
