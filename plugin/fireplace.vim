@@ -39,7 +39,7 @@ function! s:map(mode, lhs, rhs, ...) abort
     let tail = matchstr(head, '<[^<>]*>$\|.$') . tail
     let head = substitute(head, '<[^<>]*>$\|.$', '', '')
   endwhile
-  if flags =~# '<unique>' && !empty(mapcheck(head.tail, a:mode))
+  if flags !~# '<unique>' || empty(mapcheck(head.tail, a:mode))
     exe a:mode.'map <buffer>' flags head.tail a:rhs
   endif
 endfunction
