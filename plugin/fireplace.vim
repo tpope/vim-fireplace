@@ -1770,9 +1770,10 @@ function! s:set_up_doc() abort
   command! -buffer -bar -nargs=1 Javadoc :exe s:Lookup('clojure.java.javadoc', 'javadoc', <q-args>)
   command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Doc     :exe s:Doc(<q-args>)
   command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Source  :exe s:Lookup(s:repl_ns(), 'source', <q-args>)
+  command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Dlist   :exe s:Lookup(s:repl_ns(), 'source', <q-args>)
+  command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Dsearch :exe s:Lookup(s:repl_ns(), 'source', <q-args>)
   setlocal keywordprg=:Doc
 
-  if get(g:, 'fireplace_no_maps') | return | endif
   call s:map('n', 'K', '<Plug>FireplaceK', '<unique>')
   call s:map('n', '[d', '<Plug>FireplaceSource')
   call s:map('n', ']d', '<Plug>FireplaceSource')
