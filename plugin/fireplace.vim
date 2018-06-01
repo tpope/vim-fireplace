@@ -1654,7 +1654,7 @@ augroup END
 " Section: Formatting
 
 function! fireplace#format(lnum, count, char) abort
-  if mode() =~# '[iR]'
+  if mode() =~# '[iR]' || getline(a:lnum) =~# '^\s*;'
     return -1
   endif
   let reg_save = @@
