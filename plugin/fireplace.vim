@@ -8,6 +8,38 @@ if exists("g:loaded_fireplace") || v:version < 700 || &compatible
 endif
 let g:loaded_fireplace = 1
 
+" Section: Python
+let s:python_version = ["3", "2"]
+if exists("g:fireplace_python_version_preference")
+  if g:fireplace_python_version_preference == 2:
+    let s:python_version = ["2", "3"]
+  elseif g:fireplace_python_version_preference == 3:
+    let s:python_version = ["3", "2"]
+  endif
+endif
+for py_ver in s:python_version
+  let _py = "python" . py_ver
+  if has(_py)
+    let g:fireplace#_py = _py
+    if py_ver == 2
+      let g:fireplace#_pyfile = "pyfile"
+    elseif py_ver == 3
+      let g:fireplace#_pyfile = "py3file"
+    endif
+
+    " most distributions have an explicitly name Python like /usr/bin/python3
+    " and /usr/bin/python2
+    if executable(_py)
+      let g:fireplace#_pyexe = _py
+    elseif executable("python")
+      let g:fireplace#_pyexe = "python"
+    else
+      let g:fireplace#_pyexe = ""
+    endif
+    break
+  endif
+endfor
+
 " Section: File type
 
 augroup fireplace_file_type
@@ -72,16 +104,15 @@ function! fireplace#jar_contents(path) abort
       let s:zipinfo = 'zipinfo -1 '
     elseif executable('jar')
       let s:zipinfo = 'jar tf '
-    elseif executable('python')
-      let s:zipinfo = 'python -c '.shellescape('import zipfile, sys; print chr(10).join(zipfile.ZipFile(sys.argv[1]).namelist())').' '
+    elseif executable(g:fireplace#_pyexe)
+      let s:zipinfo = g:fireplace#_pyexe . ' -c '.shellescape('import zipfile, sys; print chr(10).join(zipfile.ZipFile(sys.argv[1]).namelist())').' '
     else
-      let s:zipinfo = ''
     endif
   endif
 
-  if !has_key(s:jar_contents, a:path) && has('python') && !$FIREPLACE_NO_IF_PYTHON
-    python import vim, zipfile
-    python vim.command("let s:jar_contents[a:path] = split('" + "\n".join(zipfile.ZipFile(vim.eval('a:path')).namelist()) + "', \"\n\")")
+  if !has_key(s:jar_contents, a:path) && has(g:fireplace#_py) && !$FIREPLACE_NO_IF_PYTHON
+    exe g:fireplace#_py . " import vim, zipfile"
+    exe g:fireplace#_py . ' vim.command("let s:jar_contents[a:path] = split(''" + "\n".join(zipfile.ZipFile(vim.eval(''a:path'')).namelist()) + "'', \"\n\")")'
   elseif !has_key(s:jar_contents, a:path) && !empty(s:zipinfo)
     let s:jar_contents[a:path] = split(system(s:zipinfo.shellescape(a:path)), "\n")
     if v:shell_error

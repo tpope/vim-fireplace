@@ -85,7 +85,7 @@ let s:keepalive = tempname()
 call writefile([getpid()], s:keepalive)
 
 function! s:nrepl_transport_command(cmd, args) dict abort
-  return 'python'
+  return g:fireplace#_pyexe
         \ . ' ' . s:shellesc(s:python_dir.'/nrepl_fireplace.py')
         \ . ' ' . s:shellesc(self.host)
         \ . ' ' . s:shellesc(self.port)
@@ -119,36 +119,22 @@ let s:nrepl_transport = {
       \ 'dispatch': s:function('s:nrepl_transport_dispatch'),
       \ 'call': s:function('s:nrepl_transport_call')}
 
-if !has('python') || $FIREPLACE_NO_IF_PYTHON
+if !has(g:fireplace#_py) || $FIREPLACE_NO_IF_PYTHON
   finish
 endif
 
-if !exists('s:python')
-  exe 'python sys.path.insert(0, "'.escape(s:python_dir, '\"').'")'
-  let s:python = 1
-  python import nrepl_fireplace
+if !exists('s:loaded_plugin_python_scripts')
+  exe g:fireplace#_py . ' sys.path.insert(0, "'.escape(s:python_dir, '\"').'")'
+  let s:loaded_plugin_python_scripts = 1
+  exe g:fireplace#_py . " import nrepl_fireplace"
 else
-  python reload(nrepl_fireplace)
+  exe g:fireplace#_py . " reload(nrepl_fireplace)"
 endif
 
-python << EOF
-import vim
-
-def fireplace_let(var, value):
-  return vim.command('let ' + var + ' = ' + nrepl_fireplace.vim_encode(value))
-
-def fireplace_check():
-  vim.eval('getchar(1)')
-
-def fireplace_repl_dispatch(command, *args):
-  try:
-    fireplace_let('out', nrepl_fireplace.dispatch(vim.eval('self.host'), vim.eval('self.port'), fireplace_check, None, command, *args))
-  except Exception, e:
-    fireplace_let('err', str(e))
-EOF
+exe fireplace#_pyfile . " " . escape(s:python_dir, '\"') ."/nrepl_fireplace_loader.py"
 
 function! s:nrepl_transport_dispatch(command, ...) dict abort
-  python fireplace_repl_dispatch(vim.eval('a:command'), *vim.eval('a:000'))
+  exe g:fireplace#_py . " fireplace_repl_dispatch(vim.eval('a:command'), *vim.eval('a:000'))"
   if !exists('err')
     return out
   endif
