@@ -108,7 +108,7 @@ class Connection:
             response = self.receive()
             if "stacktrace" in response and "status" not in response:
                 response["status"] = ["done"]
-            if "changed-namespaces" in response and "status" not in response:
+            if "changed-namespaces" in response:
                 response["status"] = ["done"]
             for key in selectors:
                 if response[key] != selectors[key]:
