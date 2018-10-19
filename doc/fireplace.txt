@@ -48,6 +48,11 @@ properly, and that not all operations are supported.
 :Piggieback!            Terminate the most recently created piggieback
                         session.
 
+:Fig {env-id}		Wrapper around :Piggieback to avoid useless typing for
+			Figwheel.main.
+			Instead	':Piggieback (figwheel.main.api/repl-env "dev")'
+			just use ':Fig dev'.
+
 DOCUMENTATION                                   *fireplace-documentation*
 
                                                 *fireplace-:Doc*
