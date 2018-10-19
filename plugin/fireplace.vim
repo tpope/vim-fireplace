@@ -492,7 +492,7 @@ augroup fireplace_connect
   autocmd FileType clojure command! -buffer -bang -complete=customlist,fireplace#eval_complete -nargs=*
         \ Piggieback call s:piggieback(<q-args>, <bang>0)
   autocmd FileType clojure command! -buffer -bang -complete=customlist,fireplace#eval_complete -nargs=*
-          \ Fig call s:piggieback("(figwheel.main.api/repl-env \"" . <q-args> . "\")", <bang>0)
+        \ Fig call s:piggieback("(figwheel.main.api/repl-env \"" . <q-args> . "\")", <bang>0)
 augroup END
 
 " Section: Java runner
