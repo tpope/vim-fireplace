@@ -307,8 +307,15 @@ function! s:repl.piggieback(arg, ...) abort
 
   let connection = s:conn_try(self.connection, 'clone')
   if empty(a:arg)
-    call connection.eval("(require 'cljs.repl.nashorn)")
-    let arg = '(cljs.repl.nashorn/repl-env)'
+    if exists("g:fireplace_default_cljs_repl")
+      let arg = g:fireplace_default_cljs_repl
+      if empty(arg)
+        return {'ex': 'No cljs repl available'}
+      endif
+    else
+      call connection.eval("(require 'cljs.repl.nashorn)")
+      let arg = '(cljs.repl.nashorn/repl-env)'
+    endif
   elseif a:arg =~# '^\d\{1,5}$'
     let replns = 'weasel.repl.websocket'
     if has_key(connection.eval("(require '" . replns . ")"), 'ex')

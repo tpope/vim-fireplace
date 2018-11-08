@@ -45,6 +45,9 @@ properly, and that not all operations are supported.
                         (rather than a Nashorn) env with the port set to the
                         number provided.
 
+                        The default environment can be configured using
+                        |g:fireplace_default_cljs_repl| option.
+
 :Piggieback!            Terminate the most recently created piggieback
                         session.
 
@@ -184,6 +187,28 @@ And insert mode:
 
 There's omnicomplete on |CTRL-X_CTRL-O|, which works in Clojure buffers and
 in the |command-line-window|, and tab complete at the cqp prompt.
+
+OPTIONS                                         *fireplace-options*
+
+                                                *'g:fireplace_default_cljs_repl'*
+g:fireplace_default_cljs_repl
+                        Sets the default ClojureScript REPL environment. This
+                        is used when evaluating code in cljs files without
+                        active Cljs REPL connection or when calling
+                        |fireplace-:Piggieback| command without arguments.
+
+Default repl-env is: >
+  (cljs.repl.nashorn/repl-env)
+
+To disable default REPL use empty string: >
+  let g:fireplace_default_cljs_repl = ''
+
+To use different REPL environment use: >
+  let g:fireplace_default_cljs_repl = "(do (require 'cljs.repl.node) ((resolve 'cljs.repl.node/repl-env)))"
+
+Note that you need to require the repl namespace yourself and use {resolve} to
+refer to the function. This is because the symbol is not available before
+namespace is loaded.
 
 ABOUT                                           *fireplace-about*
 
