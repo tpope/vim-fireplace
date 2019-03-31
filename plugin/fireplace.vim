@@ -664,7 +664,12 @@ function! fireplace#path(...) abort
       return repl.path()
     endif
   endfor
-  return s:path_extract(getbufvar(buf, '&path'))
+  let res = s:path_extract(getbufvar(buf, '&path'))
+  if len(res) == 0
+    return split(fireplace#evalparse('(System/getProperty "java.class.path")'), ':')
+  else
+    return res
+  endif
 endfunction
 
 function! fireplace#platform(...) abort
