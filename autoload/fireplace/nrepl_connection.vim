@@ -84,8 +84,10 @@ endfunction
 let s:keepalive = tempname()
 call writefile([getpid()], s:keepalive)
 
+let s:python_exe = executable('python3') ? 'python3' : 'python'
+
 function! s:nrepl_transport_command(cmd, args) dict abort
-  return 'python'
+  return s:python_exe
         \ . ' ' . s:shellesc(s:python_dir.'/nrepl_fireplace.py')
         \ . ' ' . s:shellesc(self.host)
         \ . ' ' . s:shellesc(self.port)
@@ -119,19 +121,24 @@ let s:nrepl_transport = {
       \ 'dispatch': s:function('s:nrepl_transport_dispatch'),
       \ 'call': s:function('s:nrepl_transport_call')}
 
-if !has('python') || $FIREPLACE_NO_IF_PYTHON
+let s:python = has('python3') ? 'python3' : has('python') ? 'python' : ''
+if empty(s:python) || $FIREPLACE_NO_IF_PYTHON
   finish
 endif
 
-if !exists('s:python')
-  exe 'python sys.path.insert(0, "'.escape(s:python_dir, '\"').'")'
-  let s:python = 1
-  python import nrepl_fireplace
+if !exists('s:python_loaded')
+  exe s:python 'sys.path.insert(0, "'.escape(s:python_dir, '\"').'")'
+  let s:python_loaded = 1
+  exe s:python 'import nrepl_fireplace'
 else
-  python reload(nrepl_fireplace)
+  exe s:python 'reload(nrepl_fireplace)'
 endif
 
+" Syntax highlighting hack
+exe s:python '<< EOF'
+python = EOF = 0
 python << EOF
+
 import vim
 
 def fireplace_let(var, value):
@@ -148,7 +155,7 @@ def fireplace_repl_dispatch(command, *args):
 EOF
 
 function! s:nrepl_transport_dispatch(command, ...) dict abort
-  python fireplace_repl_dispatch(vim.eval('a:command'), *vim.eval('a:000'))
+  exe s:python "fireplace_repl_dispatch(vim.eval('a:command'), *vim.eval('a:000'))"
   if !exists('err')
     return out
   endif
