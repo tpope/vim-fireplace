@@ -143,7 +143,7 @@ def fireplace_check():
 def fireplace_repl_dispatch(command, *args):
   try:
     fireplace_let('out', nrepl_fireplace.dispatch(vim.eval('self.host'), vim.eval('self.port'), fireplace_check, None, command, *args))
-  except Exception, e:
+  except Exception as e:
     fireplace_let('err', str(e))
 EOF
 
