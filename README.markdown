@@ -7,21 +7,17 @@ Clojure.
 ## Installation
 
 First, set up [cider-nrepl][].  (If you skip this step, fireplace.vim will
-make do with eval, which mostly works.) Next, fireplace.vim doesn't provide
-indenting or syntax highlighting, so you'll want [a set of Clojure runtime
-files](https://github.com/guns/vim-clojure-static) if you're on a version of
-Vim earlier than 7.4.  You might also want [salve.vim][] for assorted
-static project support.
+make do with eval, which mostly works.)
 
-If you don't have a preferred installation method, I recommend
-installing [pathogen.vim](https://github.com/tpope/vim-pathogen), and
-then simply copy and paste:
+Install Fireplace using your favorite package manager, or use Vim's built-in
+package support:
 
-    cd ~/.vim/bundle
-    git clone git://github.com/tpope/vim-fireplace.git
+    mkdir -p ~/.vim/pack/tpope/start
+    cd ~/.vim/pack/tpope/start
+    git clone https://tpope.io/vim/fireplace.git
+    vim -u NONE -c "helptags fireplace/doc" -c q
 
-Once help tags have been generated, you can view the manual with
-`:help fireplace`.
+You might also want [salve.vim][] for assorted static project support.
 
 ## Features
 
