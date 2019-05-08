@@ -373,17 +373,18 @@ function! s:unregister_connection(conn) abort
 endfunction
 
 function! fireplace#register_port_file(portfile, ...) abort
-  let old = get(s:repl_portfiles, a:portfile, {})
-  if has_key(old, 'time') && getftime(a:portfile) !=# old.time
+  let portfile = fnamemodify(a:portfile, ':p')
+  let old = get(s:repl_portfiles, portfile, {})
+  if has_key(old, 'time') && getftime(portfile) !=# old.time
     call s:unregister_connection(old.connection)
     let old = {}
   endif
-  if empty(old) && getfsize(a:portfile) > 0
-    let port = matchstr(readfile(a:portfile, 'b', 1)[0], '\d\+')
+  if empty(old) && getfsize(portfile) > 0
+    let port = matchstr(readfile(portfile, 'b', 1)[0], '\d\+')
     try
       let conn = fireplace#nrepl_connection#open(port)
-      let s:repl_portfiles[a:portfile] = {
-            \ 'time': getftime(a:portfile),
+      let s:repl_portfiles[portfile] = {
+            \ 'time': getftime(portfile),
             \ 'connection': conn}
       call s:register_connection(conn, a:0 ? a:1 : '')
       return conn
