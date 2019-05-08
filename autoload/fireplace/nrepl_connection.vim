@@ -93,7 +93,7 @@ function! s:nrepl_transport_command(cmd, args) dict abort
         \ . ' ' . s:shellesc(self.port)
         \ . ' ' . s:shellesc(s:keepalive)
         \ . ' ' . s:shellesc(a:cmd)
-        \ . ' ' . join(map(copy(a:args), 's:shellesc(fireplace#nrepl_connection#bencode(v:val))'), ' ')
+        \ . ' ' . join(map(copy(a:args), 's:shellesc(json_encode(v:val))'), ' ')
 endfunction
 
 function! s:nrepl_transport_dispatch(cmd, ...) dict abort

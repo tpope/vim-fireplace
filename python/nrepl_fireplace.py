@@ -2,6 +2,7 @@ import os
 import select
 import socket
 import sys
+import json
 
 try:
     from StringIO import StringIO
@@ -66,6 +67,13 @@ def bdecode(f, char=None):
     else:
         raise TypeError("unexpected type "+char+"in bencode data")
 
+def decode_string(s):
+    if s[0] in ['{', '[', '"']:
+        return json.loads(s)
+    elif s[0] in ['d', 'l', '0', '1', '2', '3', '4', '5', '6', '7' '8', '9']:
+        return bdecode(StringIO(s))
+    else:
+        raise TypeError("bad json/bencode argument " + s)
 
 class Connection:
     def __init__(self, host, port, custom_poll=noop, keepalive_file=None):
@@ -122,7 +130,7 @@ def dispatch(host, port, poll, keepalive, command, *args):
 
 def main(host, port, keepalive, command, *args):
     try:
-        sys.stdout.write(vim_encode(dispatch(host, port, noop, keepalive, command, *[bdecode(StringIO(arg)) for arg in args])))
+        sys.stdout.write(vim_encode(dispatch(host, port, noop, keepalive, command, *[decode_string(arg) for arg in args])))
     except Exception:
         print((sys.exc_info()[1]))
         exit(1)
