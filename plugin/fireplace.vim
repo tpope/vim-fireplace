@@ -1067,9 +1067,12 @@ function! s:printop(type) abort
 endfunction
 
 function! s:add_pprint_opts(msg) abort
+  let pprint_fn = get(g:, 'fireplace_pprint_fn', 'cider.nrepl.middleware.pprint/fipp-pprint')
+  if empty(pprint_fn)
+    return a:msg
+  endif
   let a:msg.pprint = 1
-
-  let a:msg.pprint_fn = get(g:, 'fireplace_pprint_fn', 'cider.nrepl.middleware.pprint/fipp-pprint')
+  let a:msg.pprint_fn = pprint_fn
   let max_right_margin = get(g:, 'fireplace_print_right_margin', &columns)
   let a:msg.print_right_margin = min([l:max_right_margin, &columns])
   if exists("g:fireplace_print_length")
