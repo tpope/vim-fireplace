@@ -105,7 +105,7 @@ class Connection:
         return ''
 
     def receive(self, char=None):
-        f = self.socket.makefile('rb')
+        f = self.socket.makefile('rb', False)
         while len(select.select([f], [], [], 0.1)[0]) == 0:
             self.poll()
         try:
