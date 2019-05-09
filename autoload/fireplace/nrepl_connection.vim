@@ -131,6 +131,9 @@ if !exists('s:python_loaded')
   let s:python_loaded = 1
   exe s:python 'import nrepl_fireplace'
 else
+  if s:python ==# 'py3'
+    exe s:python 'from importlib import reload'
+  endif
   exe s:python 'reload(nrepl_fireplace)'
 endif
 
