@@ -97,10 +97,11 @@ class Connection:
         return self.socket.close()
 
     def send(self, payload):
-        if sys.version_info[0] >= 3:
-            self.socket.sendall(bytes(payload, 'UTF-8'))
-        else:
-            self.socket.sendall(payload)
+        f = self.socket.makefile('w')
+        try:
+            f.write(payload)
+        finally:
+            f.close()
         return ''
 
     def receive(self, char=None):
