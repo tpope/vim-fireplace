@@ -31,47 +31,44 @@ def vim_encode(data):
         raise TypeError("can't encode a " + type(data).__name__)
 
 def binread(f, count=1):
-    buf = f.read(count)
-    if isinstance(buf, bytes):
-        buf = str(buf, 'UTF-8')
-    return buf
+    return f.read(count)
 
 def bdecode(f, char=None):
     if char == None:
         char = binread(f)
-    if char == 'l':
+    if char == b'l':
         l = []
         while True:
             char = binread(f)
-            if char == 'e':
+            if char == b'e':
                 return l
             l.append(bdecode(f, char))
-    elif char == 'd':
+    elif char == b'd':
         d = {}
         while True:
             char = binread(f)
-            if char == 'e':
+            if char == b'e':
                 return d
             key = bdecode(f, char)
             d[key] = bdecode(f)
-    elif char == 'i':
-        i = ''
+    elif char == b'i':
+        i = b''
         while True:
             char = binread(f)
-            if char == 'e':
+            if char == b'e':
                 return int(i)
             i += char
     elif char.isdigit():
         i = int(char)
         while True:
             char = binread(f)
-            if char == ':':
-                return binread(f, i)
+            if char == b':':
+                return binread(f, i).decode('UTF-8')
             i = 10 * i + int(char)
     elif char == '':
         raise EOFError("unexpected end of bencode data")
     else:
-        raise TypeError("unexpected type "+char+"in bencode data")
+        raise TypeError("unexpected type "+char+" in bencode data")
 
 def decode_string(s):
     if s[0] in ['{', '[', '"']:
