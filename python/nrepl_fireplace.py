@@ -30,20 +30,26 @@ def vim_encode(data):
     else:
         raise TypeError("can't encode a " + type(data).__name__)
 
+def binread(f, count=1):
+    buf = f.read(count)
+    if isinstance(buf, bytes):
+        buf = str(buf, 'UTF-8')
+    return buf
+
 def bdecode(f, char=None):
     if char == None:
-        char = f.read(1)
+        char = binread(f)
     if char == 'l':
         l = []
         while True:
-            char = f.read(1)
+            char = binread(f)
             if char == 'e':
                 return l
             l.append(bdecode(f, char))
     elif char == 'd':
         d = {}
         while True:
-            char = f.read(1)
+            char = binread(f)
             if char == 'e':
                 return d
             key = bdecode(f, char)
@@ -51,16 +57,16 @@ def bdecode(f, char=None):
     elif char == 'i':
         i = ''
         while True:
-            char = f.read(1)
+            char = binread(f)
             if char == 'e':
                 return int(i)
             i += char
     elif char.isdigit():
         i = int(char)
         while True:
-            char = f.read(1)
+            char = binread(f)
             if char == ':':
-                return f.read(i)
+                return binread(f, i)
             i = 10 * i + int(char)
     elif char == '':
         raise EOFError("unexpected end of bencode data")
@@ -101,7 +107,7 @@ class Connection:
         return ''
 
     def receive(self, char=None):
-        f = self.socket.makefile()
+        f = self.socket.makefile('rb')
         while len(select.select([f], [], [], 0.1)[0]) == 0:
             self.poll()
         try:
