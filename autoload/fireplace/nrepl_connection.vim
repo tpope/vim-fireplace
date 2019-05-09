@@ -143,19 +143,20 @@ python = EOF = 0
 python << EOF
 
 import vim
+import json
 
 def fireplace_check():
   vim.eval('getchar(1)')
 
 def fireplace_repl_dispatch(command, *args):
   try:
-    return [nrepl_fireplace.dispatch(vim.eval('self.host'), vim.eval('self.port'), fireplace_check, None, command, *args), '']
+    return [nrepl_fireplace.dispatch(vim.eval('self.host'), int(vim.eval('self.port')), fireplace_check, None, command, *args), '']
   except Exception as e:
     return ['', str(e)]
 EOF
 
 function! s:nrepl_transport_dispatch(command, ...) dict abort
-  let [out, err] = call(s:python . 'eval', ["fireplace_repl_dispatch(vim.eval('a:command'), *vim.eval('a:000'))"])
+  let [out, err] = call(s:python . 'eval', ["fireplace_repl_dispatch(vim.eval('a:command'), *json.loads(vim.eval('json_encode(a:000)')))"])
   if empty(err)
     return out
   endif
