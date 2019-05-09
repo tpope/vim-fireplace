@@ -12,24 +12,6 @@ except ImportError:
 def noop():
     pass
 
-def vim_encode(data):
-    if isinstance(data, list):
-        return "[" + ",".join([vim_encode(x) for x in data]) + "]"
-    elif isinstance(data, dict):
-        return "{" + ",".join([vim_encode(x)+":"+vim_encode(y) for x,y in data.items()]) + "}"
-    elif isinstance(data, str):
-        str_list = []
-        for c in data:
-            if (0 <= ord(c) and ord(c) <= 31) or c == '"' or c == "\\":
-                str_list.append("\\%03o" % ord(c))
-            else:
-                str_list.append(c)
-        return '"' + ''.join(str_list) + '"'
-    elif isinstance(data, int):
-        return str(data)
-    else:
-        raise TypeError("can't encode a " + type(data).__name__)
-
 def binread(f, count=1):
     return f.read(count)
 
@@ -134,7 +116,9 @@ def dispatch(host, port, poll, keepalive, command, *args):
 
 def main(host, port, keepalive, command, *args):
     try:
-        sys.stdout.write(vim_encode(dispatch(host, port, noop, keepalive, command, *[decode_string(arg) for arg in args])))
+        result = dispatch(host, port, noop, keepalive, command, *[decode_string(arg) for arg in args])
+        if result is not None:
+            json.dump(result, sys.stdout)
     except Exception:
         print((sys.exc_info()[1]))
         exit(1)

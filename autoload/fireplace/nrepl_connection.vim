@@ -100,6 +100,7 @@ function! s:nrepl_transport_dispatch(cmd, ...) dict abort
   let in = self.command(a:cmd, a:000)
   let out = system(in)
   if !v:shell_error
+    let [true, false, null] = [v:true, v:false, v:null]
     return eval(out)
   endif
   throw 'nREPL: '.out
