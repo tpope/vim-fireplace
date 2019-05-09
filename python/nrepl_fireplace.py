@@ -70,7 +70,7 @@ def bdecode(f, char=None):
 def decode_string(s):
     if s[0] in ['{', '[', '"']:
         return json.loads(s)
-    elif s[0] in ['d', 'l', '0', '1', '2', '3', '4', '5', '6', '7' '8', '9']:
+    elif s[0] in ['d', 'l', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
         return bdecode(StringIO(s))
     else:
         raise TypeError("bad json/bencode argument " + s)
