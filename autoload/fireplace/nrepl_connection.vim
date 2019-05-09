@@ -121,7 +121,7 @@ let s:nrepl_transport = {
       \ 'dispatch': s:function('s:nrepl_transport_dispatch'),
       \ 'call': s:function('s:nrepl_transport_call')}
 
-let s:python = has('python3') ? 'python3' : has('python') ? 'python' : ''
+let s:python = has('python3') ? 'py3' : has('python') ? 'python' : ''
 if empty(s:python) || $FIREPLACE_NO_IF_PYTHON
   finish
 endif
@@ -141,22 +141,19 @@ python << EOF
 
 import vim
 
-def fireplace_let(var, value):
-  return vim.command('let ' + var + ' = ' + nrepl_fireplace.vim_encode(value))
-
 def fireplace_check():
   vim.eval('getchar(1)')
 
 def fireplace_repl_dispatch(command, *args):
   try:
-    fireplace_let('out', nrepl_fireplace.dispatch(vim.eval('self.host'), vim.eval('self.port'), fireplace_check, None, command, *args))
+    return [nrepl_fireplace.dispatch(vim.eval('self.host'), vim.eval('self.port'), fireplace_check, None, command, *args), '']
   except Exception as e:
-    fireplace_let('err', str(e))
+    return ['', str(e)]
 EOF
 
 function! s:nrepl_transport_dispatch(command, ...) dict abort
-  exe s:python "fireplace_repl_dispatch(vim.eval('a:command'), *vim.eval('a:000'))"
-  if !exists('err')
+  let [out, err] = call(s:python . 'eval', ["fireplace_repl_dispatch(vim.eval('a:command'), *vim.eval('a:000'))"])
+  if empty(err)
     return out
   endif
   throw 'nREPL Connection Error: '.err
