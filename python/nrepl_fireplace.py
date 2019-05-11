@@ -12,6 +12,30 @@ except ImportError:
 def noop():
     pass
 
+def bencode(data, f):
+    if isinstance(data, list):
+        f.write(b'l')
+        for x in data:
+            bencode(x, f)
+        f.write(b'e')
+    elif isinstance(data, dict):
+        f.write(b'd')
+        for x in sorted(data.keys()):
+            bencode(x, f)
+            bencode(data[x], f)
+        f.write(b'e')
+    elif isinstance(data, int) or isinstance(data, bool):
+        f.write(b'i')
+        f.write(str(int(data)).encode('UTF-8'))
+        f.write(b'e')
+    elif isinstance(data, str) or type(data).__name__ == 'unicode':
+        data = data.encode('UTF-8')
+        f.write(str(len(data)).encode('UTF-8'))
+        f.write(b':')
+        f.write(data)
+    else:
+        raise TypeError("can't bencode a " + type(data).__name__)
+
 def binread(f, count=1):
     return f.read(count)
 
@@ -79,9 +103,12 @@ class Connection:
         return self.socket.close()
 
     def send(self, payload):
-        f = self.socket.makefile('w')
+        f = self.socket.makefile('wb')
         try:
-            f.write(payload)
+            if isinstance(payload, dict):
+                bencode(payload, f)
+            else:
+                f.write(payload.encode('UTF-8'))
         finally:
             f.close()
         return ''

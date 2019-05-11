@@ -11,28 +11,6 @@ function! s:function(name) abort
   return function(substitute(a:name,'^s:',matchstr(expand('<sfile>'), '.*\zs<SNR>\d\+_'),''))
 endfunction
 
-" Bencode {{{1
-
-function! fireplace#nrepl_connection#bencode(value) abort
-  if type(a:value) == type(0)
-    return 'i'.a:value.'e'
-  elseif type(a:value) == type('')
-    return strlen(a:value).':'.a:value
-  elseif type(a:value) == type([])
-    return 'l'.join(map(copy(a:value),'fireplace#nrepl_connection#bencode(v:val)'),'').'e'
-  elseif type(a:value) == type({})
-    return 'd'.join(map(
-          \ sort(keys(a:value)),
-          \ 'fireplace#nrepl_connection#bencode(v:val) . ' .
-          \ 'fireplace#nrepl_connection#bencode(a:value[v:val])'
-          \ ),'').'e'
-  else
-    throw "Can't bencode ".string(a:value)
-  endif
-endfunction
-
-" }}}1
-
 function! s:shellesc(arg) abort
   if a:arg =~ '^[A-Za-z0-9_/.-]\+$'
     return a:arg
@@ -109,8 +87,7 @@ function! s:nrepl_transport_dispatch(cmd, ...) dict abort
 endfunction
 
 function! s:nrepl_transport_call(msg, terms, sels, ...) dict abort
-  let payload = fireplace#nrepl_connection#bencode(a:msg)
-  let response = self.dispatch('call', payload, a:terms, a:sels)
+  let response = self.dispatch('call', a:msg, a:terms, a:sels)
   if !a:0
     return response
   elseif a:1 !=# 'ignore'
