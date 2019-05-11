@@ -84,10 +84,12 @@ endfunction
 let s:keepalive = tempname()
 call writefile([getpid()], s:keepalive)
 
-let s:python_exe = executable('python3') ? 'python3' : 'python'
+if !exists('g:fireplace_python_executable')
+  let g:fireplace_python_executable = executable('python3') ? 'python3' : 'python'
+endif
 
 function! s:nrepl_transport_command(cmd, args) dict abort
-  return s:python_exe
+  return g:fireplace_python_executable
         \ . ' ' . s:shellesc(s:python_dir.'/nrepl_fireplace.py')
         \ . ' ' . s:shellesc(self.host)
         \ . ' ' . s:shellesc(self.port)
