@@ -47,10 +47,10 @@ def bdecode(f, char=None):
             if char == b':':
                 return binread(f, i).decode('UTF-8')
             i = 10 * i + int(char)
-    elif char == '':
+    elif char == b'':
         raise EOFError("unexpected end of bencode data")
     else:
-        raise TypeError("unexpected type "+char+" in bencode data")
+        raise TypeError("unexpected type "+char.decode('UTF-8')+" in bencode data")
 
 def decode_string(s):
     if s[0] in ['{', '[', '"']:
@@ -73,7 +73,7 @@ class Connection:
     def poll(self):
         self.custom_poll()
         if self.keepalive_file and not os.path.exists(self.keepalive_file):
-            exit(0)
+            sys.exit(0)
 
     def close(self):
         return self.socket.close()
