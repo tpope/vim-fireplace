@@ -91,6 +91,9 @@ function! s:nrepl_path() dict abort
 endfunction
 
 function! fireplace#nrepl#combine(responses)
+  if type(a:responses) == type({})
+    return a:responses
+  endif
   let combined = {'status': [], 'session': []}
   for response in a:responses
     for key in keys(response)
