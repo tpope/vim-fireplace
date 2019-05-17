@@ -124,7 +124,7 @@ let s:nrepl_transport = {
       \ 'dispatch': s:function('s:nrepl_transport_dispatch'),
       \ 'call': s:function('s:nrepl_transport_call')}
 
-let s:python = has('python3') ? 'py3' : has('python') ? 'python' : ''
+let s:python = has('pythonx') ? 'pyx' : has('python3') ? 'py3' : has('python') ? 'python' : ''
 if empty(s:python) || $FIREPLACE_NO_IF_PYTHON
   finish
 endif
