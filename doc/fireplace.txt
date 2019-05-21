@@ -139,6 +139,12 @@ cpp                     Eval/print the innermost form at the cursor.
                                                 *fireplace-cpr*
 cpr                     :Require|RunTests
 
+                                                *fireplace-csf*
+csf                     Spec: show form for spec at the cursor
+
+                                                *fireplace-cse*
+cse                     Spec: generate example for spec at the cursor
+
                                                 *fireplace-c!*
 c!{motion}              Eval/replace the code indicated by {motion}.
 

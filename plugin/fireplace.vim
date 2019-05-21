@@ -1666,6 +1666,42 @@ augroup fireplace_go_to_file
   autocmd FileType clojure call s:set_up_go_to_file()
 augroup END
 
+" Section: Spec
+" TODO: `spec-list`
+
+function! fireplace#spec(op, symbol) abort
+  if fireplace#op_available(a:op)
+    let unaliased_symbol = fireplace#eval(a:symbol)
+    let response = fireplace#message({'op': a:op, 'spec-name': unaliased_symbol})[0]
+    if !empty(get(response, a:op))
+      echo get(response, a:op)
+    endif
+  endif
+endfunction
+
+function! s:SpecForm(symbol) abort
+  call fireplace#spec("spec-form", a:symbol)
+  return ''
+endfunction
+
+function! s:SpecExample(symbol) abort
+  call fireplace#spec("spec-example", a:symbol)
+  return ''
+endfunction
+
+nnoremap <silent> <Plug>FireplaceSpecForm    :<C-U>exe <SID>SpecForm(expand('<cword>'))<CR>
+nnoremap <silent> <Plug>FireplaceSpecExample :<C-U>exe <SID>SpecExample(expand('<cword>'))<CR>
+
+function! s:set_up_fireplace_spec() abort
+  call s:map('n', 'csf', '<Plug>FireplaceSpecForm')
+  call s:map('n', 'cse', '<Plug>FireplaceSpecExample')
+endfunction
+
+augroup fireplace_spec
+  autocmd!
+  autocmd FileType clojure call s:set_up_fireplace_spec()
+augroup END
+
 " Section: Formatting
 
 function! fireplace#format(lnum, count, char) abort
