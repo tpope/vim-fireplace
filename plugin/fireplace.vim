@@ -1422,17 +1422,10 @@ function! fireplace#source(symbol) abort
   let file = ''
   if !empty(get(info, 'resource'))
     let file = fireplace#findresource(info.resource)
-  elseif has_key(info, 'file')
-    let fpath = ''
-    if get(info, 'file') =~# '^/\|^\w:\\'
-      let file = info.file
-    elseif get(info, 'file') =~# '^file:'
-      let file = substitute(strpart(info.file,5), '/', s:slash(), 'g')
-    end
-
-    if !empty(fpath) && filereadable(fpath)
-      let file = fpath
-    end
+  elseif get(info, 'file', '') =~# '^file:'
+    let file = substitute(strpart(info.file, 5), '/', s:slash(), 'g')
+  else
+    let file = get(info, 'file', '')
   endif
 
   if !empty(file) && !empty(get(info, 'line', ''))
