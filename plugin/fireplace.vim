@@ -885,7 +885,7 @@ endfunction
 
 function! fireplace#echo_session_eval(expr, ...) abort
   try
-    echo fireplace#session_eval(a:expr, a:0 ? a:1 : {})
+    echo fireplace#session_eval(a:expr, s:add_pprint_opts(a:0 ? a:1 : {}))
   catch /^Clojure:/
   catch
     echohl ErrorMSG
@@ -1072,28 +1072,15 @@ function! s:printop(type) abort
 endfunction
 
 function! s:add_pprint_opts(msg) abort
-  let pprint_fn = get(g:, 'fireplace_pprint_fn', 'cider.nrepl.middleware.pprint/fipp-pprint')
-  if empty(pprint_fn)
-    return a:msg
-  endif
-  let a:msg.pprint = 1
-  let a:msg.pprint_fn = pprint_fn
-  let max_right_margin = get(g:, 'fireplace_print_right_margin', &columns)
-  let a:msg.print_right_margin = min([l:max_right_margin, &columns])
-  if exists("g:fireplace_print_length")
-    let a:msg.print_length = g:fireplace_print_length
-  endif
-  if exists("g:fireplace_print_level")
-    let a:msg.print_level = g:fireplace_print_level
-  endif
-  if exists("g:fireplace_print_meta")
-    let a:msg.print_meta = g:fireplace_print_meta
+  if fireplace#op_available('info')
+    let a:msg['nrepl.middleware.print/print'] = 'cider.nrepl.pprint/fipp-pprint'
+    let a:msg['nrepl.middleware.print/options'] = {'width': &columns}
   endif
   return a:msg
 endfunction
 
 function! s:print_last() abort
-  call fireplace#echo_session_eval(s:todo, s:add_pprint_opts({'file_path': s:buffer_path()}))
+  call fireplace#echo_session_eval(s:todo, {'file_path': s:buffer_path()})
   return ''
 endfunction
 
@@ -1165,7 +1152,7 @@ function! s:Eval(bang, line1, line2, count, args) abort
     catch /^Clojure:/
     endtry
   else
-    call fireplace#echo_session_eval(expr, s:add_pprint_opts(options))
+    call fireplace#echo_session_eval(expr)
   endif
   return ''
 endfunction
