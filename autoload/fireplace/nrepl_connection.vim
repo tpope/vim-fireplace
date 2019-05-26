@@ -50,8 +50,10 @@ function! s:nrepl_transport_close() dict abort
   return self
 endfunction
 
-let s:keepalive = tempname()
-call writefile([getpid()], s:keepalive)
+if !exists('s:keepalive')
+  let s:keepalive = tempname()
+  call writefile([getpid()], s:keepalive)
+endif
 
 if !exists('g:fireplace_python_executable')
   let g:fireplace_python_executable = executable('python3') ? 'python3' : 'python'
@@ -92,7 +94,7 @@ let s:nrepl_transport = {
       \ 'dispatch': s:function('s:nrepl_transport_dispatch'),
       \ 'call': s:function('s:nrepl_transport_call')}
 
-let s:python = has('pythonx') ? 'pyx' : has('python3') ? 'py3' : has('python') ? 'python' : ''
+let s:python = has('pythonx') ? 'pyx' : has('python3') ? 'py3' : has('python') ? 'py' : ''
 if empty(s:python) || $FIREPLACE_NO_IF_PYTHON
   finish
 endif
@@ -102,7 +104,7 @@ if !exists('s:python_loaded')
   let s:python_loaded = 1
   exe s:python 'import nrepl_fireplace'
 else
-  if s:python ==# 'py3'
+  if s:python ==# 'py3' || s:python ==# 'pyx' && &g:pyxversion ==# 3
     exe s:python 'from importlib import reload'
   endif
   exe s:python 'reload(nrepl_fireplace)'
