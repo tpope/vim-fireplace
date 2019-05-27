@@ -1669,32 +1669,52 @@ augroup END
 " Section: Spec
 " TODO: `spec-list`
 
-function! fireplace#spec(op, symbol) abort
-  if fireplace#op_available(a:op)
-    let unaliased_symbol = fireplace#eval(a:symbol)
-    let response = fireplace#message({'op': a:op, 'spec-name': unaliased_symbol})[0]
-    if !empty(get(response, a:op))
-      echo get(response, a:op)
+function! fireplace#symbol_or_fallback(...) abort
+  if empty(a:1)
+    return expand('<cword>')
+  endif
+  return a:1
+endfunction
+
+function! fireplace#fully_qualified_symbol(symbol) abort
+  if a:symbol =~# '^::.\+/'
+    let symbol = ':' . fireplace#resolve_alias(matchstr(a:symbol, '^::\zs[^/]\+')) . matchstr(a:symbol, '/.*')
+  elseif a:symbol =~# '^::'
+    let symbol = ':' . fireplace#ns() . '/' . strpart(a:symbol, 2)
+  else
+    let symbol = a:symbol
+  endif
+  return symbol
+endfunction
+
+function! s:SpecForm(...) abort
+  let op = "spec-form"
+  if fireplace#op_available(op)
+    let symbol = fireplace#fully_qualified_symbol(fireplace#symbol_or_fallback(a:1))
+    let response = fireplace#message({'op': op, 'spec-name': symbol})[0]
+    if !empty(get(response, op))
+      " FIXME: needs to be pretty printed
+      echo get(response, op)
     endif
   endif
-endfunction
-
-function! s:SpecForm(symbol) abort
-  call fireplace#spec("spec-form", a:symbol)
   return ''
 endfunction
 
-function! s:SpecExample(symbol) abort
-  call fireplace#spec("spec-example", a:symbol)
+function! s:SpecExample(...) abort
+  let op = "spec-example"
+  if fireplace#op_available(op)
+    let symbol = fireplace#fully_qualified_symbol(fireplace#symbol_or_fallback(a:1))
+    let response = fireplace#message({'op': op, 'spec-name': symbol})[0]
+    if !empty(get(response, op))
+      echo get(response, op)
+    endif
+  endif
   return ''
 endfunction
-
-nnoremap <silent> <Plug>FireplaceSpecForm    :<C-U>exe <SID>SpecForm(expand('<cword>'))<CR>
-nnoremap <silent> <Plug>FireplaceSpecExample :<C-U>exe <SID>SpecExample(expand('<cword>'))<CR>
 
 function! s:set_up_fireplace_spec() abort
-  call s:map('n', 'csf', '<Plug>FireplaceSpecForm')
-  call s:map('n', 'cse', '<Plug>FireplaceSpecExample')
+  command! -buffer -bar -nargs=? -complete=customlist,fireplace#eval_complete SpecForm    :exe s:SpecForm(<q-args>)
+  command! -buffer -bar -nargs=? -complete=customlist,fireplace#eval_complete SpecExample :exe s:SpecExample(<q-args>)
 endfunction
 
 augroup fireplace_spec

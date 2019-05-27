@@ -131,6 +131,13 @@ stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
 :0RunTests [pattern]    Call clojure.test/run-all-tests with the given pattern
                         and load the results into the quickfix list.
 
+                                                *fireplace-:SpecForm*
+:SpecForm [kw]          Show form for spec at the cursor or given argument
+
+                                                *fireplace-:SpecExample*
+:SpecExample [kw]       Generate example for spec at the cursor or given
+                        argument
+
                                                 *fireplace-cp*
 cp{motion}              Eval/print the code indicated by {motion}.
 
@@ -138,12 +145,6 @@ cpp                     Eval/print the innermost form at the cursor.
 
                                                 *fireplace-cpr*
 cpr                     :Require|RunTests
-
-                                                *fireplace-csf*
-csf                     Spec: show form for spec at the cursor
-
-                                                *fireplace-cse*
-cse                     Spec: generate example for spec at the cursor
 
                                                 *fireplace-c!*
 c!{motion}              Eval/replace the code indicated by {motion}.
