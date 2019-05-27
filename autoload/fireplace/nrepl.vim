@@ -94,13 +94,21 @@ function! fireplace#nrepl#combine(responses)
   if type(a:responses) == type({})
     return a:responses
   endif
-  let combined = {'status': [], 'session': []}
+  let combined = {'status': [], 'session': [], 'value': ['']}
   for response in a:responses
     for key in keys(response)
-      if key ==# 'id' || key ==# 'ns'
+      if key ==# 'id'
         let combined[key] = response[key]
+      elseif key ==# 'ns'
+        let combined[key] = response[key]
+        if !has_key(response, 'value')
+          call add(combined.value, '')
+        endif
       elseif key ==# 'value'
-        let combined.value = extend(get(combined, 'value', []), [response.value])
+        let combined.value[-1] .= response.value
+        if has_key(response, 'ns')
+          call add(combined.value, '')
+        endif
       elseif key ==# 'status'
         for entry in response[key]
           if index(combined[key], entry) < 0
@@ -118,6 +126,10 @@ function! fireplace#nrepl#combine(responses)
       endif
     endfor
   endfor
+  call filter(combined.value, 'len(v:val)')
+  if empty(combined.value)
+    call remove(combined, 'value')
+  endif
   return combined
 endfunction
 

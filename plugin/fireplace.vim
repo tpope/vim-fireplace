@@ -1072,6 +1072,7 @@ function! s:printop(type) abort
 endfunction
 
 function! s:add_pprint_opts(msg) abort
+  let a:msg['nrepl.middleware.print/stream?'] = 1
   if fireplace#op_available('info')
     let a:msg['nrepl.middleware.print/print'] = 'cider.nrepl.pprint/fipp-pprint'
     let a:msg['nrepl.middleware.print/options'] = {'width': &columns}
