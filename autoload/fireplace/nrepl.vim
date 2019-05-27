@@ -134,11 +134,12 @@ function! fireplace#nrepl#combine(responses)
 endfunction
 
 function! s:nrepl_process(msg) dict abort
-  let combined = fireplace#nrepl#combine(self.message(a:msg))
+  let combined = self.message(a:msg, v:t_dict)
   if index(combined.status, 'error') < 0
     return combined
   endif
-  throw 'nREPL: ' . tr(combined.status[0], '-', ' ')
+  let status = filter(copy(combined.status), 'v:val !=# "done" && v:val !=# "error"')
+  throw 'nREPL: ' . tr(join(status, ', '), '-', ' ')
 endfunction
 
 function! s:nrepl_eval(expr, ...) dict abort
@@ -266,7 +267,7 @@ endfunction
 
 function! fireplace#nrepl#callback(body, type, callback) abort
   try
-    let response = {'body': a:body, 'type': a:type}
+    let response = extend(copy(a:body), {'body': a:body, 'type': a:type})
     if has_key(g:fireplace_nrepl_sessions, get(a:body, 'session'))
       let response.session = g:fireplace_nrepl_sessions[a:body.session]
     endif
@@ -275,16 +276,17 @@ function! fireplace#nrepl#callback(body, type, callback) abort
   endtry
 endfunction
 
-function! s:nrepl_call(msg, ...) dict abort
-  let terms = a:0 ? a:1 : ['done']
-  let sels = a:0 > 1 ? a:2 : {}
-  return call(self.transport.call, [a:msg, terms, sels] + a:000[2:-1], self.transport)
-endfunction
-
 function! s:nrepl_message(msg, ...) dict abort
   let msg = self.prepare(a:msg)
-  let sel = {'id': msg.id}
-  return call(self.call, [msg, ['done'], sel] + a:000, self)
+  if !a:0 || a:1 is# v:t_list
+    return self.transport.message(msg)
+  elseif a:1 is# v:t_dict
+    return fireplace#nrepl#combine(self.transport.message(msg))
+  elseif a:1 is# 'ignore' || empty(a:1)
+    return self.transport.message(msg, '')
+  else
+    return call(self.transport.message, [msg] + a:000, self.transport)
+  endif
 endfunction
 
 function! s:nrepl_has_op(op) dict abort
@@ -295,7 +297,6 @@ let s:nrepl = {
       \ 'close': s:function('s:nrepl_close'),
       \ 'clone': s:function('s:nrepl_clone'),
       \ 'prepare': s:function('s:nrepl_prepare'),
-      \ 'call': s:function('s:nrepl_call'),
       \ 'message': s:function('s:nrepl_message'),
       \ 'eval': s:function('s:nrepl_eval'),
       \ 'has_op': s:function('s:nrepl_has_op'),

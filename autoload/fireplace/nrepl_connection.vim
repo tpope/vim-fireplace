@@ -78,12 +78,16 @@ function! s:nrepl_transport_dispatch(cmd, ...) dict abort
   throw 'Fireplace Python exception: ' . g:fireplace_last_python_exception.title
 endfunction
 
-function! s:nrepl_transport_call(msg, terms, sels, ...) dict abort
-  let response = self.dispatch('call', a:msg, a:terms, a:sels)
+function! s:nrepl_transport_message(msg, ...) dict abort
   if !a:0
-    return response
-  elseif a:1 !=# 'ignore'
-    return map(response, 'fireplace#nrepl#callback(v:val, "synchronous", a:000)')
+    return self.dispatch('message', a:msg)
+  elseif empty(a:1)
+    call self.dispatch('message', a:msg)
+    return v:null
+  else
+    let response = self.dispatch('message', a:msg)
+    call map(response, 'fireplace#nrepl#callback(v:val, "synchronous", a:000)')
+    return v:null
   endif
 endfunction
 
@@ -91,7 +95,7 @@ let s:nrepl_transport = {
       \ 'close': s:function('s:nrepl_transport_close'),
       \ 'command': s:function('s:nrepl_transport_command'),
       \ 'dispatch': s:function('s:nrepl_transport_dispatch'),
-      \ 'call': s:function('s:nrepl_transport_call')}
+      \ 'message': s:function('s:nrepl_transport_message')}
 
 let s:python = has('pythonx') ? 'pyx' : has('python3') ? 'py3' : has('python') ? 'py' : ''
 if empty(s:python) || $FIREPLACE_NO_IF_PYTHON
