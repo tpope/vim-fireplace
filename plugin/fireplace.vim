@@ -50,6 +50,18 @@ function! s:map(mode, lhs, rhs, ...) abort
   endif
 endfunction
 
+function! s:pr(obj) abort
+  if type(a:obj) == v:t_string
+    return a:obj
+  elseif type(a:obj) == v:t_list
+    return '(' . join(map(copy(a:obj), 's:pr(v:val)'), ' ') . ')'
+  elseif type(a:obj) == v:t_dict
+    return '{' . join(map(keys(a:obj), 's:pr(v:val) . " " . s:pr(a:obj[v:val])'), ', ') . '}'
+  else
+    return string(a:obj)
+  endif
+endfunction
+
 " Section: Escaping
 
 function! s:str(string) abort
@@ -1686,8 +1698,7 @@ function! s:SpecForm(kw) abort
     let symbol = fireplace#qualify_keyword(a:kw)
     let response = fireplace#message({'op': op, 'spec-name': symbol})[0]
     if !empty(get(response, op))
-      " FIXME: needs to be pretty printed
-      echo get(response, op)
+      echo s:pr(get(response, op))
     endif
   endif
   return ''
