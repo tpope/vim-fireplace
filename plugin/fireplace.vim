@@ -1669,13 +1669,6 @@ augroup END
 " Section: Spec
 " TODO: `spec-list`
 
-function! fireplace#symbol_or_fallback(...) abort
-  if empty(a:1)
-    return expand('<cword>')
-  endif
-  return a:1
-endfunction
-
 function! fireplace#fully_qualified_symbol(symbol) abort
   if a:symbol =~# '^::.\+/'
     let symbol = ':' . fireplace#resolve_alias(matchstr(a:symbol, '^::\zs[^/]\+')) . matchstr(a:symbol, '/.*')
@@ -1687,10 +1680,10 @@ function! fireplace#fully_qualified_symbol(symbol) abort
   return symbol
 endfunction
 
-function! s:SpecForm(...) abort
+function! s:SpecForm(kw) abort
   let op = "spec-form"
   if fireplace#op_available(op)
-    let symbol = fireplace#fully_qualified_symbol(fireplace#symbol_or_fallback(a:1))
+    let symbol = fireplace#fully_qualified_symbol(a:kw)
     let response = fireplace#message({'op': op, 'spec-name': symbol})[0]
     if !empty(get(response, op))
       " FIXME: needs to be pretty printed
@@ -1700,10 +1693,10 @@ function! s:SpecForm(...) abort
   return ''
 endfunction
 
-function! s:SpecExample(...) abort
+function! s:SpecExample(kw) abort
   let op = "spec-example"
   if fireplace#op_available(op)
-    let symbol = fireplace#fully_qualified_symbol(fireplace#symbol_or_fallback(a:1))
+    let symbol = fireplace#fully_qualified_symbol(a:kw)
     let response = fireplace#message({'op': op, 'spec-name': symbol})[0]
     if !empty(get(response, op))
       echo get(response, op)
@@ -1713,8 +1706,8 @@ function! s:SpecExample(...) abort
 endfunction
 
 function! s:set_up_fireplace_spec() abort
-  command! -buffer -bar -nargs=? -complete=customlist,fireplace#eval_complete SpecForm    :exe s:SpecForm(<q-args>)
-  command! -buffer -bar -nargs=? -complete=customlist,fireplace#eval_complete SpecExample :exe s:SpecExample(<q-args>)
+  command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete SpecForm    :exe s:SpecForm(<q-args>)
+  command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete SpecExample :exe s:SpecExample(<q-args>)
 endfunction
 
 augroup fireplace_spec
