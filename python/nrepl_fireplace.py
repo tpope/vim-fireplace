@@ -3,6 +3,7 @@ import select
 import socket
 import sys
 import json
+import uuid
 
 try:
     from StringIO import StringIO
@@ -122,7 +123,10 @@ class Connection:
         finally:
             f.close()
 
-    def call(self, payload, terminators, selectors):
+    def call(self, payload, terminators = ['done'], selectors = None):
+        if selectors is None:
+            payload.setdefault("id", str(uuid.uuid1()))
+            selectors = {'id': payload['id']}
         self.send(payload)
         responses = []
         while True:
@@ -133,6 +137,9 @@ class Connection:
             responses.append(response)
             if 'status' in response and set(terminators) & set(response['status']):
                 return responses
+
+    def message(self, payload):
+        self.call(payload)
 
 def dispatch(host, port, poll, keepalive, command, *args):
     conn = Connection(host, port, poll, keepalive)
