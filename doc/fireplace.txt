@@ -57,10 +57,18 @@ DOCUMENTATION                                   *fireplace-documentation*
 :Javadoc {class}        Open the java docs for the given class in a browser.
 
                                                 *fireplace-K*
-K                       Look up docs for symbol under cursor.
+K                       Look up (java) doc/spec-form for symbol/keyword under
+                        cursor.
 
                                                 *fireplace-:FindDoc*
 :FindDoc {arg}          Wrapper around (clojure.repl/find-doc ...).
+
+                                                *fireplace-:SpecForm*
+:SpecForm [kw]          Show form for spec at the cursor or given argument
+
+                                                *fireplace-:SpecExample*
+:SpecExample [kw]       Generate example for spec at the cursor or given
+                        argument
 
                                                 *fireplace-:Source*
 :Source {symbol}        Show the source for the given symbol.
@@ -130,13 +138,6 @@ stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
 
 :0RunTests [pattern]    Call clojure.test/run-all-tests with the given pattern
                         and load the results into the quickfix list.
-
-                                                *fireplace-:SpecForm*
-:SpecForm [kw]          Show form for spec at the cursor or given argument
-
-                                                *fireplace-:SpecExample*
-:SpecExample [kw]       Generate example for spec at the cursor or given
-                        argument
 
                                                 *fireplace-cp*
 cp{motion}              Eval/print the code indicated by {motion}.
