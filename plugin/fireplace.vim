@@ -1821,6 +1821,8 @@ function! s:K() abort
   let java_candidate = matchstr(word, '^\%(\w\+\.\)*\u\l[[:alnum:]$]*\ze\%(\.\|\/\w\+\)\=$')
   if java_candidate !=# ''
     return 'Javadoc '.java_candidate
+  elseif word =~# '^:'
+    return 'SpecForm '.word
   else
     return 'Doc '.word
   endif
