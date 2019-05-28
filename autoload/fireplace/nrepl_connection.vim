@@ -26,15 +26,6 @@ function! s:shellesc(arg) abort
   endif
 endfunction
 
-if !exists('s:id')
-  let s:vim_id = localtime()
-  let s:id = 0
-endif
-function! s:id() abort
-  let s:id += 1
-  return 'fireplace-'.hostname().'-'.s:vim_id.'-'.s:id
-endfunction
-
 function! fireplace#nrepl_connection#prompt() abort
   return fireplace#input_host_port()
 endfunction
