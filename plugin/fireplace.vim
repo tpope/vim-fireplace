@@ -1679,7 +1679,6 @@ augroup fireplace_go_to_file
 augroup END
 
 " Section: Spec
-" TODO: `spec-list`
 
 function! fireplace#qualify_keyword(kw) abort
   if a:kw =~# '^::.\+/'
