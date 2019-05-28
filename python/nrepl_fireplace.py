@@ -1,8 +1,9 @@
+import json
 import os
 import select
 import socket
 import sys
-import json
+import traceback
 import uuid
 
 try:
@@ -148,13 +149,29 @@ def dispatch(host, port, poll, keepalive, command, *args):
     finally:
         conn.close()
 
-def main(host, port, keepalive, command, *args):
+def quickfix(t, e, tb):
+    items = []
+    stack = traceback.extract_tb(tb)
+    for frame in stack:
+        (filename, lineno, name, line) = frame
+        module = ''
+        if filename and filename[0] == '<':
+            module = filename
+            filename = ''
+        items.append({
+            'filename': filename,
+            'lnum': lineno,
+            'module': module,
+            'text': line})
+    return {'title': str(e), 'items': items}
+
+def main(host = None, port = None, keepalive = None, command = None, *args):
     try:
         result = dispatch(host, port, noop, keepalive, command, *[decode_string(arg) for arg in args])
         if result is not None:
             json.dump(result, sys.stdout)
     except Exception:
-        print((sys.exc_info()[1]))
+        json.dump(quickfix(*sys.exc_info()), sys.stdout)
         exit(1)
 
 if __name__ == "__main__":

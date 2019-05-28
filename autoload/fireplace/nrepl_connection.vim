@@ -73,10 +73,10 @@ function! s:nrepl_transport_dispatch(cmd, ...) dict abort
   let in = self.command(a:cmd, a:000)
   let out = system(in)
   if !v:shell_error
-    let [true, false, null] = [v:true, v:false, v:null]
-    return eval(out)
+    return json_decode(out)
   endif
-  throw 'nREPL: '.out
+  let g:fireplace_last_python_exception = json_decode(out)
+  throw 'Fireplace Python exception: ' . g:fireplace_last_python_exception.title
 endfunction
 
 function! s:nrepl_transport_call(msg, terms, sels, ...) dict abort
@@ -115,17 +115,18 @@ exe s:python '<< EOF'
 python = EOF = 0
 python << EOF
 
-import vim
 import json
+import vim
+import sys
 
 def fireplace_check():
   vim.eval('getchar(1)')
 
 def fireplace_repl_dispatch(command, *args):
   try:
-    return [nrepl_fireplace.dispatch(vim.eval('self.host'), int(vim.eval('self.port')), fireplace_check, None, command, *args), '']
+    return [nrepl_fireplace.dispatch(vim.eval('self.host'), int(vim.eval('self.port')), fireplace_check, None, command, *args), {}]
   except Exception as e:
-    return ['', str(e)]
+    return ['', nrepl_fireplace.quickfix(*sys.exc_info())]
 EOF
 
 function! s:nrepl_transport_dispatch(command, ...) dict abort
@@ -133,5 +134,6 @@ function! s:nrepl_transport_dispatch(command, ...) dict abort
   if empty(err)
     return out
   endif
-  throw 'nREPL Connection Error: '.err
+  let g:fireplace_last_python_exception = err
+  throw 'Fireplace Python exception: ' . g:fireplace_last_python_exception.title
 endfunction
