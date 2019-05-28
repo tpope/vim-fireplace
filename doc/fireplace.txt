@@ -64,11 +64,12 @@ K                       Look up the doc, javadoc, or spec-form for the
 :FindDoc {arg}          Wrapper around (clojure.repl/find-doc ...).
 
                                                 *fireplace-:SpecForm*
-:SpecForm [kw]          Show form for spec at the cursor or given argument
+:SpecForm {keyword}     Show the form of the spec given.
+                        Like (spec/form keyword).
 
                                                 *fireplace-:SpecExample*
-:SpecExample [kw]       Generate example for spec at the cursor or given
-                        argument
+:SpecExample {keyword}  Generate one example for the spec given.
+                        Like (gen/generate keyword).
 
                                                 *fireplace-:Source*
 :Source {symbol}        Show the source for the given symbol.
