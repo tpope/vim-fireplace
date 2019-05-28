@@ -60,17 +60,16 @@ if !exists('g:fireplace_python_executable')
 endif
 
 function! s:nrepl_transport_command(cmd, args) dict abort
-  return g:fireplace_python_executable
-        \ . ' ' . s:shellesc(s:python_dir.'/nrepl_fireplace.py')
-        \ . ' ' . s:shellesc(self.host)
-        \ . ' ' . s:shellesc(self.port)
-        \ . ' ' . s:shellesc(s:keepalive)
-        \ . ' ' . s:shellesc(a:cmd)
-        \ . ' ' . join(map(copy(a:args), 's:shellesc(json_encode(v:val))'), ' ')
+  return [g:fireplace_python_executable,
+        \ s:python_dir.'/nrepl_fireplace.py',
+        \ self.host,
+        \ self.port,
+        \ s:keepalive,
+        \ a:cmd] + map(copy(a:args), 'json_encode(v:val)')
 endfunction
 
 function! s:nrepl_transport_dispatch(cmd, ...) dict abort
-  let in = self.command(a:cmd, a:000)
+  let in = join(map(self.command(a:cmd, a:000), 's:shellesc(v:val)'), ' ')
   let out = system(in)
   if !v:shell_error
     return json_decode(out)
