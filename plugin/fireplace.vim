@@ -1669,21 +1669,21 @@ augroup END
 " Section: Spec
 " TODO: `spec-list`
 
-function! fireplace#fully_qualified_symbol(symbol) abort
-  if a:symbol =~# '^::.\+/'
-    let symbol = ':' . fireplace#resolve_alias(matchstr(a:symbol, '^::\zs[^/]\+')) . matchstr(a:symbol, '/.*')
-  elseif a:symbol =~# '^::'
-    let symbol = ':' . fireplace#ns() . '/' . strpart(a:symbol, 2)
+function! fireplace#qualify_keyword(kw) abort
+  if a:kw =~# '^::.\+/'
+    let kw = ':' . fireplace#resolve_alias(matchstr(a:kw, '^::\zs[^/]\+')) . matchstr(a:kw, '/.*')
+  elseif a:kw =~# '^::'
+    let kw = ':' . fireplace#ns() . '/' . strpart(a:kw, 2)
   else
-    let symbol = a:symbol
+    let kw = a:kw
   endif
-  return symbol
+  return kw
 endfunction
 
 function! s:SpecForm(kw) abort
   let op = "spec-form"
   if fireplace#op_available(op)
-    let symbol = fireplace#fully_qualified_symbol(a:kw)
+    let symbol = fireplace#qualify_keyword(a:kw)
     let response = fireplace#message({'op': op, 'spec-name': symbol})[0]
     if !empty(get(response, op))
       " FIXME: needs to be pretty printed
@@ -1696,7 +1696,7 @@ endfunction
 function! s:SpecExample(kw) abort
   let op = "spec-example"
   if fireplace#op_available(op)
-    let symbol = fireplace#fully_qualified_symbol(a:kw)
+    let symbol = fireplace#qualify_keyword(a:kw)
     let response = fireplace#message({'op': op, 'spec-name': symbol})[0]
     if !empty(get(response, op))
       echo get(response, op)
