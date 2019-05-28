@@ -3,16 +3,10 @@
 " Version:      1.1
 " GetLatestVimScripts: 4978 1 :AutoInstall: fireplace.vim
 
-if exists("g:loaded_fireplace") || &compatible
+if exists("g:loaded_fireplace") || v:version < 800 || &compatible
   finish
 endif
 let g:loaded_fireplace = 1
-if !exists('*json_decode')
-  if &verbose
-    echomsg 'Not loading Fireplace: Vim version too old.'
-  endif
-  finish
-endif
 
 " Section: File type
 
