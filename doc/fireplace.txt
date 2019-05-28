@@ -57,8 +57,8 @@ DOCUMENTATION                                   *fireplace-documentation*
 :Javadoc {class}        Open the java docs for the given class in a browser.
 
                                                 *fireplace-K*
-K                       Look up (java) doc/spec-form for symbol/keyword under
-                        cursor.
+K                       Look up the doc, javadoc, or spec-form for the
+                        identifier under the cursor.
 
                                                 *fireplace-:FindDoc*
 :FindDoc {arg}          Wrapper around (clojure.repl/find-doc ...).
