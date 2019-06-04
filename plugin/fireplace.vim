@@ -931,20 +931,20 @@ endfunction
 
 function! s:qfmassage(line, path) abort
   let entry = {'text': a:line}
-  let match = matchlist(a:line, '\(\S\+\)\s\=(\(\S\+\))')
+  let match = matchlist(a:line, '\(\S\+\)\s\=(\([^:()]*\)\%(:\(\d\+\)\)\=)')
   if !empty(match)
-    let [_, class, file; __] = match
-    if file =~# '^NO_SOURCE_FILE:' || file !~# ':'
+    let [_, class, file, lnum; __] = match
+    let entry.module = class
+    let entry.lnum = +lnum
+    if file ==# 'NO_SOURCE_FILE' || !lnum
       let entry.resource = ''
-      let entry.lnum = 0
     else
       let truncated = substitute(class, '\.[A-Za-z0-9_]\+\%([$/].*\)$', '', '')
-      let entry.resource = tr(truncated, '.', '/').'/'.split(file, ':')[0]
-      let entry.lnum = split(file, ':')[-1]
+      let entry.resource = tr(truncated, '.', '/') . '/' . file
     endif
     let entry.filename = fireplace#findresource(entry.resource, a:path)
-    if empty(entry.filename)
-      let entry.lnum = 0
+    if has('patch-8.0.1782')
+      let entry.text = ''
     else
       let entry.text = class
     endif
