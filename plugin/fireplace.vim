@@ -649,10 +649,10 @@ function! s:includes_file(file, path) abort
   endfor
 endfunction
 
-function! s:path_extract(path)
+function! s:path_extract(path, ...) abort
   let path = []
-  if a:path =~# '\.jar'
-    for elem in split(substitute(a:path, ',$', '', ''), ',')
+  if a:0 || a:path =~# '\.jar'
+    for elem in split(substitute(a:path, ',$', '', ''), a:0 ? '[=,]' : ',')
       if elem ==# ''
         let path += ['.']
       else
@@ -958,11 +958,11 @@ function! fireplace#quickfix_for(stacktrace) abort
 endfunction
 
 function! s:massage_quickfix() abort
-  let p = substitute(matchstr(','.&errorformat, '\C,\%(%\\&\)\=classpath\zs\%(\\.\|[^\,]\)*'), '\\\ze[\,%]', '', 'g')
+  let p = substitute(matchstr(','.&errorformat, '\C,\%(%\\&\)\=classpath=\=\zs\%(\\.\|[^\,]\)*'), '\\\ze[\,%]', '', 'g')
   if empty(p)
     return
   endif
-  let path = p[0] ==# ',' ? s:path_extract(p[1:-1]) : split(p[1:-1], p[0])
+  let path = p =~# '^[:;]' ? split(p[1:-1], p[0]) : p[0] ==# ',' ? s:path_extract(p[1:-1], 1) : s:path_extract(p, 1)
   let qflist = getqflist()
   for entry in qflist
     call extend(entry, s:qfmassage(get(entry, 'text', ''), path))
