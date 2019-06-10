@@ -868,7 +868,7 @@ function! fireplace#session_eval(expr, ...) abort
   elseif has_key(response, 'value')
     return response.value
   else
-    let err = 'fireplace.vim: Something went wrong: '.string(response)
+    return ''
   endif
   throw err
 endfunction
@@ -879,7 +879,14 @@ endfunction
 
 function! fireplace#echo_session_eval(expr, ...) abort
   try
-    echo fireplace#session_eval(a:expr, s:add_pprint_opts(a:0 ? a:1 : {}))
+    let value = fireplace#session_eval(a:expr, s:add_pprint_opts(a:0 ? a:1 : {}))
+    if empty(value)
+      echohl WarningMsg
+      echo "No return value"
+      echohl NONE
+    else
+      echo value
+    endif
   catch /^Clojure:/
   catch
     echohl ErrorMSG
@@ -918,7 +925,7 @@ function! fireplace#evalparse(expr, ...) abort
   elseif has_key(response, 'value')
     return empty(response.value) ? '' : eval(response.value)
   else
-    let err = 'fireplace.vim: Something went wrong: '.string(response)
+    let err = 'fireplace.vim: No value in '.string(response)
   endif
   throw err
 endfunction
