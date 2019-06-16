@@ -159,18 +159,6 @@ function! s:nrepl_eval(expr, ...) dict abort
     let msg.id = fireplace#nrepl#next_id()
   endif
 
-  if has_key(options, 'file_path')
-    let msg.op = 'load-file'
-    let msg['file-path'] = options.file_path
-    let msg['file-name'] = fnamemodify(options.file_path, ':t')
-    if has_key(msg, 'ns')
-      let msg.file = "(in-ns '".msg.ns.") ".msg.code
-      call remove(msg, 'ns')
-    else
-      let msg.file = msg.code
-    endif
-    call remove(msg, 'code')
-  endif
   try
     let response = self.process(msg)
   finally

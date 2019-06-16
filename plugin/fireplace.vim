@@ -342,11 +342,7 @@ function! s:piggieback.user_ns() abort
 endfunction
 
 function! s:piggieback.eval(expr, options) abort
-  let options = copy(a:options)
-  if has_key(options, 'file_path')
-    call remove(options, 'file_path')
-  endif
-  return call(s:repl.eval, [a:expr, options], self)
+  return call(s:repl.eval, [a:expr, a:options], self)
 endfunction
 
 function! s:repl.user_ns() abort
@@ -834,11 +830,17 @@ function! s:qfhistory() abort
 endfunction
 
 function! fireplace#session_eval(expr, ...) abort
-  let response = s:eval(a:expr, a:0 ? a:1 : {})
-
-  if !empty(get(response, 'value', '')) || !empty(get(response, 'err', ''))
-    call insert(s:history, {'buffer': bufnr(''), 'code': a:expr, 'ns': fireplace#ns(), 'response': response})
+  if type(a:expr) ==# type({})
+    let opts = copy(a:expr)
+    let code = get(opts, 'code', '')
+    unlet! opts.code
+  else
+    let code = a:expr
+    let opts = {}
   endif
+  let response = s:eval(code, extend(opts, a:0 ? a:1 : {}))
+
+  call insert(s:history, {'buffer': bufnr(''), 'code': code, 'ns': fireplace#ns(), 'response': response})
   if len(s:history) > &history
     call remove(s:history, &history, -1)
   endif
@@ -1027,11 +1029,7 @@ function! s:opfunc(type) abort
       silent exe "normal! `[v`]y"
     endif
     redraw
-    if fireplace#client().user_ns() ==# 'user'
-      return repeat("\n", line("'<")-1) . repeat(" ", col("'<")-1) . @@
-    else
-      return @@
-    endif
+    return {'code': @@, 'file': s:buffer_path(), 'line': line("'<"), 'column': col("'<")}
   finally
     let @@ = reg_save
     let &selection = sel_save
@@ -1045,8 +1043,8 @@ function! s:filterop(type) abort
   let cb_save = &clipboard
   try
     set selection=inclusive clipboard-=unnamed clipboard-=unnamedplus
-    let expr = s:opfunc(a:type)
-    let @@ = fireplace#session_eval(matchstr(expr, '^\n\+').expr).matchstr(expr, '\n\+$')
+    let opts = s:opfunc(a:type)
+    let @@ = matchstr(opts.code, '^\n\+') . fireplace#session_eval(opts) . matchstr(opts.code, '\n\+$')
     if @@ !~# '^\n*$'
       normal! gvp
     endif
@@ -1060,11 +1058,11 @@ function! s:filterop(type) abort
 endfunction
 
 function! s:macroexpandop(type) abort
-  call fireplace#macroexpand("clojure.walk/macroexpand-all", s:opfunc(a:type))
+  call fireplace#macroexpand("clojure.walk/macroexpand-all", s:opfunc(a:type).code)
 endfunction
 
 function! s:macroexpand1op(type) abort
-  call fireplace#macroexpand("macroexpand-1", s:opfunc(a:type))
+  call fireplace#macroexpand("macroexpand-1", s:opfunc(a:type).code)
 endfunction
 
 function! s:printop(type) abort
@@ -1082,14 +1080,14 @@ function! s:add_pprint_opts(msg) abort
 endfunction
 
 function! s:print_last() abort
-  call fireplace#echo_session_eval(s:todo, {'file_path': s:buffer_path()})
+  call fireplace#echo_session_eval(s:todo)
   return ''
 endfunction
 
 function! s:editop(type) abort
   call feedkeys(eval('"\'.&cedit.'"') . "\<Home>", 'n')
   let input = s:input(substitute(substitute(substitute(
-        \ s:opfunc(a:type), "\s*;[^\n\"]*\\%(\n\\@=\\|$\\)", '', 'g'),
+        \ s:opfunc(a:type).code, "\s*;[^\n\"]*\\%(\n\\@=\\|$\\)", '', 'g'),
         \ '\n\+\s*', ' ', 'g'),
         \ '^\s*', '', ''))
   if input !=# ''
@@ -1123,17 +1121,13 @@ function! s:Eval(bang, line1, line2, count, args) abort
     if !line1 || !line2
       return ''
     endif
-    let options.file_path = s:buffer_path()
-    if expand('%:e') ==# 'cljs'
-      "leading line feed don't work on cljs repl
-      let expr = ''
-    else
-      let expr = repeat("\n", line1-1).repeat(" ", col1-1)
-    endif
+    let options.file = s:buffer_path()
+    let options.line = line1
+    let options.column = col1
     if line1 == line2
-      let expr .= getline(line1)[col1-1 : col2-1]
+      let expr = getline(line1)[col1-1 : col2-1]
     else
-      let expr .= getline(line1)[col1-1 : -1] . "\n"
+      let expr = getline(line1)[col1-1 : -1] . "\n"
             \ . join(map(getline(line1+1, line2-1), 'v:val . "\n"'))
             \ . getline(line2)[0 : col2-1]
     endif
@@ -1154,7 +1148,7 @@ function! s:Eval(bang, line1, line2, count, args) abort
     catch /^Clojure:/
     endtry
   else
-    call fireplace#echo_session_eval(expr)
+    call fireplace#echo_session_eval(expr, options)
   endif
   return ''
 endfunction
