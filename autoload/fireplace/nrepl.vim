@@ -33,11 +33,7 @@ function! fireplace#nrepl#for(transport) abort
   let client = copy(s:nrepl)
   let client.transport = a:transport
   let client.session = client.process({'op': 'clone', 'session': 0})['new-session']
-  let client.describe = client.process({'op': 'describe', 'verbose?': 1})
-  if get(client.describe.versions.nrepl, 'major', -1) == 0 &&
-        \ client.describe.versions.nrepl.minor < 2
-    throw 'nREPL: 0.2.0 or higher required'
-  endif
+  let client.describe = client.process({'op': 'describe'})
   " Handle boot, which sets a fake.class.path entry
   let response = client.process({'op': 'eval', 'code':
         \ '[(System/getProperty "path.separator") (System/getProperty "fake.class.path")]', 'session': ''})
