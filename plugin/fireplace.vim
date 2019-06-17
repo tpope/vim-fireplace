@@ -1797,12 +1797,13 @@ function! fireplace#capture_test_run(expr, ...) abort
         \ . ' (catch Exception e'
         \ . '   (clojure.core/println (clojure.core/str e))'
         \ . '   (clojure.core/println (clojure.string/join "\n" (.getStackTrace e)))))'
-  let qflist = []
+  call setqflist([], ' ', {'title': a:expr})
   let response = s:eval(expr, {'session': 0})
   if !has_key(response, 'out')
     call setqflist(fireplace#quickfix_for(get(response, 'stacktrace', [])))
     return s:output_response(response)
   endif
+  let entries = []
   for line in split(response.out, "\r\\=\n")
     if line =~# '\t.*\t.*\t'
       let entry = {'text': line}
@@ -1821,20 +1822,14 @@ function! fireplace#capture_test_run(expr, ...) abort
     else
       let entry = s:qfmassage(line, fireplace#path())
     endif
-    call add(qflist, entry)
+    call add(entries, entry)
   endfor
-  call setqflist(qflist)
+  call setqflist(entries, 'a')
   let was_qf = &buftype ==# 'quickfix'
   botright cwindow
   if &buftype ==# 'quickfix' && !was_qf
     wincmd p
   endif
-  for winnr in range(1, winnr('$'))
-    if getwinvar(winnr, '&buftype') ==# 'quickfix'
-      call setwinvar(winnr, 'quickfix_title', a:expr)
-      return
-    endif
-  endfor
 endfunction
 
 function! s:RunTests(bang, count, ...) abort
