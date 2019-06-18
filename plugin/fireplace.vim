@@ -940,7 +940,7 @@ endfunction
 
 function! s:qfmassage(line, path) abort
   let entry = {'text': a:line}
-  let match = matchlist(a:line, '\(\S\+\)\s\=(\([^:()]*\)\%(:\(\d\+\)\)\=)')
+  let match = matchlist(a:line, '\(\S\+\)\s\=(\([^:()[:space:]]*\)\%(:\(\d\+\)\)\=)')
   if !empty(match)
     let [_, class, file, lnum; __] = match
     let entry.module = class
