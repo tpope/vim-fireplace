@@ -25,7 +25,9 @@ endif
 augroup fireplace_nrepl_connection
   autocmd!
   autocmd VimLeave * for s:session in values(g:fireplace_nrepl_sessions)
-        \ |   call s:session.close()
+        \ |   if s:session.transport.alive()
+        \ |     call s:session.close()
+        \ |   endif
         \ | endfor
 augroup END
 
@@ -59,7 +61,6 @@ function! s:nrepl_close() dict abort
       unlet self.session
     endtry
   endif
-  call self.transport.close()
   return self
 endfunction
 
@@ -237,17 +238,6 @@ function! s:nrepl_prepare(msg) dict abort
     let msg.session = self.session
   endif
   return msg
-endfunction
-
-function! fireplace#nrepl#callback(body, type, callback) abort
-  try
-    let response = extend(copy(a:body), {'body': a:body, 'type': a:type})
-    if has_key(g:fireplace_nrepl_sessions, get(a:body, 'session'))
-      let response.session = g:fireplace_nrepl_sessions[a:body.session]
-    endif
-    call call(a:callback[0], [response] + a:callback[1:-1])
-  catch
-  endtry
 endfunction
 
 function! s:nrepl_message(msg, ...) dict abort

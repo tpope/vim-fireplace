@@ -5,6 +5,7 @@ import socket
 import sys
 import traceback
 import uuid
+import threading
 
 try:
     from StringIO import StringIO
@@ -173,6 +174,51 @@ class Connection:
     def message(self, payload):
         return self.call(payload)
 
+    def notify(self, data, i = 0):
+        json.dump([i, data], sys.stdout)
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+
+    def tunnel_socket_to_stdout(self):
+        socket_in = self.socket().makefile('rb', False)
+        try:
+            while True:
+                msg = self.receive()
+                self.notify(msg)
+        except EOFError:
+            os._exit(0)
+        except Exception:
+            self.notify(["exception", quickfix(*sys.exc_info())])
+            os._exit(4)
+        finally:
+            socket_in.close()
+
+    def tunnel(self):
+        try:
+            self.socket()
+            t = threading.Thread(target = self.tunnel_socket_to_stdout)
+            t.daemon = True
+            t.start()
+            self.notify(["status", ""])
+            line = sys.stdin.readline()
+            while len(line) > 0:
+                try:
+                    obj = json.loads(line)
+                    if isinstance(obj, list):
+                        obj = obj[1]
+                    self.send(obj)
+                except Exception:
+                    self.notify(["exception", quickfix(*sys.exc_info())])
+                line = sys.stdin.readline()
+            t.join(0.1)
+        except socket.error as e:
+            self.notify(["status", e.strerror])
+            os._exit(2)
+        except Exception as e:
+            self.notify(["status", str(e)])
+            self.notify(["exception", quickfix(*sys.exc_info())])
+            os._exit(3)
+
 def dispatch(host, port, poll, keepalive, command, *args):
     conn = Connection(host, port, poll, keepalive)
     try:
@@ -186,7 +232,7 @@ def main(host = None, port = None, keepalive = None, command = None, *args):
         if result is not None:
             json.dump(result, sys.stdout)
     except Exception:
-        json.dump(quickfix(*sys.exc_info()), sys.stdout)
+        json.dump([0, ["exception", quickfix(*sys.exc_info())]], sys.stdout)
         exit(1)
 
 if __name__ == "__main__":
