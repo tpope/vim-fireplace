@@ -404,7 +404,7 @@ endfunction
 
 " Section: :Connect
 
-command! -bar -bang -complete=customlist,s:connect_complete -nargs=* FireplaceConnect exe s:Connect(<bang>, <f-args>)
+command! -bar -bang -complete=customlist,s:connect_complete -nargs=* FireplaceConnect exe s:Connect(<bang>0, <f-args>)
 
 function! s:protos() abort
   return map(split(globpath(&runtimepath, 'autoload/fireplace/*_connection.vim'), "\n"), 'fnamemodify(v:val, ":t")[0:-16]')
