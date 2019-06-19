@@ -9,13 +9,8 @@ function! s:function(name) abort
   return function(substitute(a:name,'^s:',matchstr(expand('<sfile>'), '.*\zs<SNR>\d\+_'),''))
 endfunction
 
-if !exists('s:id')
-  let s:vim_id = localtime()
-  let s:id = 0
-endif
 function! fireplace#nrepl#next_id() abort
-  let s:id += 1
-  return 'fireplace-'.hostname().'-'.s:vim_id.'-'.s:id
+  return fireplace#transport#id()
 endfunction
 
 if !exists('g:fireplace_nrepl_sessions')
@@ -55,7 +50,7 @@ function! s:nrepl_close() dict abort
   if has_key(self, 'session')
     try
       unlet! g:fireplace_nrepl_sessions[self.session]
-      call self.message({'op': 'close'}, 'ignore')
+      call self.message({'op': 'close'}, '')
     catch
     finally
       unlet self.session
@@ -77,47 +72,8 @@ function! s:nrepl_path() dict abort
   return self._path
 endfunction
 
-function! fireplace#nrepl#combine(responses)
-  if type(a:responses) == type({})
-    return a:responses
-  endif
-  let combined = {'status': [], 'session': [], 'value': ['']}
-  for response in a:responses
-    for key in keys(response)
-      if key ==# 'id'
-        let combined[key] = response[key]
-      elseif key ==# 'ns'
-        let combined[key] = response[key]
-        if !has_key(response, 'value')
-          call add(combined.value, '')
-        endif
-      elseif key ==# 'value'
-        let combined.value[-1] .= response.value
-        if has_key(response, 'ns')
-          call add(combined.value, '')
-        endif
-      elseif key ==# 'status'
-        for entry in response[key]
-          if index(combined[key], entry) < 0
-            call extend(combined[key], [entry])
-          endif
-        endfor
-      elseif key ==# 'session'
-        if index(combined[key], response[key]) < 0
-          call extend(combined[key], [response[key]])
-        endif
-      elseif type(response[key]) == type('')
-        let combined[key] = get(combined, key, '') . response[key]
-      else
-        let combined[key] = response[key]
-      endif
-    endfor
-  endfor
-  call filter(combined.value, 'len(v:val)')
-  if empty(combined.value)
-    call remove(combined, 'value')
-  endif
-  return combined
+function! fireplace#nrepl#combine(responses) abort
+  return fireplace#transport#combine(a:responses)
 endfunction
 
 function! s:nrepl_process(msg) dict abort
@@ -143,7 +99,7 @@ function! s:nrepl_eval(expr, ...) dict abort
   endif
 
   if !has_key(msg, 'id')
-    let msg.id = fireplace#nrepl#next_id()
+    let msg.id = fireplace#transport#id()
   endif
 
   try
@@ -152,7 +108,7 @@ function! s:nrepl_eval(expr, ...) dict abort
     if !exists('response')
       let session = get(msg, 'session', self.session)
       if !empty(session)
-        call self.message({'op': 'interrupt', 'session': session, 'interrupt-id': msg.id}, 'ignore')
+        call self.message({'op': 'interrupt', 'session': session, 'interrupt-id': msg.id}, '')
       endif
       throw 'Clojure: Interrupt'
     endif
@@ -227,7 +183,7 @@ call writefile([getpid()], s:keepalive)
 function! s:nrepl_prepare(msg) dict abort
   let msg = copy(a:msg)
   if !has_key(msg, 'id')
-    let msg.id = fireplace#nrepl#next_id()
+    let msg.id = fireplace#transport#id()
   endif
   if empty(get(msg, 'ns', 1))
     unlet msg.ns
@@ -242,15 +198,7 @@ endfunction
 
 function! s:nrepl_message(msg, ...) dict abort
   let msg = self.prepare(a:msg)
-  if !a:0 || a:1 is# v:t_list
-    return self.transport.message(msg)
-  elseif a:1 is# v:t_dict
-    return fireplace#nrepl#combine(self.transport.message(msg))
-  elseif a:1 is# 'ignore' || empty(a:1)
-    return self.transport.message(msg, '')
-  else
-    return call(self.transport.message, [msg] + a:000, self.transport)
-  endif
+  return call(self.transport.message, [msg] + a:000, self.transport)
 endfunction
 
 function! s:nrepl_has_op(op) dict abort
