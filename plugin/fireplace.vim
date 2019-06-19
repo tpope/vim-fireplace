@@ -360,7 +360,7 @@ function! s:repl.eval(expr, options) dict abort
 endfunction
 
 function! s:register_connection(conn, ...) abort
-  call insert(s:repls, extend({'connection': a:conn, 'piggiebacks': []}, deepcopy(s:repl)))
+  call insert(s:repls, extend({'connection': a:conn, 'session': a:conn, 'transport': a:conn.transport, 'piggiebacks': []}, deepcopy(s:repl)))
   if a:0 && a:1 !=# ''
     let s:repl_paths[a:1] = s:repls[0]
   endif
@@ -368,9 +368,10 @@ function! s:register_connection(conn, ...) abort
 endfunction
 
 function! s:unregister_connection(conn) abort
-  call filter(s:repl_paths, 'v:val.connection.transport isnot# a:conn.transport')
-  call filter(s:repls, 'v:val.connection.transport isnot# a:conn.transport')
-  call filter(s:repl_portfiles, 'v:val.connection.transport isnot# a:conn.transport')
+  let transport = get(a:conn, 'transport', a:conn)
+  call filter(s:repl_paths, 'v:val.connection.transport isnot# transport')
+  call filter(s:repls, 'v:val.connection.transport isnot# transport')
+  call filter(s:repl_portfiles, 'v:val.connection.transport isnot# transport')
 endfunction
 
 function! fireplace#register_port_file(portfile, ...) abort
@@ -383,13 +384,15 @@ function! fireplace#register_port_file(portfile, ...) abort
   if empty(old) && getfsize(portfile) > 0
     let port = matchstr(readfile(portfile, 'b', 1)[0], '\d\+')
     try
-      let conn = fireplace#nrepl_connection#open(port)
+      let transport = fireplace#transport#connect(port)
+      let conn = fireplace#nrepl#for(transport)
       let s:repl_portfiles[portfile] = {
             \ 'time': getftime(portfile),
+            \ 'transport': transport,
             \ 'connection': conn}
       call s:register_connection(conn, a:0 ? a:1 : '')
       return conn
-    catch /^nREPL Connection Error:/
+    catch /^Fireplace:/
       if &verbose
         echohl WarningMSG
         echomsg v:exception
@@ -406,21 +409,13 @@ endfunction
 
 command! -bar -bang -complete=customlist,s:connect_complete -nargs=* FireplaceConnect exe s:Connect(<bang>0, <f-args>)
 
-function! s:protos() abort
-  return map(split(globpath(&runtimepath, 'autoload/fireplace/*_connection.vim'), "\n"), 'fnamemodify(v:val, ":t")[0:-16]')
-endfunction
-
 function! s:connect_complete(A, L, P) abort
   let proto = matchstr(a:A, '\w\+\ze://')
   if proto ==# ''
-    let options = map(s:protos(), 'v:val."://"')
+    let options = map(['nrepl'], 'v:val."://"')
   else
     let rest = matchstr(a:A, '://\zs.*')
-    try
-      let options = fireplace#{proto}_connection#complete(rest)
-    catch /^Vim(let):E117/
-      let options = ['localhost:']
-    endtry
+    let options = ['localhost:']
     call map(options, 'proto."://".v:val')
   endif
   if a:A !=# ''
@@ -430,15 +425,16 @@ function! s:connect_complete(A, L, P) abort
 endfunction
 
 function! s:Connect(bang, ...) abort
-  if (a:0 ? a:1 : '') =~# '^\w\+://'
-    let [proto, arg] = split(a:1, '://')
-  elseif (a:0 ? a:1 : '') =~# '^\%([[:alnum:].-]\+:\)\=\d\+$'
-    let [proto, arg] = ['nrepl', a:1]
-  else
+  let str = a:0 ? a:1 : ''
+  if str =~# '^\d\+$'
+    let str = 'nrepl://localhost:' . a:1
+  elseif str =~# '^[[:alnum:].-]\+:\=\d\+$'
+    let str = 'nrepl://' . a:1
+  elseif str !~# '^\w\+://'
     return 'echoerr '.string('Usage: :Connect host:port or :Connect proto://...')
   endif
   try
-    let connection = fireplace#{proto}_connection#open(arg)
+    let connection = fireplace#nrepl#for(fireplace#transport#connect(str))
   catch /.*/
     return 'echoerr '.string(v:exception)
   endtry
@@ -446,7 +442,7 @@ function! s:Connect(bang, ...) abort
     return ''
   endif
   let client = s:register_connection(connection)
-  echo 'Connected to '.proto.'://'.arg
+  echo 'Connected to '.str
   let path = fnamemodify(exists('b:java_root') ? b:java_root : fnamemodify(expand('%'), ':p:s?.*\zs[\/]src[\/].*??'), ':~')
   let root = a:0 > 1 ? expand(a:2) : input('Scope connection to: ', path, 'dir')
   if root !=# '' && root !=# '-'
@@ -644,7 +640,7 @@ endfunction
 
 function! fireplace#platform(...) abort
   for [k, v] in items(s:repl_portfiles)
-    if getftime(k) != v.time
+    if getftime(k) != v.time || !has_key(v, 'transport') || !v.transport.alive()
       call s:unregister_connection(v.connection)
     endif
   endfor
