@@ -12,17 +12,10 @@ function! s:function(name) abort
 endfunction
 
 function! s:shellesc(arg) abort
-  if a:arg =~ '^[A-Za-z0-9_/.-]\+$'
+  if a:arg =~# '^[A-Za-z0-9_/.-]\+$'
     return a:arg
-  elseif &shell =~# 'cmd'
-    throw 'Python interface not working. See :help python-dynamic'
   else
-    let escaped = shellescape(a:arg)
-    if &shell =~# 'sh' && &shell !~# 'csh'
-      return substitute(escaped, '\\\n', '\n', 'g')
-    else
-      return escaped
-    endif
+    return shellescape(a:arg)
   endif
 endfunction
 
