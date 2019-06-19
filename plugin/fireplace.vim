@@ -1798,13 +1798,28 @@ function! fireplace#capture_test_run(expr, ...) abort
         \ . '   (clojure.core/println (clojure.core/str e))'
         \ . '   (clojure.core/println (clojure.string/join "\n" (.getStackTrace e)))))'
   call setqflist([], ' ', {'title': a:expr})
-  let response = s:eval(expr, {'session': 0})
-  if !has_key(response, 'out')
-    call setqflist(fireplace#quickfix_for(get(response, 'stacktrace', [])))
-    return s:output_response(response)
+  let was_qf = &buftype ==# 'quickfix'
+  botright copen
+  if &buftype ==# 'quickfix' && !was_qf
+    wincmd p
+  endif
+  call fireplace#message({'op': 'eval', 'code': expr, 'session': 0}, function('s:handle_test_response', [[], fireplace#path()]))
+endfunction
+
+function! s:handle_test_response(buffer, path, message) abort
+  let str = get(a:message, 'out', '') . get(a:message, 'err', '')
+  if empty(a:buffer)
+    let str = substitute(str, "^\r\\=\n", "", "")
+    call add(a:buffer, '')
+  endif
+  let lines = split(a:buffer[0] . str, "\r\\=\n", 1)
+  if !has_key(a:message, 'status') || empty(lines[-1])
+    let a:buffer[0] = remove(lines, -1)
+  else
+    let a:buffer[0] = ''
   endif
   let entries = []
-  for line in split(response.out, "\r\\=\n")
+  for line in lines
     if line =~# '\t.*\t.*\t'
       let entry = {'text': line}
       let [resource, lnum, type, name] = split(line, "\t", 1)
@@ -1815,20 +1830,22 @@ function! fireplace#capture_test_run(expr, ...) abort
         let resource = ''
         let entry.lnum = 0
       endif
-      let entry.filename = fireplace#findresource(resource, fireplace#path())
+      let entry.filename = fireplace#findresource(resource, a:path)
       if empty(entry.filename)
         let entry.lnum = 0
       endif
     else
-      let entry = s:qfmassage(line, fireplace#path())
+      let entry = s:qfmassage(line, a:path)
     endif
     call add(entries, entry)
   endfor
   call setqflist(entries, 'a')
-  let was_qf = &buftype ==# 'quickfix'
-  botright cwindow
-  if &buftype ==# 'quickfix' && !was_qf
-    wincmd p
+  if has_key(a:message, 'status')
+    let was_qf = &buftype ==# 'quickfix'
+    botright cwindow
+    if &buftype ==# 'quickfix' && !was_qf
+      wincmd p
+    endif
   endif
 endfunction
 
