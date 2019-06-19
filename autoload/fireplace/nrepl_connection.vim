@@ -24,8 +24,8 @@ function! fireplace#nrepl_connection#open(arg) abort
     let host = 'localhost'
     let port = a:arg
   elseif a:arg =~# ':\d\+\%(/\|$\)'
-    let host = matchstr(a:arg, '[^:/@]\+\ze:')
-    let port = matchstr(a:arg, '.*:\zs\d\+')
+    let host = matchstr(a:arg, '[^:/@]\+\ze:\d')
+    let port = matchstr(a:arg, ':\zs\d\+')
   else
     throw "nREPL: Couldn't find [host:]port in " . a:arg
   endif
