@@ -404,7 +404,7 @@ endfunction
 
 " Section: :Connect
 
-command! -bar -complete=customlist,s:connect_complete -nargs=* FireplaceConnect :exe s:Connect(<f-args>)
+command! -bar -bang -complete=customlist,s:connect_complete -nargs=* FireplaceConnect exe s:Connect(<bang>, <f-args>)
 
 function! s:protos() abort
   return map(split(globpath(&runtimepath, 'autoload/fireplace/*_connection.vim'), "\n"), 'fnamemodify(v:val, ":t")[0:-16]')
@@ -429,7 +429,7 @@ function! s:connect_complete(A, L, P) abort
   return options
 endfunction
 
-function! s:Connect(...) abort
+function! s:Connect(bang, ...) abort
   if (a:0 ? a:1 : '') =~# '^\w\+://'
     let [proto, arg] = split(a:1, '://')
   elseif (a:0 ? a:1 : '') =~# '^\%([[:alnum:].-]\+:\)\=\d\+$'
@@ -462,8 +462,8 @@ endfunction
 
 augroup fireplace_connect
   autocmd!
-  autocmd FileType clojure command! -buffer -bar  -complete=customlist,s:connect_complete -nargs=*
-        \ Connect FireplaceConnect <args>
+  autocmd FileType clojure command! -buffer -bang -bar -complete=customlist,s:connect_complete -nargs=*
+        \ Connect FireplaceConnect<bang> <args>
   autocmd FileType clojure command! -buffer -bang -complete=customlist,fireplace#eval_complete -nargs=*
         \ Piggieback call s:piggieback(<q-args>, <bang>0)
 augroup END
