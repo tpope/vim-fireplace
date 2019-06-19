@@ -40,8 +40,11 @@ def bencode(data, f):
 
 def binread(f, count=1):
     buf = f.read(count)
-    while len(buf) != count:
-        buf += f.read(count - len(buf))
+    length = len(buf)
+    while len(buf) != count and length > 0:
+        more = f.read(count - len(buf))
+        length = len(more)
+        buf += more
     return buf
 
 def bdecode(f, char=None):
