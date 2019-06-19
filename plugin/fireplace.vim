@@ -406,20 +406,6 @@ endfunction
 
 command! -bar -complete=customlist,s:connect_complete -nargs=* FireplaceConnect :exe s:Connect(<f-args>)
 
-function! fireplace#input_host_port() abort
-  let arg = input('Host> ', 'localhost')
-  if arg ==# ''
-    return ''
-  endif
-  echo "\n"
-  let arg .= ':' . input('Port> ')
-  if arg =~# ':$'
-    return ''
-  endif
-  echo "\n"
-  return arg
-endfunction
-
 function! s:protos() abort
   return map(split(globpath(&runtimepath, 'autoload/fireplace/*_connection.vim'), "\n"), 'fnamemodify(v:val, ":t")[0:-16]')
 endfunction
@@ -448,21 +434,8 @@ function! s:Connect(...) abort
     let [proto, arg] = split(a:1, '://')
   elseif (a:0 ? a:1 : '') =~# '^\%([[:alnum:].-]\+:\)\=\d\+$'
     let [proto, arg] = ['nrepl', a:1]
-  elseif a:0
-    return 'echoerr '.string('Usage: :Connect proto://...')
   else
-    let protos = s:protos()
-    if empty(protos)
-      return 'echoerr '.string('No protocols available')
-    endif
-    let proto = s:inputlist('Protocol> ', protos)
-    if proto ==# ''
-      return
-    endif
-    redraw!
-    echo ':Connect'
-    echo 'Protocol> '.proto
-    let arg = fireplace#{proto}_connection#prompt()
+    return 'echoerr '.string('Usage: :Connect host:port or :Connect proto://...')
   endif
   try
     let connection = fireplace#{proto}_connection#open(arg)

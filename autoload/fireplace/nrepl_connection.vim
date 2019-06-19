@@ -19,17 +19,13 @@ function! s:shellesc(arg) abort
   endif
 endfunction
 
-function! fireplace#nrepl_connection#prompt() abort
-  return fireplace#input_host_port()
-endfunction
-
 function! fireplace#nrepl_connection#open(arg) abort
   if a:arg =~# '^\d\+$'
     let host = 'localhost'
     let port = a:arg
-  elseif a:arg =~# ':\d\+$'
-    let host = matchstr(a:arg, '.*\ze:')
-    let port = matchstr(a:arg, '.*:\zs.*')
+  elseif a:arg =~# ':\d\+\%(/\|$\)'
+    let host = matchstr(a:arg, '[^:/@]\+\ze:')
+    let port = matchstr(a:arg, '.*:\zs\d\+')
   else
     throw "nREPL: Couldn't find [host:]port in " . a:arg
   endif
