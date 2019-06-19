@@ -34,16 +34,6 @@ function! fireplace#nrepl#for(transport) abort
   let client.transport = a:transport
   let client.session = client.process({'op': 'clone', 'session': 0})['new-session']
   let client.describe = client.process({'op': 'describe'})
-  " Handle boot, which sets a fake.class.path entry
-  let response = client.process({'op': 'eval', 'code':
-        \ '[(System/getProperty "path.separator") (System/getProperty "fake.class.path")]', 'session': ''})
-  let cpath = response.value[-1][5:-2]
-  if cpath !=# 'nil'
-    let cpath = eval(cpath)
-    if !empty(cpath)
-      let client._path = split(cpath, response.value[-1][2])
-    endif
-  endif
   if !has_key(client, '_path') && client.has_op('classpath')
     let response = client.message({'op': 'classpath'})[0]
     if type(get(response, 'classpath')) == type([])
@@ -52,7 +42,7 @@ function! fireplace#nrepl#for(transport) abort
   endif
   if !has_key(client, '_path')
     let response = client.process({'op': 'eval', 'code':
-          \ '[(System/getProperty "path.separator") (System/getProperty "java.class.path")]', 'session': ''})
+          \ '[(System/getProperty "path.separator") (or (System/getProperty "fake.class.path") (System/getProperty "java.class.path") "")]', 'session': ''})
     let client._path = split(eval(response.value[-1][5:-2]), response.value[-1][2])
   endif
   let g:fireplace_nrepl_sessions[client.session] = client
