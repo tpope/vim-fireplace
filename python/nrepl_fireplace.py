@@ -106,22 +106,31 @@ class Connection:
     def __init__(self, host, port, custom_poll=noop, keepalive_file=None):
         self.custom_poll = custom_poll
         self.keepalive_file = keepalive_file
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(8)
-        s.connect((host, int(port)))
-        s.setblocking(1)
-        self.socket = s
+        self.connected = False
+        self.host = host
+        self.port = int(port)
+
+    def socket(self):
+        if not self.connected:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(8)
+            s.connect((self.host, self.port))
+            s.setblocking(1)
+            self._socket = s
+            self.connected = True
+        return self._socket
 
     def poll(self):
         self.custom_poll()
         if self.keepalive_file and not os.path.exists(self.keepalive_file):
-            sys.exit(0)
+            os._exit(0)
 
     def close(self):
-        return self.socket.close()
+        if self.connected:
+            return self.socket().close()
 
     def send(self, payload):
-        f = self.socket.makefile('wb')
+        f = self.socket().makefile('wb')
         try:
             if isinstance(payload, dict):
                 bencode(payload, f)
@@ -132,7 +141,7 @@ class Connection:
         return ''
 
     def receive(self, char=None):
-        f = self.socket.makefile('rb', False)
+        f = self.socket().makefile('rb', False)
         while len(select.select([f], [], [], 0.1)[0]) == 0:
             self.poll()
         try:
