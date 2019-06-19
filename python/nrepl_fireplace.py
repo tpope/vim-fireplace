@@ -39,7 +39,10 @@ def bencode(data, f):
         raise TypeError("can't bencode a " + type(data).__name__)
 
 def binread(f, count=1):
-    return f.read(count)
+    buf = f.read(count)
+    while len(buf) != count:
+        buf += f.read(count - len(buf))
+    return buf
 
 def bdecode(f, char=None):
     if char == None:
