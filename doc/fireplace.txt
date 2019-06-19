@@ -27,7 +27,7 @@ buffer and 'path' contains at least one jar file, java (or $JAVA_CMD) is
 invoked directly, which can be quite slow depending on your setup.
 
 The only adapter shipped with fireplace.vim is for nREPL.  You need either
-|if_pyth| or the python command in your PATH.
+`python` or `python3` in your path.
 
                         *fireplace-piggieback* *fireplace-clojurescript*
 ClojureScript can be evaled with Piggieback if the appropriate nREPL
