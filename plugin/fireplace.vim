@@ -1803,10 +1803,11 @@ function! fireplace#capture_test_run(expr, ...) abort
   if &buftype ==# 'quickfix' && !was_qf
     wincmd p
   endif
-  call fireplace#message({'op': 'eval', 'code': expr, 'session': 0}, function('s:handle_test_response', [[], fireplace#path()]))
+  call fireplace#message({'op': 'eval', 'code': expr, 'session': 0},
+        \ function('s:handle_test_response', [[], get(getqflist({'id': 0}), 'id'), fireplace#path()]))
 endfunction
 
-function! s:handle_test_response(buffer, path, message) abort
+function! s:handle_test_response(buffer, id, path, message) abort
   let str = get(a:message, 'out', '') . get(a:message, 'err', '')
   if empty(a:buffer)
     let str = substitute(str, "^\r\\=\n", "", "")
@@ -1839,7 +1840,11 @@ function! s:handle_test_response(buffer, path, message) abort
     endif
     call add(entries, entry)
   endfor
-  call setqflist(entries, 'a')
+  if a:id
+    call setqflist([], 'a', {'id': a:id, 'items': entries})
+  else
+    call setqflist(entries, 'a')
+  endif
   if has_key(a:message, 'status')
     let was_qf = &buftype ==# 'quickfix'
     botright cwindow
