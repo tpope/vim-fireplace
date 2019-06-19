@@ -74,8 +74,18 @@ function! s:nrepl_transport_dispatch(cmd, ...) dict abort
   if !v:shell_error
     return json_decode(out)
   endif
-  let g:fireplace_last_python_exception = json_decode(out)
-  throw 'Fireplace Python exception: ' . g:fireplace_last_python_exception.title
+  let err = json_decode(out)
+  if type(err) == v:t_list
+    let err = err[1]
+  endif
+  if type(err) == v:t_list
+    let err = err[1]
+  endif
+  if type(err) == v:t_dict
+    let g:fireplace_last_python_exception = err
+    let err = err.title
+  endif
+  throw 'Fireplace Python exception: ' . err
 endfunction
 
 function! s:nrepl_transport_message(msg, ...) dict abort
