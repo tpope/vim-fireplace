@@ -158,6 +158,19 @@ function! fireplace#transport#connect(arg) abort
   endwhile
   if get(transport.state, 'status') is# ''
     let transport.describe = transport.message({'op': 'describe', 'verbose?': 1}, v:t_dict)
+    if transport.has_op('classpath')
+      let response = transport.message({'op': 'classpath', 'session': ''})[0]
+      if type(get(response, 'classpath')) == type([])
+        let transport._path = response.classpath
+      endif
+    endif
+    if !has_key(transport, '_path')
+      let response = transport.message({'op': 'eval', 'code':
+            \ '[(System/getProperty "path.separator") (or' .
+            \ ' (System/getProperty "fake.class.path")' .
+            \ ' (System/getProperty "java.class.path") "")]'}, v:t_dict)
+      let transport._path = split(eval(response.value[-1][5:-2]), response.value[-1][2])
+    endif
     return transport
   endif
   throw 'Fireplace: Connection Error: ' . get(transport.state, 'status', 'Failed to run command ' . join(command, ' '))

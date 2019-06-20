@@ -266,7 +266,7 @@ if !exists('s:repls')
 endif
 
 function! s:repl.path() dict abort
-  return self.connection.path()
+  return self.transport._path
 endfunction
 
 function! s:conn_try(connection, function, ...) abort
