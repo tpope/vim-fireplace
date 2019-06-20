@@ -29,10 +29,8 @@ augroup END
 function! fireplace#nrepl#for(transport) abort
   let client = copy(s:nrepl)
   let client.transport = a:transport
-  let client.session = client.process({'op': 'clone', 'session': 0})['new-session']
-  let client.describe = client.process({'op': 'describe'})
-  if !has_key(client, '_path') && client.has_op('classpath')
-    let response = client.message({'op': 'classpath'})[0]
+  if a:transport.has_op('classpath')
+    let response = a:transport.message({'op': 'classpath'})[0]
     if type(get(response, 'classpath')) == type([])
       let client._path = response.classpath
     endif
@@ -42,6 +40,7 @@ function! fireplace#nrepl#for(transport) abort
           \ '[(System/getProperty "path.separator") (or (System/getProperty "fake.class.path") (System/getProperty "java.class.path") "")]', 'session': ''})
     let client._path = split(eval(response.value[-1][5:-2]), response.value[-1][2])
   endif
+  let client.session = client.process({'op': 'clone', 'session': ''})['new-session']
   let g:fireplace_nrepl_sessions[client.session] = client
   return client
 endfunction
@@ -202,7 +201,7 @@ function! s:nrepl_message(msg, ...) dict abort
 endfunction
 
 function! s:nrepl_has_op(op) dict abort
-  return has_key(self.describe.ops, a:op)
+  return self.transport.has_op(a:op)
 endfunction
 
 let s:nrepl = {

@@ -157,6 +157,7 @@ function! fireplace#transport#connect(arg) abort
     sleep 20m
   endwhile
   if get(transport.state, 'status') is# ''
+    let transport.describe = transport.message({'op': 'describe', 'verbose?': 1}, v:t_dict)
     return transport
   endif
   throw 'Fireplace: Connection Error: ' . get(transport.state, 'status', 'Failed to run command ' . join(command, ' '))
@@ -171,6 +172,10 @@ function! s:transport_close() dict abort
     call s:stop(self.job)
   endif
   return self
+endfunction
+
+function! s:transport_has_op(op) dict abort
+  return has_key(self.describe.ops, a:op)
 endfunction
 
 function! s:transport_message(request, ...) dict abort
@@ -212,4 +217,5 @@ endfunction
 let s:nrepl_transport = {
       \ 'alive': function('s:transport_alive'),
       \ 'close': function('s:transport_close'),
+      \ 'has_op': function('s:transport_has_op'),
       \ 'message': function('s:transport_message')}

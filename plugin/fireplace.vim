@@ -705,8 +705,8 @@ endfunction
 function! fireplace#op_available(op) abort
   try
     let client = fireplace#platform()
-    if has_key(client, 'connection')
-      return client.connection.has_op(a:op)
+    if has_key(client, 'transport')
+      return client.transport.has_op(a:op)
     endif
   catch /^Fireplace: :Connect to a REPL/
   endtry
