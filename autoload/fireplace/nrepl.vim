@@ -19,44 +19,47 @@ endif
 
 augroup fireplace_nrepl_connection
   autocmd!
-  autocmd VimLeave * for s:session in values(g:fireplace_nrepl_sessions)
-        \ |   if s:session.transport.alive()
-        \ |     call s:session.close()
+  autocmd VimLeave * for s:ses in values(g:fireplace_nrepl_sessions)
+        \ |   if s:ses.transport.alive()
+        \ |     call s:ses.close()
         \ |   endif
         \ | endfor
 augroup END
 
 function! fireplace#nrepl#for(transport) abort
-  let client = copy(s:nrepl)
-  let client.transport = a:transport
-  let client.session = client.process({'op': 'clone', 'session': ''})['new-session']
-  let g:fireplace_nrepl_sessions[client.session] = client
-  return client
+  let session = copy(s:session)
+  let session.transport = a:transport
+  let session.id = session.process({'op': 'clone', 'session': ''})['new-session']
+  let session.session = session.id
+  let g:fireplace_nrepl_sessions[session.id] = session
+  return session
 endfunction
 
-function! s:nrepl_close() dict abort
-  if has_key(self, 'session')
+function! s:session_close() dict abort
+  if has_key(self, 'id')
     try
-      unlet! g:fireplace_nrepl_sessions[self.session]
+      unlet! g:fireplace_nrepl_sessions[self.id]
       call self.message({'op': 'close'}, '')
     catch
     finally
+      unlet self.id
       unlet self.session
     endtry
   endif
   return self
 endfunction
 
-function! s:nrepl_clone() dict abort
-  let client = copy(self)
+function! s:session_clone() dict abort
+  let session = copy(self)
   if has_key(self, 'session')
-    let client.session = client.process({'op': 'clone'})['new-session']
-    let g:fireplace_nrepl_sessions[client.session] = client
+    let session.id = session.process({'op': 'clone'})['new-session']
+    let session.session = session.id
+    let g:fireplace_nrepl_sessions[session.id] = session
   endif
-  return client
+  return session
 endfunction
 
-function! s:nrepl_path() dict abort
+function! s:session_path() dict abort
   return self.transport._path
 endfunction
 
@@ -64,7 +67,7 @@ function! fireplace#nrepl#combine(responses) abort
   return fireplace#transport#combine(a:responses)
 endfunction
 
-function! s:nrepl_process(msg) dict abort
+function! s:session_process(msg) dict abort
   let combined = self.message(a:msg, v:t_dict)
   if index(combined.status, 'error') < 0
     return combined
@@ -73,7 +76,7 @@ function! s:nrepl_process(msg) dict abort
   throw 'nREPL: ' . tr(join(status, ', '), '-', ' ')
 endfunction
 
-function! s:nrepl_eval(expr, ...) dict abort
+function! s:session_eval(expr, ...) dict abort
   let msg = {"op": "eval"}
   let msg.code = a:expr
   let options = a:0 ? a:1 : {}
@@ -94,7 +97,7 @@ function! s:nrepl_eval(expr, ...) dict abort
     let response = self.process(msg)
   finally
     if !exists('response')
-      let session = get(msg, 'session', self.session)
+      let session = get(msg, 'session', self.id)
       if !empty(session)
         call self.message({'op': 'interrupt', 'session': session, 'interrupt-id': msg.id}, '')
       endif
@@ -105,8 +108,8 @@ function! s:nrepl_eval(expr, ...) dict abort
     let self.ns = response.ns
   endif
 
-  if has_key(response, 'ex') && !empty(get(msg, 'session', 1))
-    let response.stacktrace = s:extract_last_stacktrace(self, get(msg, 'session', self.session))
+  if has_key(response, 'ex') && get(msg, 'session', self.id) ==# self.id
+    let response.stacktrace = s:extract_last_stacktrace(self)
   endif
 
   if has_key(response, 'value')
@@ -127,9 +130,9 @@ function! s:process_stacktrace_entry(entry) abort
   return str
 endfunction
 
-function! s:extract_last_stacktrace(nrepl, session) abort
-  if a:nrepl.has_op('stacktrace')
-    let stacktrace = a:nrepl.message({'op': 'stacktrace', 'session': a:session})
+function! s:extract_last_stacktrace(session) abort
+  if a:session.has_op('stacktrace')
+    let stacktrace = a:session.message({'op': 'stacktrace'})
     if len(stacktrace) > 0 && has_key(stacktrace[0], 'stacktrace')
       let stacktrace = stacktrace[0].stacktrace
     endif
@@ -153,22 +156,22 @@ function! s:extract_last_stacktrace(nrepl, session) abort
         \                         ' (seq (amap st idx ret (str (aget st idx)))))]' .
         \             ' (apply str (interleave (repeat "\n") parts))))' .
         \         ' "\n\b\n")))'
-  let response = a:nrepl.process({'op': 'eval', 'code': '['.format_st.' *3 *2 *1]', 'ns': 'user', 'session': a:session})
+  let response = a:session.process({'op': 'eval', 'code': '['.format_st.' *3 *2 *1]', 'ns': 'user', 'session': a:session})
   try
     let stacktrace = split(get(split(response.value[0], "\n\b\n"), 1, ""), "\n")
   catch
     throw string(response)
   endtry
-  call a:nrepl.message({'op': 'eval', 'code': '(*1 1)', 'ns': 'user', 'session': a:session})
-  call a:nrepl.message({'op': 'eval', 'code': '(*2 2)', 'ns': 'user', 'session': a:session})
-  call a:nrepl.message({'op': 'eval', 'code': '(*3 3)', 'ns': 'user', 'session': a:session})
+  call a:session.message({'op': 'eval', 'code': '(*1 1)', 'ns': 'user'})
+  call a:session.message({'op': 'eval', 'code': '(*2 2)', 'ns': 'user'})
+  call a:session.message({'op': 'eval', 'code': '(*3 3)', 'ns': 'user'})
   return stacktrace
 endfunction
 
 let s:keepalive = tempname()
 call writefile([getpid()], s:keepalive)
 
-function! s:nrepl_prepare(msg) dict abort
+function! s:session_prepare(msg) dict abort
   let msg = copy(a:msg)
   if !has_key(msg, 'id')
     let msg.id = fireplace#transport#id()
@@ -179,26 +182,26 @@ function! s:nrepl_prepare(msg) dict abort
   if empty(get(msg, 'session', 1))
     unlet msg.session
   elseif !has_key(msg, 'session')
-    let msg.session = self.session
+    let msg.session = self.id
   endif
   return msg
 endfunction
 
-function! s:nrepl_message(msg, ...) dict abort
+function! s:session_message(msg, ...) dict abort
   let msg = self.prepare(a:msg)
   return call(self.transport.message, [msg] + a:000, self.transport)
 endfunction
 
-function! s:nrepl_has_op(op) dict abort
+function! s:session_has_op(op) dict abort
   return self.transport.has_op(a:op)
 endfunction
 
-let s:nrepl = {
-      \ 'close': s:function('s:nrepl_close'),
-      \ 'clone': s:function('s:nrepl_clone'),
-      \ 'prepare': s:function('s:nrepl_prepare'),
-      \ 'message': s:function('s:nrepl_message'),
-      \ 'eval': s:function('s:nrepl_eval'),
-      \ 'has_op': s:function('s:nrepl_has_op'),
-      \ 'path': s:function('s:nrepl_path'),
-      \ 'process': s:function('s:nrepl_process')}
+let s:session = {
+      \ 'close': s:function('s:session_close'),
+      \ 'clone': s:function('s:session_clone'),
+      \ 'prepare': s:function('s:session_prepare'),
+      \ 'message': s:function('s:session_message'),
+      \ 'eval': s:function('s:session_eval'),
+      \ 'has_op': s:function('s:session_has_op'),
+      \ 'path': s:function('s:session_path'),
+      \ 'process': s:function('s:session_process')}
