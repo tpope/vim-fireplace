@@ -261,7 +261,7 @@ function! s:conn_try(connection, function, ...) abort
   try
     return call(a:connection[a:function], a:000, a:connection)
   catch /^\w\+ Connection Error:/
-    call s:unregister_connection(a:connection)
+    call s:unregister(a:connection)
     throw v:exception
   endtry
 endfunction
@@ -270,14 +270,14 @@ function! s:repl.message(payload, ...) dict abort
   if has_key(a:payload, 'ns') && a:payload.ns !=# self.user_ns()
     let ignored_error = self.preload(a:payload.ns)
   endif
-  return call('s:conn_try', [self.connection, 'message', a:payload] + a:000, self)
+  return call('s:conn_try', [get(self, 'session', get(self, 'connection', {})), 'message', a:payload] + a:000, self)
 endfunction
 
 function! s:repl.preload(lib) dict abort
   if !empty(a:lib) && a:lib !=# self.user_ns() && !get(self.requires, a:lib)
     let reload = has_key(self.requires, a:lib) ? ' :reload' : ''
     let self.requires[a:lib] = 0
-    let clone = s:conn_try(self.connection, 'clone')
+    let clone = s:conn_try(get(self, 'session', get(self, 'connection', {})), 'clone')
     if self.user_ns() ==# 'user'
       let qsym = s:qsym(a:lib)
       let expr = '(when-not (find-ns '.qsym.') (try'
@@ -356,42 +356,41 @@ function! s:repl.eval(expr, options) dict abort
       return error
     endif
   endif
-  return s:conn_try(self.connection, 'eval', a:expr, a:options)
+  return s:conn_try(get(self, 'session', get(self, 'connection', {})), 'eval', a:expr, a:options)
 endfunction
 
-function! s:register_connection(conn, ...) abort
-  call insert(s:repls, extend({'connection': a:conn, 'session': a:conn, 'transport': a:conn.transport, 'piggiebacks': []}, deepcopy(s:repl)))
+function! s:register(transport, ...) abort
+  let session = fireplace#nrepl#for(a:transport)
+  call insert(s:repls, extend({'connection': session, 'session': session, 'transport': a:transport, 'piggiebacks': []}, deepcopy(s:repl)))
   if a:0 && a:1 !=# ''
     let s:repl_paths[a:1] = s:repls[0]
   endif
   return s:repls[0]
 endfunction
 
-function! s:unregister_connection(conn) abort
-  let transport = get(a:conn, 'transport', a:conn)
-  call filter(s:repl_paths, 'v:val.connection.transport isnot# transport')
-  call filter(s:repls, 'v:val.connection.transport isnot# transport')
-  call filter(s:repl_portfiles, 'v:val.connection.transport isnot# transport')
+function! s:unregister(transport) abort
+  let transport = get(a:transport, 'transport', a:transport)
+  call filter(s:repl_paths, 'get(v:val, "connection", v:val).transport isnot# transport')
+  call filter(s:repls, 'get(v:val, "connection", v:val).transport isnot# transport')
+  call filter(s:repl_portfiles, 'get(v:val, "connection", v:val).transport isnot# transport')
 endfunction
 
 function! fireplace#register_port_file(portfile, ...) abort
   let portfile = fnamemodify(a:portfile, ':p')
   let old = get(s:repl_portfiles, portfile, {})
   if has_key(old, 'time') && getftime(portfile) !=# old.time
-    call s:unregister_connection(old.connection)
+    call s:unregister(get(old, 'transport', get(old, 'connection', {})))
     let old = {}
   endif
   if empty(old) && getfsize(portfile) > 0
     let port = matchstr(readfile(portfile, 'b', 1)[0], '\d\+')
     try
       let transport = fireplace#transport#connect(port)
-      let conn = fireplace#nrepl#for(transport)
       let s:repl_portfiles[portfile] = {
             \ 'time': getftime(portfile),
-            \ 'transport': transport,
-            \ 'connection': conn}
-      call s:register_connection(conn, a:0 ? a:1 : '')
-      return conn
+            \ 'transport': transport}
+      call s:register(transport, a:0 ? a:1 : '')
+      return transport
     catch /^Fireplace:/
       if &verbose
         echohl WarningMSG
@@ -401,7 +400,7 @@ function! fireplace#register_port_file(portfile, ...) abort
       return {}
     endtry
   else
-    return get(old, 'connection', {})
+    return get(old, 'transport', {})
   endif
 endfunction
 
@@ -434,14 +433,14 @@ function! s:Connect(bang, ...) abort
     return 'echoerr '.string('Usage: :Connect host:port or :Connect proto://...')
   endif
   try
-    let connection = fireplace#nrepl#for(fireplace#transport#connect(str))
+    let transport = fireplace#transport#connect(str)
   catch /.*/
     return 'echoerr '.string(v:exception)
   endtry
-  if type(connection) !=# type({}) || empty(connection)
+  if type(transport) !=# type({}) || empty(transport)
     return ''
   endif
-  let client = s:register_connection(connection)
+  let client = s:register(transport)
   echo 'Connected to '.str
   let path = fnamemodify(exists('b:java_root') ? b:java_root : fnamemodify(expand('%'), ':p:s?.*\zs[\/]src[\/].*??'), ':~')
   let root = a:0 > 1 ? expand(a:2) : input('Scope connection to: ', path, 'dir')
@@ -641,7 +640,7 @@ endfunction
 function! fireplace#platform(...) abort
   for [k, v] in items(s:repl_portfiles)
     if getftime(k) != v.time || !has_key(v, 'transport') || !v.transport.alive()
-      call s:unregister_connection(v.connection)
+      call s:unregister(get(v, 'transport', get(v, 'connection', {})))
     endif
   endfor
 
