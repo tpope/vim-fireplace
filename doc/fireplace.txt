@@ -124,7 +124,7 @@ stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
                         and load the results into the quickfix list.
 
 :[range]RunTests        Call clojure.test/test-var on the var defined at or
-                        above the specicied line and load the results into the
+                        above the specified line and load the results into the
                         quickfix list.  Typically invoked as :.RunTests to run
                         the test under the cursor.
 
