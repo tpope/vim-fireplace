@@ -310,30 +310,30 @@ function! s:repl.piggieback(arg, ...) abort
     return {}
   endif
 
-  let connection = s:conn_try(self.connection, 'clone')
+  let session = s:conn_try(get(self, 'session', get(self, 'connection', {})), 'clone')
   if empty(a:arg)
-    call connection.eval("(require 'cljs.repl.nashorn)")
+    call session.eval("(require 'cljs.repl.nashorn)")
     let arg = '(cljs.repl.nashorn/repl-env)'
   elseif a:arg =~# '^\d\{1,5}$'
     let replns = 'weasel.repl.websocket'
-    if has_key(connection.eval("(require '" . replns . ")"), 'ex')
+    if has_key(session.eval("(require '" . replns . ")"), 'ex')
       let replns = 'cljs.repl.browser'
-      call connection.eval("(require '" . replns . ")")
+      call session.eval("(require '" . replns . ")")
     endif
     let port = matchstr(a:arg, '^\d\{1,5}$')
     let arg = '('.replns.'/repl-env :port '.port.')'
   else
     let arg = a:arg
   endif
-  let response = connection.eval("((or (resolve 'cider.piggieback/cljs-repl)"
+  let response = session.eval("((or (resolve 'cider.piggieback/cljs-repl)"
         \ ."(resolve 'cemerick.piggieback/cljs-repl))"
         \ .' '.arg.')')
 
   if empty(get(response, 'ex'))
-    call insert(self.piggiebacks, extend({'connection': connection}, deepcopy(s:piggieback)))
+    call insert(self.piggiebacks, extend({'connection': session, 'session': session, 'transport': session.transport}, deepcopy(s:piggieback)))
     return {}
   endif
-  call connection.close()
+  call session.close()
   return response
 endfunction
 
@@ -677,7 +677,7 @@ function! fireplace#client(...) abort
   let buf = a:0 ? a:1 : s:buf()
   let client = fireplace#platform(buf)
   if fnamemodify(bufname(buf), ':e') ==# 'cljs'
-    if !has_key(client, 'connection')
+    if !has_key(client, 'transport')
       throw 'Fireplace: no live REPL connection'
     endif
     if empty(client.piggiebacks)
