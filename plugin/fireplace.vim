@@ -424,13 +424,15 @@ function! s:connect_complete(A, L, P) abort
 endfunction
 
 function! s:Connect(bang, ...) abort
-  let str = a:0 ? a:1 : ''
-  if str =~# '^\d\+$'
-    let str = 'nrepl://localhost:' . a:1
-  elseif str =~# '^[[:alnum:].-]\+:\=\d\+$'
-    let str = 'nrepl://' . a:1
-  elseif str !~# '^\w\+://'
-    return 'echoerr '.string('Usage: :Connect host:port or :Connect proto://...')
+  let str = substitute(expand(a:0 ? a:1 : ''), '^file:[\/]\{' . (has('win32') ? '3' : '2') . '\}', '', '')
+  if str !~# ':\d\|:[\/][\/]' && filereadable(str)
+    let path = fnamemodify(str, ':p:h')
+    let str = readfile(str, '', 1)[0]
+  elseif str !~# ':\d\|:[\/][\/]' && filereadable(str . '/.nrepl-port')
+    let path = fnamemodify(str, ':p:h')
+    let str = readfile(str . '/.nrepl-port', '', 1)[0]
+  else
+    let path = fnamemodify(exists('b:java_root') ? b:java_root : fnamemodify(expand('%'), ':p:s?.*\zs[\/]src[\/].*??'), ':~')
   endif
   try
     let transport = fireplace#transport#connect(str)
@@ -442,7 +444,6 @@ function! s:Connect(bang, ...) abort
   endif
   let client = s:register(transport)
   echo 'Connected to '.str
-  let path = fnamemodify(exists('b:java_root') ? b:java_root : fnamemodify(expand('%'), ':p:s?.*\zs[\/]src[\/].*??'), ':~')
   let root = a:0 > 1 ? expand(a:2) : input('Scope connection to: ', path, 'dir')
   if root !=# '' && root !=# '-'
     let s:repl_paths[fnamemodify(root, ':p:s?.\zs[\/]$??')] = client
