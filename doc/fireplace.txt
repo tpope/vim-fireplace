@@ -27,7 +27,7 @@ buffer and 'path' contains at least one jar file, java (or $JAVA_CMD) is
 invoked directly, which can be quite slow depending on your setup.
 
 The only adapter shipped with fireplace.vim is for nREPL.  You need either
-|if_pyth| or the python command in your PATH.
+`python` or `python3` in your path.
 
                         *fireplace-piggieback* *fireplace-clojurescript*
 ClojureScript can be evaled with Piggieback if the appropriate nREPL
@@ -129,7 +129,7 @@ stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
                         and load the results into the quickfix list.
 
 :[range]RunTests        Call clojure.test/test-var on the var defined at or
-                        above the specicied line and load the results into the
+                        above the specified line and load the results into the
                         quickfix list.  Typically invoked as :.RunTests to run
                         the test under the cursor.
 
