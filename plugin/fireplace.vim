@@ -312,22 +312,38 @@ function! s:repl.piggieback(arg, ...) abort
 
   let session = s:conn_try(get(self, 'session', get(self, 'connection', {})), 'clone')
   if empty(a:arg)
-    call session.eval("(require 'cljs.repl.nashorn)")
-    let arg = '(cljs.repl.nashorn/repl-env)'
-  elseif a:arg =~# '^\d\{1,5}$'
-    let replns = 'weasel.repl.websocket'
-    if has_key(session.eval("(require '" . replns . ")"), 'ex')
-      let replns = 'cljs.repl.browser'
-      call session.eval("(require '" . replns . ")")
+    let arg = get(b:, 'fireplace_cljs_repl', get(g:, 'fireplace_cljs_repl'))
+    if arg is# 0
+      if len(fireplace#findresource('cljs/repl/nashorn.clj'))
+        let arg = '(cljs.repl.nashorn/repl-env)'
+      else
+        let arg = ''
+      endif
     endif
-    let port = matchstr(a:arg, '^\d\{1,5}$')
-    let arg = '('.replns.'/repl-env :port '.port.')'
+  elseif a:arg =~# '^\d\{1,5}$'
+    if len(fireplace#findresource('weasel/repl/websocket.clj', self.path()))
+      let arg = '(weasel.repl.websocket/repl-env :port ' . a:arg . ')'
+    else
+      let arg = '(cljs.repl.browser/repl-env :port ' . a:arg .')'
+    endif
   else
     let arg = a:arg
   endif
-  let response = session.eval("((or (resolve 'cider.piggieback/cljs-repl)"
-        \ ."(resolve 'cemerick.piggieback/cljs-repl))"
-        \ .' '.arg.')')
+  if empty(arg)
+    throw 'Fireplace: no default ClojureScript REPL'
+  endif
+  let replns = matchstr(arg, '^(\=\zs[a-z][a-z0-9-]\+\.[a-z0-9.-]\+\ze/')
+  if len(replns)
+    call session.eval("(require '" . replns . ")")
+  endif
+  if arg =~# '^\S*repl-env\>' || arg !~# '('
+    if len(fireplace#findresource('cemerick/piggieback.clj', self.path())) && !len(fireplace#findresource('cider/piggieback.clj', self.path()))
+      let arg = '(cemerick.piggieback/cljs-repl ' . arg . ')'
+    else
+      let arg = '(cider.piggieback/cljs-repl ' . arg . ')'
+    endif
+  endif
+  let response = session.eval(arg)
 
   if empty(get(response, 'ex'))
     call insert(self.piggiebacks, extend({'connection': session, 'session': session, 'transport': session.transport}, deepcopy(s:piggieback)))
@@ -451,17 +467,22 @@ function! s:Connect(bang, ...) abort
   return ''
 endfunction
 
-function! s:piggieback(arg, remove) abort
-  let response = fireplace#platform().piggieback(a:arg, a:remove)
-  call s:output_response(response)
+function! s:piggieback(count, arg, remove) abort
+  try
+    let response = fireplace#platform().piggieback(a:arg, a:remove)
+    call s:output_response(response)
+    return ''
+  catch /^Fireplace:/
+    return 'echoerr ' . string(v:exception)
+  endtry
 endfunction
 
 augroup fireplace_connect
   autocmd!
   autocmd FileType clojure command! -buffer -bang -bar -complete=customlist,s:connect_complete -nargs=*
         \ Connect FireplaceConnect<bang> <args>
-  autocmd FileType clojure command! -buffer -bang -complete=customlist,fireplace#eval_complete -nargs=*
-        \ Piggieback call s:piggieback(<q-args>, <bang>0)
+  autocmd FileType clojure command! -buffer -bang -range=-1 -complete=customlist,fireplace#eval_complete -nargs=*
+        \ Piggieback exe s:piggieback(<count>, <q-args>, <bang>0)
 augroup END
 
 " Section: Java runner
