@@ -388,8 +388,7 @@ function! s:repl.eval(expr, options) dict abort
 endfunction
 
 function! s:register(transport, ...) abort
-  let session = fireplace#session#for(a:transport)
-  call insert(s:repls, extend({'session': session, 'transport': a:transport, 'piggiebacks': []}, deepcopy(s:repl)))
+  call insert(s:repls, extend({'session': a:transport.clone(), 'transport': a:transport, 'piggiebacks': []}, deepcopy(s:repl)))
   if a:0 && a:1 !=# ''
     let s:repl_paths[a:1] = s:repls[0]
   endif
@@ -471,7 +470,7 @@ function! s:Connect(bang, ...) abort
     return ''
   endif
   let client = s:register(transport)
-  echo 'Connected to '.str
+  echo 'Connected to ' . transport.url
   let root = a:0 > 1 ? expand(a:2) : input('Scope connection to: ', path, 'dir')
   if root !=# '' && root !=# '-'
     let s:repl_paths[fnamemodify(root, ':p:s?.\zs[\/]$??')] = client

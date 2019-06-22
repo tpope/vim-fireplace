@@ -10,32 +10,39 @@ function! s:function(name) abort
 endfunction
 
 
-if !exists('g:fireplace_nrepl_sessions')
-  let g:fireplace_nrepl_sessions = {}
-endif
-
-augroup fireplace_nrepl_connection
-  autocmd!
-  autocmd VimLeave * for s:ses in values(g:fireplace_nrepl_sessions)
-        \ |   if s:ses.transport.alive()
-        \ |     call s:ses.close()
-        \ |   endif
-        \ | endfor
-augroup END
-
-function! fireplace#session#for(transport) abort
+function! fireplace#session#for(transport, ...) abort
   let session = copy(s:session)
+  let session.callbacks = []
+  if a:0 && type(a:1) == v:t_func
+    call add(session.callbacks(function(a:1, a:000[1:-1])))
+  endif
   let session.transport = a:transport
-  let session.id = session.process({'op': 'clone', 'session': ''})['new-session']
+  let session.id = session.process({'op': 'clone', 'session': a:0 ? a:1 : ''})['new-session']
   let session.session = session.id
-  let g:fireplace_nrepl_sessions[session.id] = session
+  let a:transport.sessions[session.id] = function('s:session_callback', [], session)
   return session
+endfunction
+
+function! s:session_callback(msg) dict abort
+  if index(get(a:msg, 'status', []), 'session-closed') >= 0
+    if has_key(self, 'session')
+      call remove(self, 'session')
+    endif
+    if has_key(self, 'id')
+      call remove(self, 'id')
+    endif
+  endif
+  for Callback in self.callbacks
+    try
+      call call(Callback, [a:msg])
+      exe &debug =~# 'throw' ? '' : 'catch'
+    endtry
+  endfor
 endfunction
 
 function! s:session_close() dict abort
   if has_key(self, 'id')
     try
-      unlet! g:fireplace_nrepl_sessions[self.id]
       call self.message({'op': 'close'}, '')
     catch
     finally
@@ -46,14 +53,8 @@ function! s:session_close() dict abort
   return self
 endfunction
 
-function! s:session_clone() dict abort
-  let session = copy(self)
-  if has_key(self, 'session')
-    let session.id = session.process({'op': 'clone'})['new-session']
-    let session.session = session.id
-    let g:fireplace_nrepl_sessions[session.id] = session
-  endif
-  return session
+function! s:session_clone(...) dict abort
+  return call('fireplace#session#for', [self.transport, self.id] + a:000)
 endfunction
 
 function! s:session_path() dict abort

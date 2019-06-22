@@ -16,22 +16,6 @@ if !exists('s:keepalive')
   call writefile([getpid()], s:keepalive)
 endif
 
-function! s:json_send(job, msg) abort
-  if type(a:job) == v:t_number
-    call chansend(a:job, json_encode(a:msg) . "\n")
-  else
-    call ch_sendexpr(a:job, a:msg)
-  endif
-endfunction
-
-function! s:stop(job) abort
-  if type(a:job) == v:t_int
-    return jobstop(a:job)
-  else
-    return job_stop(a:job)
-  endif
-endfunction
-
 if !exists('s:id')
   let s:vim_id = localtime()
   let s:id = 0
@@ -84,6 +68,31 @@ function! fireplace#transport#combine(responses) abort
   return combined
 endfunction
 
+function! s:json_send(job, msg) abort
+  if type(a:job) == v:t_number
+    call chansend(a:job, json_encode(a:msg) . "\n")
+  else
+    call ch_sendexpr(a:job, a:msg)
+  endif
+endfunction
+
+function! s:close(job) abort
+  if type(a:job) == v:t_number
+    return chanclose(a:job, 'stdin')
+  else
+    return ch_close_in(a:job)
+  endif
+endfunction
+
+function! s:stop(job) abort
+  if type(a:job) == v:t_number
+    return jobstop(a:job)
+  else
+    call ch_close_in(a:job)
+    return job_stop(a:job, 'kill')
+  endif
+endfunction
+
 function! s:wrap_nvim_callback(cb, buffer, job, msgs, _) abort
   let a:msgs[0] = a:buffer[0] . a:msgs[0]
   let a:buffer[0] = remove(a:msgs, -1)
@@ -108,7 +117,7 @@ function! s:json_start(command, out_cb, exit_cb) abort
   endif
 endfunction
 
-function! s:json_callback(state, requests, job, msg) abort
+function! s:json_callback(url, state, requests, sessions, job, msg) abort
   if type(a:msg) ==# v:t_list && len(a:msg) == 2
     if a:msg[0] ==# 'exception'
       let g:fireplace_last_python_exception = a:msg[1]
@@ -116,20 +125,44 @@ function! s:json_callback(state, requests, job, msg) abort
       let a:state.status = a:msg[1]
     endif
   endif
-  if type(a:msg) !=# v:t_dict || !has_key(a:msg, 'id')
+  if type(a:msg) !=# v:t_dict
     return
   endif
+  if has_key(a:msg, 'new-session') && !has_key(a:sessions, a:msg['new-session'])
+    let a:sessions[a:msg['new-session']] = 'len'
+  endif
   if has_key(a:requests, get(a:msg, 'id'))
-    call call(a:requests[a:msg.id], [a:msg])
+    try
+      call call(a:requests[a:msg.id], [a:msg])
+    catch
+    endtry
     if index(get(a:msg, 'status', []), 'done') >= 0
       call remove(a:requests, a:msg.id)
     endif
   endif
+  if has_key(a:sessions, get(a:msg, 'session'))
+    call call(a:sessions[a:msg.session], [a:msg])
+    if index(get(a:msg, 'status', []), 'session-closed') >= 0
+      call remove(a:sessions, a:msg.session)
+    endif
+  endif
 endfunction
 
-function! s:exit_callback(state, requests, job, status) abort
+function! s:exit_callback(url, state, requests, sessions, job, status) abort
+  call remove(s:urls, a:url)
   let a:state.exit = a:status
 endfunction
+
+if !exists('s:urls')
+  let s:urls = {}
+endif
+
+augroup fireplace_transport
+  autocmd!
+  autocmd VimLeave for s:dict in values(s:urls)
+        \ |   call s:dict.transport.close()
+        \ | endfor
+augroup END
 
 function! fireplace#transport#connect(arg) abort
   let arg = substitute(a:arg, '^nrepl://', '', '')
@@ -142,21 +175,28 @@ function! fireplace#transport#connect(arg) abort
   else
     throw "Fireplace: invalid connection string " . string(a:arg)
   endif
+  let url = 'nrepl://' . host . ':' . port
+  if has_key(s:urls, url)
+    return s:urls[url].transport
+  endif
   let command = [g:fireplace_python_executable,
         \ s:python_dir.'/nrepl_fireplace.py',
         \ host,
         \ port,
         \ s:keepalive,
         \ 'tunnel']
-  let transport = deepcopy(s:nrepl_transport)
+  let transport = deepcopy(s:transport)
+  let transport.url = url
   let transport.state = {}
+  let transport.sessions = {}
   let transport.requests = {}
-  let cb_args = [transport.state, transport.requests]
+  let cb_args = [url, transport.state, transport.requests, transport.sessions]
   let transport.job = s:json_start(command, function('s:json_callback', cb_args), function('s:exit_callback', cb_args))
   while !has_key(transport.state, 'status') && transport.alive()
     sleep 20m
   endwhile
   if get(transport.state, 'status') is# ''
+    let s:urls[transport.url] = {'transport': transport}
     let transport.describe = transport.message({'op': 'describe', 'verbose?': 1}, v:t_dict)
     if transport.has_op('classpath')
       let response = transport.message({'op': 'classpath', 'session': ''})[0]
@@ -180,8 +220,23 @@ function! s:transport_alive() dict abort
   return !has_key(self.state, 'exit')
 endfunction
 
+function! s:transport_clone(...) dict abort
+  return call('fireplace#session#for', [self, ''] + a:000)
+endfunction
+
 function! s:transport_close() dict abort
   if has_key(self, 'job')
+    for session in keys(self.sessions)
+      call self.message({'op': 'close', 'session': session}, '')
+      call remove(self.sessions, session)
+    endfor
+    call s:close(self.job)
+    for i in range(50)
+      if !has_key(s:urls, self.url)
+        return self
+      endif
+      sleep 20m
+    endfor
     call s:stop(self.job)
   endif
   return self
@@ -227,8 +282,9 @@ function! s:transport_message(request, ...) dict abort
   endif
 endfunction
 
-let s:nrepl_transport = {
+let s:transport = {
       \ 'alive': function('s:transport_alive'),
+      \ 'clone': function('s:transport_clone'),
       \ 'close': function('s:transport_close'),
       \ 'has_op': function('s:transport_has_op'),
       \ 'message': function('s:transport_message')}
