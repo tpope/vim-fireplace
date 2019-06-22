@@ -200,7 +200,7 @@ function! s:transport_message(request, ...) dict abort
   endif
   call s:json_send(self.job, request)
   if !exists('msgs')
-    return v:null
+    return request.id
   endif
   while has_key(self.requests, request.id)
     sleep 20m
