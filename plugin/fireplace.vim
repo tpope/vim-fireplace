@@ -358,7 +358,7 @@ function! s:repl.piggieback(arg, ...) abort
   let response = session.eval(arg)
 
   if empty(get(response, 'ex'))
-    call insert(self.piggiebacks, extend({'connection': session, 'session': session, 'transport': session.transport}, deepcopy(s:piggieback)))
+    call insert(self.piggiebacks, extend({'session': session, 'transport': session.transport}, deepcopy(s:piggieback)))
     return {}
   endif
   call session.close()
@@ -388,8 +388,8 @@ function! s:repl.eval(expr, options) dict abort
 endfunction
 
 function! s:register(transport, ...) abort
-  let session = fireplace#nrepl#for(a:transport)
-  call insert(s:repls, extend({'connection': session, 'session': session, 'transport': a:transport, 'piggiebacks': []}, deepcopy(s:repl)))
+  let session = fireplace#session#for(a:transport)
+  call insert(s:repls, extend({'session': session, 'transport': a:transport, 'piggiebacks': []}, deepcopy(s:repl)))
   if a:0 && a:1 !=# ''
     let s:repl_paths[a:1] = s:repls[0]
   endif

@@ -1,17 +1,14 @@
-" Location:     autoload/nrepl/fireplace.vim
+" Location:     autoload/session/fireplace.vim
 
-if exists("g:autoloaded_fireplace_nrepl")
+if exists("g:autoloaded_fireplace_session")
   finish
 endif
-let g:autoloaded_fireplace_nrepl = 1
+let g:autoloaded_fireplace_session = 1
 
 function! s:function(name) abort
   return function(substitute(a:name,'^s:',matchstr(expand('<sfile>'), '.*\zs<SNR>\d\+_'),''))
 endfunction
 
-function! fireplace#nrepl#next_id() abort
-  return fireplace#transport#id()
-endfunction
 
 if !exists('g:fireplace_nrepl_sessions')
   let g:fireplace_nrepl_sessions = {}
@@ -26,7 +23,7 @@ augroup fireplace_nrepl_connection
         \ | endfor
 augroup END
 
-function! fireplace#nrepl#for(transport) abort
+function! fireplace#session#for(transport) abort
   let session = copy(s:session)
   let session.transport = a:transport
   let session.id = session.process({'op': 'clone', 'session': ''})['new-session']
@@ -61,10 +58,6 @@ endfunction
 
 function! s:session_path() dict abort
   return self.transport._path
-endfunction
-
-function! fireplace#nrepl#combine(responses) abort
-  return fireplace#transport#combine(a:responses)
 endfunction
 
 function! s:session_process(msg) dict abort
