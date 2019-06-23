@@ -270,9 +270,15 @@ function! s:transport_message(request, ...) dict abort
   if !exists('msgs')
     return request.id
   endif
-  while has_key(self.requests, request.id)
-    sleep 20m
-  endwhile
+  try
+    while has_key(self.requests, request.id)
+      sleep 20m
+    endwhile
+  finally
+    if has_key(self.requests, request.id) && has_key(request, 'session')
+      call s:json_send(self.job, {'op': 'interrupt', 'session': request.session, 'interrupt-id': request.id})
+    endif
+  endtry
   if !a:0 || a:1 is# v:t_list
     return msgs
   elseif a:1 is# v:t_dict

@@ -54,7 +54,11 @@ function! s:session_close() dict abort
 endfunction
 
 function! s:session_clone(...) dict abort
-  return call('fireplace#session#for', [self.transport, self.id] + a:000)
+  let session = call('fireplace#session#for', [self.transport, self.id] + a:000)
+  if has_key(self, 'ns')
+    let session.ns = self.ns
+  endif
+  return session
 endfunction
 
 function! s:session_path() dict abort
@@ -83,21 +87,7 @@ function! s:session_eval(expr, ...) dict abort
     let msg.ns = self.ns
   endif
 
-  if !has_key(msg, 'id')
-    let msg.id = fireplace#transport#id()
-  endif
-
-  try
-    let response = self.process(msg)
-  finally
-    if !exists('response')
-      let session = get(msg, 'session', self.id)
-      if !empty(session)
-        call self.message({'op': 'interrupt', 'session': session, 'interrupt-id': msg.id}, '')
-      endif
-      throw 'Clojure: Interrupt'
-    endif
-  endtry
+  let response = self.process(msg)
   if has_key(response, 'ns') && empty(get(options, 'ns'))
     let self.ns = response.ns
   endif
