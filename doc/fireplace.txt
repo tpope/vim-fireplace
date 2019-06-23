@@ -55,8 +55,8 @@ properly, and that not all operations are supported.
                         Nashorn REPL environment.  This will also happen
                         automatically on first eval in a ClojureScript buffer
                         if :Piggieback is not invoked explicitly.  Override
-                        this default with *b:fireplace_cljs_repl_env* or
-                        *g:fireplace_cljs_repl_env* .  Use an empty string to
+                        this default with *b:fireplace_cljs_repl* or
+                        *g:fireplace_cljs_repl* .  Use an empty string to
                         always require an argument.
 
 :Piggieback!            Terminate the most recently created piggieback
