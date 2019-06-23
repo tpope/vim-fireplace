@@ -135,12 +135,12 @@ function! fireplace#transport#connect(arg) abort
   let arg = substitute(a:arg, '^nrepl://', '', '')
   if arg =~# '^\d\+$'
     let host = 'localhost'
-    let port = a:arg
+    let port = arg
   elseif arg =~# '^[^:/@]\+:\d\+\%(/\|$\)'
     let host = matchstr(a:arg, '^[^:/@]\+')
     let port = matchstr(a:arg, ':\zs\d\+')
   else
-    throw "Fireplace: invalid connection string " . string(arg)
+    throw "Fireplace: invalid connection string " . string(a:arg)
   endif
   let command = [g:fireplace_python_executable,
         \ s:python_dir.'/nrepl_fireplace.py',
@@ -200,7 +200,7 @@ function! s:transport_message(request, ...) dict abort
   endif
   call s:json_send(self.job, request)
   if !exists('msgs')
-    return v:null
+    return request.id
   endif
   while has_key(self.requests, request.id)
     sleep 20m
