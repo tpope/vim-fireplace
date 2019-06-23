@@ -482,7 +482,7 @@ augroup fireplace_connect
   autocmd FileType clojure command! -buffer -bang -bar -complete=customlist,s:connect_complete -nargs=*
         \ Connect FireplaceConnect<bang> <args>
   autocmd FileType clojure command! -buffer -bang -complete=customlist,fireplace#eval_complete -nargs=*
-        \ Fig exe s:piggieback(<count>, (figwheel.main.api/repl-env  <q-args> ), <bang>0)
+	    \ Fig call s:piggieback(<count>, "(figwheel.main.api/repl-env \"" . <q-args> . "\")", <bang>0)
   autocmd FileType clojure command! -buffer -bang -range=-1 -complete=customlist,fireplace#eval_complete -nargs=*
         \ Piggieback exe s:piggieback(<count>, <q-args>, <bang>0)
 augroup END
