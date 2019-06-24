@@ -9,13 +9,8 @@ function! s:function(name) abort
   return function(substitute(a:name,'^s:',matchstr(expand('<sfile>'), '.*\zs<SNR>\d\+_'),''))
 endfunction
 
-if !exists('s:id')
-  let s:vim_id = localtime()
-  let s:id = 0
-endif
 function! fireplace#nrepl#next_id() abort
-  let s:id += 1
-  return 'fireplace-'.hostname().'-'.s:vim_id.'-'.s:id
+  return fireplace#transport#id()
 endfunction
 
 if !exists('g:fireplace_nrepl_sessions')
@@ -25,40 +20,27 @@ endif
 augroup fireplace_nrepl_connection
   autocmd!
   autocmd VimLeave * for s:session in values(g:fireplace_nrepl_sessions)
-        \ |   call s:session.close()
+        \ |   if s:session.transport.alive()
+        \ |     call s:session.close()
+        \ |   endif
         \ | endfor
 augroup END
 
 function! fireplace#nrepl#for(transport) abort
   let client = copy(s:nrepl)
   let client.transport = a:transport
-  let client.session = client.process({'op': 'clone', 'session': 0})['new-session']
-  let client.describe = client.process({'op': 'describe', 'verbose?': 1})
-  if get(client.describe.versions.nrepl, 'major', -1) == 0 &&
-        \ client.describe.versions.nrepl.minor < 2
-    throw 'nREPL: 0.2.0 or higher required'
-  endif
-  " Handle boot, which sets a fake.class.path entry
-  let response = client.process({'op': 'eval', 'code':
-        \ '[(System/getProperty "path.separator") (System/getProperty "fake.class.path")]', 'session': ''})
-  let cpath = response.value[-1][5:-2]
-  if cpath !=# 'nil'
-    let cpath = eval(cpath)
-    if !empty(cpath)
-      let client._path = split(cpath, response.value[-1][2])
-    endif
-  endif
-  if !has_key(client, '_path') && client.has_op('classpath')
-    let response = client.message({'op': 'classpath'})[0]
+  if a:transport.has_op('classpath')
+    let response = a:transport.message({'op': 'classpath'})[0]
     if type(get(response, 'classpath')) == type([])
       let client._path = response.classpath
     endif
   endif
   if !has_key(client, '_path')
     let response = client.process({'op': 'eval', 'code':
-          \ '[(System/getProperty "path.separator") (System/getProperty "java.class.path")]', 'session': ''})
+          \ '[(System/getProperty "path.separator") (or (System/getProperty "fake.class.path") (System/getProperty "java.class.path") "")]', 'session': ''})
     let client._path = split(eval(response.value[-1][5:-2]), response.value[-1][2])
   endif
+  let client.session = client.process({'op': 'clone', 'session': ''})['new-session']
   let g:fireplace_nrepl_sessions[client.session] = client
   return client
 endfunction
@@ -67,13 +49,12 @@ function! s:nrepl_close() dict abort
   if has_key(self, 'session')
     try
       unlet! g:fireplace_nrepl_sessions[self.session]
-      call self.message({'op': 'close'}, 'ignore')
+      call self.message({'op': 'close'}, '')
     catch
     finally
       unlet self.session
     endtry
   endif
-  call self.transport.close()
   return self
 endfunction
 
@@ -90,45 +71,17 @@ function! s:nrepl_path() dict abort
   return self._path
 endfunction
 
-function! fireplace#nrepl#combine(responses)
-  if type(a:responses) == type({})
-    return a:responses
-  endif
-  let combined = {'status': [], 'session': []}
-  for response in a:responses
-    for key in keys(response)
-      if key ==# 'id' || key ==# 'ns'
-        let combined[key] = response[key]
-      elseif key ==# 'value'
-        let combined.value = extend(get(combined, 'value', []), [response.value])
-      elseif key ==# 'pprint-out'
-        let combined['pprint-out'] = extend(get(combined, 'pprint-out', []), [response['pprint-out']])
-      elseif key ==# 'status'
-        for entry in response[key]
-          if index(combined[key], entry) < 0
-            call extend(combined[key], [entry])
-          endif
-        endfor
-      elseif key ==# 'session'
-        if index(combined[key], response[key]) < 0
-          call extend(combined[key], [response[key]])
-        endif
-      elseif type(response[key]) == type('')
-        let combined[key] = get(combined, key, '') . response[key]
-      else
-        let combined[key] = response[key]
-      endif
-    endfor
-  endfor
-  return combined
+function! fireplace#nrepl#combine(responses) abort
+  return fireplace#transport#combine(a:responses)
 endfunction
 
 function! s:nrepl_process(msg) dict abort
-  let combined = fireplace#nrepl#combine(self.message(a:msg))
+  let combined = self.message(a:msg, v:t_dict)
   if index(combined.status, 'error') < 0
     return combined
   endif
-  throw 'nREPL: ' . tr(combined.status[0], '-', ' ')
+  let status = filter(copy(combined.status), 'v:val !=# "done" && v:val !=# "error"')
+  throw 'nREPL: ' . tr(join(status, ', '), '-', ' ')
 endfunction
 
 function! s:nrepl_eval(expr, ...) dict abort
@@ -145,28 +98,16 @@ function! s:nrepl_eval(expr, ...) dict abort
   endif
 
   if !has_key(msg, 'id')
-    let msg.id = fireplace#nrepl#next_id()
+    let msg.id = fireplace#transport#id()
   endif
 
-  if has_key(options, 'file_path')
-    let msg.op = 'load-file'
-    let msg['file-path'] = options.file_path
-    let msg['file-name'] = fnamemodify(options.file_path, ':t')
-    if has_key(msg, 'ns')
-      let msg.file = "(in-ns '".msg.ns.") ".msg.code
-      call remove(msg, 'ns')
-    else
-      let msg.file = msg.code
-    endif
-    call remove(msg, 'code')
-  endif
   try
     let response = self.process(msg)
   finally
     if !exists('response')
       let session = get(msg, 'session', self.session)
       if !empty(session)
-        call self.message({'op': 'interrupt', 'session': session, 'interrupt-id': msg.id}, 'ignore')
+        call self.message({'op': 'interrupt', 'session': session, 'interrupt-id': msg.id}, '')
       endif
       throw 'Clojure: Interrupt'
     endif
@@ -181,9 +122,6 @@ function! s:nrepl_eval(expr, ...) dict abort
 
   if has_key(response, 'value')
     let response.value = response.value[-1]
-  endif
-  if has_key(response, 'pprint-out')
-    let response.value = join(response['pprint-out'], '')
   endif
 
   return response
@@ -244,7 +182,7 @@ call writefile([getpid()], s:keepalive)
 function! s:nrepl_prepare(msg) dict abort
   let msg = copy(a:msg)
   if !has_key(msg, 'id')
-    let msg.id = fireplace#nrepl#next_id()
+    let msg.id = fireplace#transport#id()
   endif
   if empty(get(msg, 'ns', 1))
     unlet msg.ns
@@ -257,38 +195,19 @@ function! s:nrepl_prepare(msg) dict abort
   return msg
 endfunction
 
-function! fireplace#nrepl#callback(body, type, callback) abort
-  try
-    let response = {'body': a:body, 'type': a:type}
-    if has_key(g:fireplace_nrepl_sessions, get(a:body, 'session'))
-      let response.session = g:fireplace_nrepl_sessions[a:body.session]
-    endif
-    call call(a:callback[0], [response] + a:callback[1:-1])
-  catch
-  endtry
-endfunction
-
-function! s:nrepl_call(msg, ...) dict abort
-  let terms = a:0 ? a:1 : ['done']
-  let sels = a:0 > 1 ? a:2 : {}
-  return call(self.transport.call, [a:msg, terms, sels] + a:000[2:-1], self.transport)
-endfunction
-
 function! s:nrepl_message(msg, ...) dict abort
   let msg = self.prepare(a:msg)
-  let sel = {'id': msg.id}
-  return call(self.call, [msg, ['done'], sel] + a:000, self)
+  return call(self.transport.message, [msg] + a:000, self.transport)
 endfunction
 
 function! s:nrepl_has_op(op) dict abort
-  return has_key(self.describe.ops, a:op)
+  return self.transport.has_op(a:op)
 endfunction
 
 let s:nrepl = {
       \ 'close': s:function('s:nrepl_close'),
       \ 'clone': s:function('s:nrepl_clone'),
       \ 'prepare': s:function('s:nrepl_prepare'),
-      \ 'call': s:function('s:nrepl_call'),
       \ 'message': s:function('s:nrepl_message'),
       \ 'eval': s:function('s:nrepl_eval'),
       \ 'has_op': s:function('s:nrepl_has_op'),

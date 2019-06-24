@@ -32,9 +32,6 @@ the host and port.  You can connect to multiple instances of nREPL for different
 projects, and it will use the right one automatically.  ClojureScript support is
 just as seamless with [Piggieback][].
 
-The only external dependency is that you have either a Vim with Python support
-compiled in, or `python` in your path.
-
 Oh, and if you don't have an nREPL connection, installing [salve.vim][]
 lets it fall back to using `java clojure.main` for some of the basics, using a
 class path based on your Leiningen config.  It's a bit slow, but a two-second

@@ -27,23 +27,37 @@ buffer and 'path' contains at least one jar file, java (or $JAVA_CMD) is
 invoked directly, which can be quite slow depending on your setup.
 
 The only adapter shipped with fireplace.vim is for nREPL.  You need either
-|if_pyth| or the python command in your PATH.
+`python` or `python3` in your path.
 
                         *fireplace-piggieback* *fireplace-clojurescript*
 ClojureScript can be evaled with Piggieback if the appropriate nREPL
-middleware is loaded: https://github.com/cemerick/piggieback.  Be aware that
-your ClojureScript files must be available on the classpath for this to work
+middleware is loaded: https://github.com/nrepl/piggieback.  Be aware that your
+ClojureScript files must be available on the classpath for this to work
 properly, and that not all operations are supported.
 
                                                 *fireplace-:Piggieback*
-:Piggieback [{env}]     Create a new nREPL session and invoke
-                        cider.piggieback/cljs-repl with the given or
-                        default (Nashorn) environment.  This will also happen
+:Piggieback ({ns}/repl-env [...])
+                        Create a new nREPL session and invoke
+                        cider.piggieback/cljs-repl with the given environment.
+
+:Piggieback ({ns}/cljs-repl [...])
+                        If the argument is a call to a function not named
+                        repl-env, it is invoked directly, without
+                        cider.piggieback/cljs-repl.  This is useful for
+                        (figwheel.main.api/cljs-repl) and similar functions.
+
+:Piggieback {port}      If the argument looks like a port number,
+                        weasel.repl.websocket (if available) or
+                        cljs.repl.browser will be used to provide the REPL
+                        environment.
+
+:Piggieback             If no argument is given, :Piggieback defaults to a
+                        Nashorn REPL environment.  This will also happen
                         automatically on first eval in a ClojureScript buffer
-                        if not invoked explicitly. If {env} is a number, the
-                        piggieback repl-env will will use a cljs.repl.browser
-                        (rather than a Nashorn) env with the port set to the
-                        number provided.
+                        if :Piggieback is not invoked explicitly.  Override
+                        this default with *b:fireplace_cljs_repl* or
+                        *g:fireplace_cljs_repl* .  Use an empty string to
+                        always require an argument.
 
 :Piggieback!            Terminate the most recently created piggieback
                         session.
@@ -133,7 +147,7 @@ stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
                         and load the results into the quickfix list.
 
 :[range]RunTests        Call clojure.test/test-var on the var defined at or
-                        above the specicied line and load the results into the
+                        above the specified line and load the results into the
                         quickfix list.  Typically invoked as :.RunTests to run
                         the test under the cursor.
 
