@@ -1661,7 +1661,7 @@ function! s:SpecForm(kw) abort
   let op = "spec-form"
   if fireplace#op_available(op)
     let symbol = fireplace#qualify_keyword(a:kw)
-    let response = fireplace#message({'op': op, 'spec-name': symbol})[0]
+    let response = fireplace#message({'op': op, 'spec-name': symbol}, v:t_dict)
     if !empty(get(response, op))
       echo s:pr(get(response, op))
     endif
@@ -1673,7 +1673,7 @@ function! s:SpecExample(kw) abort
   let op = "spec-example"
   if fireplace#op_available(op)
     let symbol = fireplace#qualify_keyword(a:kw)
-    let response = fireplace#message({'op': op, 'spec-name': symbol})[0]
+    let response = fireplace#message({'op': op, 'spec-name': symbol}, v:t_dict)
     if !empty(get(response, op))
       echo get(response, op)
     endif
