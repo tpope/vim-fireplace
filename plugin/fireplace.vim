@@ -1659,25 +1659,33 @@ endfunction
 
 function! s:SpecForm(kw) abort
   let op = "spec-form"
-  if fireplace#op_available(op)
+  try
     let symbol = fireplace#qualify_keyword(a:kw)
     let response = fireplace#message({'op': op, 'spec-name': symbol}, v:t_dict)
     if !empty(get(response, op))
       echo s:pr(get(response, op))
+    elseif has_key(response, 'op')
+      return 'echoerr ' . string('Fireplace: no nREPL op available for ' . op)
     endif
-  endif
+  catch /^Fireplace:/
+    return 'echoerr ' . string(v:exception)
+  endtry
   return ''
 endfunction
 
 function! s:SpecExample(kw) abort
   let op = "spec-example"
-  if fireplace#op_available(op)
+  try
     let symbol = fireplace#qualify_keyword(a:kw)
     let response = fireplace#message({'op': op, 'spec-name': symbol}, v:t_dict)
     if !empty(get(response, op))
       echo get(response, op)
+    elseif has_key(response, 'op')
+      return 'echoerr ' . string('Fireplace: no nREPL op available for ' . op)
     endif
-  endif
+  catch /^Fireplace:/
+    return 'echoerr ' . string(v:exception)
+  endtry
   return ''
 endfunction
 
