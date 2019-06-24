@@ -44,6 +44,18 @@ function! s:map(mode, lhs, rhs, ...) abort
   endif
 endfunction
 
+function! s:pr(obj) abort
+  if type(a:obj) == v:t_string
+    return a:obj
+  elseif type(a:obj) == v:t_list
+    return '(' . join(map(copy(a:obj), 's:pr(v:val)'), ' ') . ')'
+  elseif type(a:obj) == v:t_dict
+    return '{' . join(map(keys(a:obj), 's:pr(v:val) . " " . s:pr(a:obj[v:val])'), ', ') . '}'
+  else
+    return string(a:obj)
+  endif
+endfunction
+
 " Section: Escaping
 
 function! s:str(string) abort
@@ -1632,6 +1644,61 @@ augroup fireplace_go_to_file
   autocmd FileType clojure call s:set_up_go_to_file()
 augroup END
 
+" Section: Spec
+
+function! fireplace#qualify_keyword(kw) abort
+  if a:kw =~# '^::.\+/'
+    let kw = ':' . fireplace#resolve_alias(matchstr(a:kw, '^::\zs[^/]\+')) . matchstr(a:kw, '/.*')
+  elseif a:kw =~# '^::'
+    let kw = ':' . fireplace#ns() . '/' . strpart(a:kw, 2)
+  else
+    let kw = a:kw
+  endif
+  return kw
+endfunction
+
+function! s:SpecForm(kw) abort
+  let op = "spec-form"
+  try
+    let symbol = fireplace#qualify_keyword(a:kw)
+    let response = fireplace#message({'op': op, 'spec-name': symbol}, v:t_dict)
+    if !empty(get(response, op))
+      echo s:pr(get(response, op))
+    elseif has_key(response, 'op')
+      return 'echoerr ' . string('Fireplace: no nREPL op available for ' . op)
+    endif
+  catch /^Fireplace:/
+    return 'echoerr ' . string(v:exception)
+  endtry
+  return ''
+endfunction
+
+function! s:SpecExample(kw) abort
+  let op = "spec-example"
+  try
+    let symbol = fireplace#qualify_keyword(a:kw)
+    let response = fireplace#message({'op': op, 'spec-name': symbol}, v:t_dict)
+    if !empty(get(response, op))
+      echo get(response, op)
+    elseif has_key(response, 'op')
+      return 'echoerr ' . string('Fireplace: no nREPL op available for ' . op)
+    endif
+  catch /^Fireplace:/
+    return 'echoerr ' . string(v:exception)
+  endtry
+  return ''
+endfunction
+
+function! s:set_up_fireplace_spec() abort
+  command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete SpecForm    :exe s:SpecForm(<q-args>)
+  command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete SpecExample :exe s:SpecExample(<q-args>)
+endfunction
+
+augroup fireplace_spec
+  autocmd!
+  autocmd FileType clojure call s:set_up_fireplace_spec()
+augroup END
+
 " Section: Formatting
 
 function! fireplace#format(lnum, count, char) abort
@@ -1738,6 +1805,8 @@ function! s:K() abort
   let java_candidate = matchstr(word, '^\%(\w\+\.\)*\u\l[[:alnum:]$]*\ze\%(\.\|\/\w\+\)\=$')
   if java_candidate !=# ''
     return 'Javadoc '.java_candidate
+  elseif word =~# '^:'
+    return 'SpecForm '.word
   else
     return 'Doc '.word
   endif

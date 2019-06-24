@@ -71,10 +71,19 @@ DOCUMENTATION                                   *fireplace-documentation*
 :Javadoc {class}        Open the java docs for the given class in a browser.
 
                                                 *fireplace-K*
-K                       Look up docs for symbol under cursor.
+K                       Look up the doc, javadoc, or spec-form for the
+                        identifier under the cursor.
 
                                                 *fireplace-:FindDoc*
 :FindDoc {arg}          Wrapper around (clojure.repl/find-doc ...).
+
+                                                *fireplace-:SpecForm*
+:SpecForm {keyword}     Show the form of the spec given.
+                        Like (spec/form keyword).
+
+                                                *fireplace-:SpecExample*
+:SpecExample {keyword}  Generate one example for the spec given.
+                        Like (gen/generate keyword).
 
                                                 *fireplace-:Source*
 :Source {symbol}        Show the source for the given symbol.
