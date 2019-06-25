@@ -17,7 +17,7 @@ function! fireplace#session#for(transport, ...) abort
     call add(session.callbacks(function(a:1, a:000[1:-1])))
   endif
   let session.transport = a:transport
-  let session.id = session.process({'op': 'clone', 'session': a:0 ? a:1 : ''})['new-session']
+  let session.id = session.message({'op': 'clone', 'session': a:0 ? a:1 : ''}, v:t_dict)['new-session']
   let session.session = session.id
   let a:transport.sessions[session.id] = function('s:session_callback', [], session)
   return session
@@ -65,15 +65,6 @@ function! s:session_path() dict abort
   return self.transport._path
 endfunction
 
-function! s:session_process(msg) dict abort
-  let combined = self.message(a:msg, v:t_dict)
-  if index(combined.status, 'error') < 0
-    return combined
-  endif
-  let status = filter(copy(combined.status), 'v:val !=# "done" && v:val !=# "error"')
-  throw 'nREPL: ' . tr(join(status, ', '), '-', ' ')
-endfunction
-
 function! s:session_eval(expr, ...) dict abort
   let msg = {"op": "eval"}
   let msg.code = a:expr
@@ -87,7 +78,8 @@ function! s:session_eval(expr, ...) dict abort
     let msg.ns = self.ns
   endif
 
-  let response = self.process(msg)
+  let response = self.message(msg, v:t_dict)
+
   if has_key(response, 'ns') && empty(get(options, 'ns'))
     let self.ns = response.ns
   endif
@@ -100,7 +92,10 @@ function! s:session_eval(expr, ...) dict abort
     let response.value = response.value[-1]
   endif
 
-  return response
+  if index(response.status, 'namespace-not-found') < 0
+    return response
+  endif
+  throw 'Fireplace: namespace not found: ' . get(msg, 'ns', 'user')
 endfunction
 
 function! s:session_stacktrace_lines() dict abort
@@ -118,7 +113,7 @@ function! s:session_stacktrace_lines() dict abort
         \    '))'
   try
     let session = self.clone()
-    let response = self.process({'op': 'eval', 'code': format_st, 'ns': 'user'})
+    let response = self.message({'op': 'eval', 'code': format_st, 'ns': 'user'}, v:t_dict)
     return split(response.value[0], "\n", 1)
   finally
     call session.close()
@@ -147,5 +142,4 @@ let s:session = {
       \ 'eval': s:function('s:session_eval'),
       \ 'has_op': s:function('s:session_has_op'),
       \ 'path': s:function('s:session_path'),
-      \ 'process': s:function('s:session_process'),
       \ 'stacktrace_lines': s:function('s:session_stacktrace_lines')}
