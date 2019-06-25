@@ -128,24 +128,11 @@ endfunction
 let s:keepalive = tempname()
 call writefile([getpid()], s:keepalive)
 
-function! s:session_prepare(msg) dict abort
-  let msg = copy(a:msg)
-  if !has_key(msg, 'id')
-    let msg.id = fireplace#transport#id()
-  endif
-  if empty(get(msg, 'ns', 1))
-    unlet msg.ns
-  endif
-  if empty(get(msg, 'session', 1))
-    unlet msg.session
-  elseif !has_key(msg, 'session')
-    let msg.session = self.id
-  endif
-  return msg
-endfunction
-
 function! s:session_message(msg, ...) dict abort
-  let msg = self.prepare(a:msg)
+  if !has_key(self, 'id') && !has_key(a:msg, 'session')
+    throw 'Fireplace: session closed'
+  endif
+  let msg = extend({'session': get(self, 'id')}, a:msg, 'keep')
   return call(self.transport.message, [msg] + a:000, self.transport)
 endfunction
 
@@ -156,7 +143,6 @@ endfunction
 let s:session = {
       \ 'close': s:function('s:session_close'),
       \ 'clone': s:function('s:session_clone'),
-      \ 'prepare': s:function('s:session_prepare'),
       \ 'message': s:function('s:session_message'),
       \ 'eval': s:function('s:session_eval'),
       \ 'has_op': s:function('s:session_has_op'),
