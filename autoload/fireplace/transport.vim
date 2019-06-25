@@ -193,7 +193,7 @@ function! fireplace#transport#connect(arg) abort
   let cb_args = [url, transport.state, transport.requests, transport.sessions]
   let transport.job = s:json_start(command, function('s:json_callback', cb_args), function('s:exit_callback', cb_args))
   while !has_key(transport.state, 'status') && transport.alive()
-    sleep 20m
+    sleep 1m
   endwhile
   if get(transport.state, 'status') is# ''
     let s:urls[transport.url] = {'transport': transport}
@@ -235,7 +235,7 @@ function! s:transport_close() dict abort
       if !has_key(s:urls, self.url)
         return self
       endif
-      sleep 20m
+      sleep 1m
     endfor
     call s:stop(self.job)
   endif
@@ -272,7 +272,7 @@ function! s:transport_message(request, ...) dict abort
   endif
   try
     while has_key(self.requests, request.id)
-      sleep 20m
+      sleep 1m
     endwhile
   finally
     if has_key(self.requests, request.id) && has_key(request, 'session')
