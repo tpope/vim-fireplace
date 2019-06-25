@@ -93,7 +93,7 @@ function! s:session_eval(expr, ...) dict abort
   endif
 
   if has_key(response, 'ex') && get(msg, 'session', self.id) ==# self.id
-    let response.stacktrace = s:extract_last_stacktrace(self)
+    let response.stacktrace = call('s:session_stacktrace_lines', [], self)
   endif
 
   if has_key(response, 'value')
@@ -103,53 +103,26 @@ function! s:session_eval(expr, ...) dict abort
   return response
 endfunction
 
-function! s:process_stacktrace_entry(entry) abort
-  if !has_key(a:entry, 'class')
-    return ''
-  endif
-  let str = a:entry.class.'.'.a:entry.method
-  if !empty(get(a:entry, 'file'))
-    let str .= '('.a:entry.file.':'.a:entry.line.')'
-  endif
-  return str
-endfunction
-
-function! s:extract_last_stacktrace(session) abort
-  if a:session.has_op('stacktrace')
-    let stacktrace = a:session.message({'op': 'stacktrace'})
-    if len(stacktrace) > 0 && has_key(stacktrace[0], 'stacktrace')
-      let stacktrace = stacktrace[0].stacktrace
-    endif
-
-    call map(stacktrace, 's:process_stacktrace_entry(v:val)')
-    call filter(stacktrace, '!empty(v:val)')
-    if !empty(stacktrace)
-      return stacktrace
-    endif
-  endif
+function! s:session_stacktrace_lines() dict abort
   let format_st =
         \ '(let [st (or (when (= "#''cljs.core/str" (str #''str))' .
         \               ' (.-stack *e))' .
         \             ' (.getStackTrace *e))]' .
         \  ' (symbol' .
-        \    ' (str "\n\b"' .
-        \         ' (if (string? st)' .
-        \           ' st' .
-        \           ' (let [parts (if (= "class [Ljava.lang.StackTraceElement;" (str (type st)))' .
-        \                         ' (map str st)' .
-        \                         ' (seq (amap st idx ret (str (aget st idx)))))]' .
-        \             ' (apply str (interleave (repeat "\n") parts))))' .
-        \         ' "\n\b\n")))'
-  let response = a:session.process({'op': 'eval', 'code': '['.format_st.' *3 *2 *1]', 'ns': 'user', 'session': a:session})
+        \    ' (if (string? st)' .
+        \      ' (.replace st #"^(\S.*\n)*" "")' .
+        \      ' (let [parts (if (= "class [Ljava.lang.StackTraceElement;" (str (type st)))' .
+        \                    ' (map str st)' .
+        \                    ' (seq (amap st idx ret (str (aget st idx)))))]' .
+        \        ' (apply str (interpose "\n" (cons *e parts)))))' .
+        \    '))'
   try
-    let stacktrace = split(get(split(response.value[0], "\n\b\n"), 1, ""), "\n")
-  catch
-    throw string(response)
+    let session = self.clone()
+    let response = self.process({'op': 'eval', 'code': format_st, 'ns': 'user'})
+    return split(response.value[0], "\n", 1)
+  finally
+    call session.close()
   endtry
-  call a:session.message({'op': 'eval', 'code': '(*1 1)', 'ns': 'user'})
-  call a:session.message({'op': 'eval', 'code': '(*2 2)', 'ns': 'user'})
-  call a:session.message({'op': 'eval', 'code': '(*3 3)', 'ns': 'user'})
-  return stacktrace
 endfunction
 
 let s:keepalive = tempname()
@@ -188,4 +161,5 @@ let s:session = {
       \ 'eval': s:function('s:session_eval'),
       \ 'has_op': s:function('s:session_has_op'),
       \ 'path': s:function('s:session_path'),
-      \ 'process': s:function('s:session_process')}
+      \ 'process': s:function('s:session_process'),
+      \ 'stacktrace_lines': s:function('s:session_stacktrace_lines')}
