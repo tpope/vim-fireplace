@@ -112,7 +112,7 @@ endfunction
 function! fireplace#eval_complete(A, L, P) abort
   let prefix = matchstr(a:A, '\%(.* \|^\)\%(#\=[\[{('']\)*')
   let keyword = a:A[strlen(prefix) : -1]
-  return sort(map(fireplace#omnicomplete(0, keyword), 'prefix . v:val.word'))
+  return sort(map(fireplace#omnicomplete(0, keyword, 1), 'prefix . v:val.word'))
 endfunction
 
 function! fireplace#ns_complete(A, L, P) abort
@@ -187,7 +187,33 @@ function! s:get_complete_context() abort
   return strpart(expr, 0, p) . ' __prefix__ ' . strpart(expr, p)
 endfunction
 
-function! fireplace#omnicomplete(findstart, base) abort
+function! fireplace#CompletionContext() abort
+  return s:get_complete_context()
+endfunction
+
+function! s:complete_extract(msg) abort
+  let trans = '{"word": (v:val =~# ''[./]'' ? "" : matchstr(a:base, ''^.\+/'')) . v:val}'
+  let value = get(a:msg, 'value', get(a:msg, 'completions'))
+  if type(value) == type([])
+    if type(get(value, 0)) == type({})
+      return map(value, 's:candidate(v:val)')
+    elseif type(get(value, 0)) == type([])
+      return map(value[0], trans)
+    elseif type(get(value, 0)) == type('')
+      return map(value, trans)
+    else
+      return []
+    endif
+  endif
+endfunction
+
+function! s:complete_add(msg) abort
+  for entry in s:complete_extract(a:msg)
+    call complete_add(entry)
+  endfor
+endfunction
+
+function! fireplace#omnicomplete(findstart, base, ...) abort
   if a:findstart
     let line = getline('.')[0 : col('.')-2]
     return col('.') - strlen(matchstr(line, '\k\+$')) - 1
@@ -195,25 +221,21 @@ function! fireplace#omnicomplete(findstart, base) abort
     try
 
       if fireplace#op_available('complete')
-        let response = fireplace#message({
+        let request = {
               \ 'op': 'complete',
               \ 'symbol': a:base,
               \ 'extra-metadata': ['arglists', 'doc'],
-              \ 'context': s:get_complete_context()
-              \ })
-        let trans = '{"word": (v:val =~# ''[./]'' ? "" : matchstr(a:base, ''^.\+/'')) . v:val}'
-        let value = get(response[0], 'value', get(response[0], 'completions'))
-        if type(value) == type([])
-          if type(get(value, 0)) == type({})
-            return map(value, 's:candidate(v:val)')
-          elseif type(get(value, 0)) == type([])
-            return map(value[0], trans)
-          elseif type(get(value, 0)) == type('')
-            return map(value, trans)
-          else
-            return []
-          endif
+              \ 'context': a:0 ? '' : s:get_complete_context()
+              \ }
+        if a:0
+          return s:complete_extract(fireplace#message(request, v:t_dict))
         endif
+        let id = fireplace#message(request, function('s:complete_add'))
+        while !fireplace#client().done(id)
+          call complete_check()
+          sleep 1m
+        endwhile
+        return []
       endif
 
       let omnifier = '(fn [[k v]] (let [{:keys [arglists] :as m} (meta v)]' .
@@ -283,6 +305,16 @@ function! s:repl.message(payload, ...) dict abort
     let ignored_error = self.preload(a:payload.ns)
   endif
   return call('s:conn_try', [get(self, 'session', get(self, 'connection', {})), 'message', a:payload] + a:000, self)
+endfunction
+
+function! s:repl.done(id) dict abort
+  if type(a:id) == v:t_string
+    return !has_key(self.transport.requests, a:id)
+  elseif type(a:id) == v:t_dict
+    return index(get(a:id, 'status', []), 'done') >= 0
+  else
+    return -1
+  endif
 endfunction
 
 function! s:repl.preload(lib) dict abort
