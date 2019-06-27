@@ -276,7 +276,7 @@ function! s:transport_message(request, ...) dict abort
     endwhile
   finally
     if has_key(self.requests, request.id) && has_key(request, 'session')
-      call s:json_send(self.job, {'op': 'interrupt', 'session': request.session, 'interrupt-id': request.id})
+      call s:json_send(self.job, {'op': 'interrupt', 'id': fireplace#transport#id(), 'session': request.session, 'interrupt-id': request.id})
     endif
   endtry
   if !a:0 || a:1 is# v:t_list
