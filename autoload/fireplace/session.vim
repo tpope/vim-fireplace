@@ -13,8 +13,8 @@ endfunction
 function! fireplace#session#for(transport, ...) abort
   let session = copy(s:session)
   let session.callbacks = []
-  if a:0 && type(a:1) == v:t_func
-    call add(session.callbacks(function(a:1, a:000[1:-1])))
+  if a:0 > 1 && type(a:2) == v:t_func
+    call add(session.callbacks(function(a:2, a:000[2:-1])))
   endif
   let session.transport = a:transport
   let session.id = session.message({'op': 'clone', 'session': a:0 ? a:1 : ''}, v:t_dict)['new-session']
