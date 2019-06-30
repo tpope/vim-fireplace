@@ -121,7 +121,11 @@ function! s:session_message(msg, ...) dict abort
   if !has_key(self, 'id') || !has_key(a:msg, 'session')
     throw 'Fireplace: session closed'
   endif
-  let msg = extend({'session': get(self, 'id')}, a:msg, 'keep')
+  let msg = a:msg
+  if !has_key(msg, 'session')
+    let msg = copy(msg)
+    let msg.session = self.id
+  endif
   return call(self.transport.message, [msg] + a:000, self.transport)
 endfunction
 
