@@ -25,12 +25,7 @@ endfunction
 
 function! s:session_callback(msg) dict abort
   if index(get(a:msg, 'status', []), 'session-closed') >= 0
-    if has_key(self, 'session')
-      call remove(self, 'session')
-    endif
-    if has_key(self, 'id')
-      call remove(self, 'id')
-    endif
+    call filter(self, 'v:key !=# "id" && v:key !=# "session"')
   endif
   for Callback in self.callbacks
     try
@@ -46,8 +41,7 @@ function! s:session_close() dict abort
       call self.message({'op': 'close'}, '')
     catch
     finally
-      unlet self.id
-      unlet self.session
+      call filter(self, 'v:key !=# "id" && v:key !=# "session"')
     endtry
   endif
   return self
@@ -124,7 +118,7 @@ let s:keepalive = tempname()
 call writefile([getpid()], s:keepalive)
 
 function! s:session_message(msg, ...) dict abort
-  if !has_key(self, 'id') && !has_key(a:msg, 'session')
+  if !has_key(self, 'id') || !has_key(a:msg, 'session')
     throw 'Fireplace: session closed'
   endif
   let msg = extend({'session': get(self, 'id')}, a:msg, 'keep')
