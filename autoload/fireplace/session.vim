@@ -118,11 +118,11 @@ let s:keepalive = tempname()
 call writefile([getpid()], s:keepalive)
 
 function! s:session_message(msg, ...) dict abort
-  if !has_key(self, 'id') || !has_key(a:msg, 'session')
-    throw 'Fireplace: session closed'
-  endif
   let msg = a:msg
   if !has_key(msg, 'session')
+    if !has_key(self, 'id')
+      throw 'Fireplace: session closed'
+    endif
     let msg = copy(msg)
     let msg.session = self.id
   endif
