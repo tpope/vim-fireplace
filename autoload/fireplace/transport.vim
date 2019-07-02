@@ -17,12 +17,13 @@ if !exists('s:keepalive')
 endif
 
 if !exists('s:id')
-  let s:vim_id = localtime()
+  let s:vim_id = 'fireplace-' . hostname() . '-' . localtime()
   let s:id = 0
 endif
 function! fireplace#transport#id() abort
   let s:id += 1
-  return 'fireplace-'.hostname().'-'.s:vim_id.'-'.s:id
+  let sha = sha256(s:vim_id . '-' . s:id . '-' . reltimestr(reltime()))
+  return printf('%s-%s-4%s-%s-%s', sha[0:7], sha[8:11], sha[13:15], sha[16:19], sha[20:31])
 endfunction
 
 function! fireplace#transport#combine(responses) abort
