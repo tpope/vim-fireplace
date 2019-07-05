@@ -8,13 +8,6 @@ if exists("g:loaded_fireplace") || v:version < 800 || &compatible
 endif
 let g:loaded_fireplace = 1
 
-" Section: File type
-
-augroup fireplace_file_type
-  autocmd!
-  autocmd BufNewFile,BufReadPost *.clj setfiletype clojure
-augroup END
-
 " Section: Utilities
 
 function! s:map(mode, lhs, rhs, ...) abort
@@ -278,11 +271,6 @@ function! fireplace#omnicomplete(findstart, base, ...) abort
   endif
 endfunction
 
-augroup fireplace_completion
-  autocmd!
-  autocmd FileType clojure setlocal omnifunc=fireplace#omnicomplete
-augroup END
-
 " Section: REPL client
 
 let s:repl = {"requires": {}}
@@ -471,9 +459,7 @@ endfunction
 
 " Section: :Connect
 
-command! -bar -bang -complete=customlist,s:connect_complete -nargs=* FireplaceConnect exe s:Connect(<bang>0, <f-args>)
-
-function! s:connect_complete(A, L, P) abort
+function! fireplace#connect_complete(A, L, P) abort
   let proto = matchstr(a:A, '\w\+\ze://')
   if proto ==# ''
     let options = map(['nrepl'], 'v:val."://"')
@@ -488,8 +474,8 @@ function! s:connect_complete(A, L, P) abort
   return options
 endfunction
 
-function! s:Connect(bang, ...) abort
-  let str = substitute(expand(a:0 ? a:1 : ''), '^file:[\/]\{' . (has('win32') ? '3' : '2') . '\}', '', '')
+function! fireplace#connect_command(line1, line2, range, count, bang, mods, reg, arg, args) abort
+  let str = substitute(get(a:args, 0, ''), '^file:[\/]\{' . (has('win32') ? '3' : '2') . '\}', '', '')
   if str !~# ':\d\|:[\/][\/]' && filereadable(str)
     let path = fnamemodify(str, ':p:h')
     let str = readfile(str, '', 1)[0]
@@ -509,7 +495,7 @@ function! s:Connect(bang, ...) abort
   endif
   let client = s:register(transport)
   echo 'Connected to ' . transport.url
-  let root = a:0 > 1 ? expand(a:2) : input('Scope connection to: ', path, 'dir')
+  let root = len(a:args) > 1 ? expand(a:args[1]) : input('Scope connection to: ', path, 'dir')
   if root !=# '' && root !=# '-'
     let s:repl_paths[fnamemodify(root, ':p:s?.\zs[\/]$??')] = client
   endif
@@ -526,13 +512,12 @@ function! s:piggieback(count, arg, remove) abort
   endtry
 endfunction
 
-augroup fireplace_connect
-  autocmd!
-  autocmd FileType clojure command! -buffer -bang -bar -complete=customlist,s:connect_complete -nargs=*
+function! s:set_up_connect() abort
+  command! -buffer -bang -bar -complete=customlist,fireplace#connect_complete -nargs=*
         \ Connect FireplaceConnect<bang> <args>
-  autocmd FileType clojure command! -buffer -bang -range=-1 -complete=customlist,fireplace#eval_complete -nargs=*
+  command! -buffer -bang -range=-1 -complete=customlist,fireplace#eval_complete -nargs=*
         \ Piggieback exe s:piggieback(<count>, <q-args>, <bang>0)
-augroup END
+endfunction
 
 " Section: Java runner
 
@@ -1019,14 +1004,6 @@ function! fireplace#massage_list(...) abort
   call SetList([], 'r', attrs)
 endfunction
 
-augroup fireplace_quickfix
-  autocmd!
-  autocmd QuickFixCmdPost make,cfile,cgetfile
-        \ if &efm =~# 'classpath' | call fireplace#massage_list() | endif
-  autocmd QuickFixCmdPost lmake,lfile,lgetfile
-        \ if &efm =~# 'classpath' | call fireplace#massage_list(0) | endif
-augroup END
-
 " Section: Eval
 
 let fireplace#skip = 'synIDattr(synID(line("."),col("."),1),"name") =~? "comment\\|string\\|char\\|regexp"'
@@ -1355,7 +1332,6 @@ endfunction
 
 augroup fireplace_eval
   autocmd!
-  autocmd FileType clojure call s:set_up_eval()
   autocmd BufReadPost * if has_key(s:qffiles, expand('<amatch>:p')) |
         \   call s:set_up_historical() |
         \ endif
@@ -1390,11 +1366,6 @@ function! s:set_up_require() abort
 
   call s:map('n', 'cpr', ":<C-R>=expand('%:e') ==# 'cljs' ? 'Require' : 'RunTests'<CR><CR>", '<silent>')
 endfunction
-
-augroup fireplace_require
-  autocmd!
-  autocmd FileType clojure call s:set_up_require()
-augroup END
 
 " Section: Go to source
 
@@ -1502,11 +1473,6 @@ function! s:set_up_source() abort
   call s:map('n', '<C-W>d',     '<Plug>FireplaceDsplit')
   call s:map('n', '<C-W>gd',    '<Plug>FireplaceDtabjump')
 endfunction
-
-augroup fireplace_source
-  autocmd!
-  autocmd FileType clojure call s:set_up_source()
-augroup END
 
 " Section: Go to file
 
@@ -1680,11 +1646,6 @@ function! s:set_up_go_to_file() abort
   call s:map('n', '<C-W>gf',    '<Plug>FireplaceTabeditFile', '<unique>')
 endfunction
 
-augroup fireplace_go_to_file
-  autocmd!
-  autocmd FileType clojure call s:set_up_go_to_file()
-augroup END
-
 " Section: Spec
 
 function! fireplace#qualify_keyword(kw) abort
@@ -1730,15 +1691,10 @@ function! s:SpecExample(kw) abort
   return ''
 endfunction
 
-function! s:set_up_fireplace_spec() abort
+function! s:set_up_spec() abort
   command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete SpecForm    :exe s:SpecForm(<q-args>)
   command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete SpecExample :exe s:SpecExample(<q-args>)
 endfunction
-
-augroup fireplace_spec
-  autocmd!
-  autocmd FileType clojure call s:set_up_fireplace_spec()
-augroup END
 
 " Section: Formatting
 
@@ -1766,12 +1722,6 @@ function! fireplace#format(lnum, count, char) abort
     let &clipboard = cb_save
   endtry
 endfunction
-
-augroup fireplace_formatting
-  autocmd!
-  autocmd FileType clojure
-        \ setlocal formatexpr=fireplace#format(v:lnum,v:count,v:char)
-augroup END
 
 " Section: Documentation
 
@@ -1869,11 +1819,6 @@ function! s:set_up_doc() abort
   call s:map('n', '[d', '<Plug>FireplaceSource')
   call s:map('n', ']d', '<Plug>FireplaceSource')
 endfunction
-
-augroup fireplace_doc
-  autocmd!
-  autocmd FileType clojure call s:set_up_doc()
-augroup END
 
 " Section: Tests
 
@@ -2004,7 +1949,31 @@ function! s:set_up_tests() abort
         \ call s:RunTests(<bang>0, -1, <f-args>)
 endfunction
 
-augroup fireplace_tests
+" Section: Activation
+
+function! fireplace#activate() abort
+  setlocal omnifunc=fireplace#omnicomplete
+  setlocal formatexpr=fireplace#format(v:lnum,v:count,v:char)
+  call s:set_up_connect()
+  call s:set_up_eval()
+  call s:set_up_require()
+  call s:set_up_source()
+  call s:set_up_go_to_file()
+  call s:set_up_spec()
+  call s:set_up_doc()
+  call s:set_up_tests()
+  doautocmd <nomodeline> User FireplaceActivate
+endfunction
+
+augroup fireplace
   autocmd!
-  autocmd FileType clojure call s:set_up_tests()
+  autocmd FileType clojure call fireplace#activate()
+
+  autocmd QuickFixCmdPost make,cfile,cgetfile
+        \ if &efm =~# 'classpath' | call fireplace#massage_list() | endif
+  autocmd QuickFixCmdPost lmake,lfile,lgetfile
+        \ if &efm =~# 'classpath' | call fireplace#massage_list(0) | endif
 augroup END
+
+command! -bar -bang -complete=customlist,fireplace#connect_complete -nargs=* FireplaceConnect
+      \ exe fireplace#connect_command(<line1>, <line2>, +'<range>', <count>, <bang>0, '<mods>', <q-reg>, <q-args>, [<f-args>])
