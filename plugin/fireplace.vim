@@ -1581,9 +1581,6 @@ function! s:ns(...) abort
 endfunction
 
 function! fireplace#resolve_alias(name) abort
-  if a:name =~# '\.'
-    return a:name
-  endif
   let _ = {}
   for refs in filter(copy(s:ns()), 'type(v:val) == type([])')
     if a:name =~# '^\u' && get(refs, 0) is# ':import'
