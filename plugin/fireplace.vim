@@ -56,6 +56,16 @@ function! s:pr(obj) abort
   endif
 endfunction
 
+function! s:cword() abort
+  let isk = &l:iskeyword
+  try
+    setlocal iskeyword+='
+    return substitute(expand('<cword>'), "^''*", '', '')
+  finally
+    let &l:iskeyword = isk
+  endtry
+endfunction
+
 " Section: Escaping
 
 function! s:str(string) abort
@@ -1479,9 +1489,9 @@ function! s:Edit(cmd, keyword) abort
   return 'echoerr v:errmsg'
 endfunction
 
-nnoremap <silent> <Plug>FireplaceDjump :<C-U>exe <SID>Edit('edit', expand('<cword>'))<CR>
-nnoremap <silent> <Plug>FireplaceDsplit :<C-U>exe <SID>Edit('split', expand('<cword>'))<CR>
-nnoremap <silent> <Plug>FireplaceDtabjump :<C-U>exe <SID>Edit('tabedit', expand('<cword>'))<CR>
+nnoremap <silent> <Plug>FireplaceDjump :<C-U>exe <SID>Edit('edit', <SID>cword())<CR>
+nnoremap <silent> <Plug>FireplaceDsplit :<C-U>exe <SID>Edit('split', <SID>cword())<CR>
+nnoremap <silent> <Plug>FireplaceDtabjump :<C-U>exe <SID>Edit('tabedit', <SID>cword())<CR>
 
 function! s:set_up_source() abort
   setlocal define=^\\s*(def\\w*
@@ -1520,8 +1530,8 @@ function! fireplace#findfile(path) abort
   return ''
 endfunction
 
-let s:iskeyword = '[[:alnum:]_=?!#$%&*+|./<>:-]'
-let s:token = '^\%(#"\%(\\\@<!\%(\\\\\)*\\"\|[^"]\)*"\|"\%(\\.\|[^"]\)*"\|[[:space:],]\+\|\%(;\|#!\)[^'."\n".']*\|\~@\|#[[:punct:]]\|'.s:iskeyword.'\+\|\\\%(space\|tab\|newline\|return\|.\)\|.\)'
+let s:iskeyword = '[[:alnum:]_=?!#$%&*+|./<>:''-]'
+let s:token = '^\%(#"\%(\\\@<!\%(\\\\\)*\\"\|[^"]\)*"\|"\%(\\.\|[^"]\)*"\|[[:space:],]\+\|\%(;\|#!\)[^'."\n".']*\|\~@\|#[[:punct:]]\|''\@!'.s:iskeyword.'\+\|\\\%(space\|tab\|newline\|return\|.\)\|.\)'
 function! s:read_token(str, pos) abort
   let pos = a:pos
   let match = ' '
@@ -1559,7 +1569,6 @@ function! s:ns(...) abort
   let head = getbufline(buffer, 1, 1000)
   let blank = '^\s*\%(;.*\)\=$'
   call filter(head, 'v:val !~# blank')
-  let keyword_group = '[A-Za-z0-9_?*!+/=<>.-]'
   let lines = join(head, "\n")
   let match = matchstr(lines, '\C^(\s*ns\s\+.*')
   if len(match)
@@ -1607,11 +1616,17 @@ function! fireplace#resolve_alias(name) abort
 endfunction
 
 function! fireplace#cfile() abort
-  let file = expand('<cfile>')
+  let isfname = &isfname
+  try
+    set isfname+='
+    let file = substitute(expand('<cfile>'), "^''*", '', '')
+  finally
+    let isfname = &isfname
+  endtry
   if file =~# '^\w[[:alnum:]_/]*$' &&
         \ synIDattr(synID(line("."),col("."),1),"name") =~# 'String'
     let file = substitute(expand('%:p'), '[^\/:]*$', '', '').file
-  elseif file =~# '^[^/]*/[^/.]*$' && file =~# '^\k\+$'
+  elseif file =~# '^[^/]*/[^/.]*$' && file =~# '^\%(\k\|''\)\+$'
     let [file, jump] = split(file, "/")
     let file = fireplace#resolve_alias(file)
     if file !~# '\.' && fireplace#op_available('info')
@@ -1619,7 +1634,7 @@ function! fireplace#cfile() abort
       let file = get(get(res, 0, {}), 'ns', file)
     endif
     let file = tr(file, '.-', '/_')
-  elseif file =~# '^\w[[:alnum:].-]*$'
+  elseif file =~# '^\w[[:alnum:].-]*''\=$'
     let file = tr(fireplace#resolve_alias(file), '.-', '/_')
   endif
   if exists('jump')
@@ -1832,7 +1847,7 @@ function! s:Doc(symbol) abort
 endfunction
 
 function! s:K() abort
-  let word = expand('<cword>')
+  let word = s:cword()
   let java_candidate = matchstr(word, '^\%(\w\+\.\)*\u\l[[:alnum:]$]*\ze\%(\.\|\/\w\+\)\=$')
   if java_candidate !=# ''
     return 'Javadoc '.java_candidate
@@ -1844,7 +1859,7 @@ function! s:K() abort
 endfunction
 
 nnoremap <Plug>FireplaceK :<C-R>=<SID>K()<CR><CR>
-nnoremap <Plug>FireplaceSource :Source <C-R><C-W><CR>
+nnoremap <Plug>FireplaceSource :Source <C-R>=<SID>cword()<CR><CR>
 
 function! s:set_up_doc() abort
   command! -buffer -nargs=1 FindDoc :exe s:Lookup(s:repl_ns(), 'find-doc', printf('#"%s"', <q-args>))
