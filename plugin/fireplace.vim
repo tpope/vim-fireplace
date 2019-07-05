@@ -197,10 +197,6 @@ function! s:get_complete_context() abort
   return strpart(expr, 0, p) . ' __prefix__ ' . strpart(expr, p)
 endfunction
 
-function! fireplace#CompletionContext() abort
-  return s:get_complete_context()
-endfunction
-
 function! s:complete_extract(msg) abort
   let trans = '{"word": (v:val =~# ''[./]'' ? "" : matchstr(a:base, ''^.\+/'')) . v:val}'
   let value = get(a:msg, 'value', get(a:msg, 'completions'))
@@ -941,14 +937,6 @@ function! fireplace#echo_session_eval(expr, ...) abort
   return ''
 endfunction
 
-function! fireplace#evalprint(expr) abort
-  return fireplace#echo_session_eval(a:expr)
-endfunction
-
-function! fireplace#macroexpand(fn, form) abort
-  return fireplace#evalprint('('.a:fn.' (quote '.a:form.'))')
-endfunction
-
 let g:fireplace#reader =
       \ '(symbol ((fn *vimify [x]' .
       \  ' (cond' .
@@ -1100,12 +1088,16 @@ function! s:filterop(type) abort
   endtry
 endfunction
 
+function! s:macroexpand(fn, form) abort
+  return fireplace#echo_session_eval('('.a:fn.' (quote '.a:form.'))')
+endfunction
+
 function! s:macroexpandop(type) abort
-  call fireplace#macroexpand("clojure.walk/macroexpand-all", s:opfunc(a:type).code)
+  call s:macroexpand("clojure.walk/macroexpand-all", s:opfunc(a:type).code)
 endfunction
 
 function! s:macroexpand1op(type) abort
-  call fireplace#macroexpand("macroexpand-1", s:opfunc(a:type).code)
+  call s:macroexpand("macroexpand-1", s:opfunc(a:type).code)
 endfunction
 
 function! s:printop(type) abort
