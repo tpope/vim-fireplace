@@ -997,28 +997,34 @@ function! fireplace#quickfix_for(stacktrace) abort
   return map(copy(a:stacktrace), 's:qfmassage(v:val, path)')
 endfunction
 
-function! s:massage_quickfix() abort
+function! fireplace#massage_list(...) abort
   let p = substitute(matchstr(','.&errorformat, '\C,\%(%\\&\)\=classpath=\=\zs\%(\\.\|[^\,]\)*'), '\\\ze[\,%]', '', 'g')
   if empty(p)
     return
   endif
+  if a:0
+    let GetList = function('getloclist', [a:1])
+    let SetList = function('setloclist', [a:1])
+  else
+    let GetList = function('getqflist', [])
+    let SetList = function('setqflist', [])
+  endif
   let path = p =~# '^[:;]' ? split(p[1:-1], p[0]) : p[0] ==# ',' ? s:path_extract(p[1:-1], 1) : s:path_extract(p, 1)
-  let qflist = getqflist()
+  let qflist = GetList()
   for entry in qflist
     call extend(entry, s:qfmassage(get(entry, 'text', ''), path))
   endfor
-  if exists(':chistory')
-    let attrs = getqflist({'title': 1})
-  endif
-  call setqflist(qflist, 'r')
-  if exists('l:attrs')
-    call setqflist(qflist, 'r', attrs)
-  endif
+  let attrs = GetList({'title': 1})
+  call SetList(qflist, 'r')
+  call SetList([], 'r', attrs)
 endfunction
 
 augroup fireplace_quickfix
   autocmd!
-  autocmd QuickFixCmdPost make,cfile,cgetfile call s:massage_quickfix()
+  autocmd QuickFixCmdPost make,cfile,cgetfile
+        \ if &efm =~# 'classpath' | call fireplace#massage_list() | endif
+  autocmd QuickFixCmdPost lmake,lfile,lgetfile
+        \ if &efm =~# 'classpath' | call fireplace#massage_list(0) | endif
 augroup END
 
 " Section: Eval
