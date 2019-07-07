@@ -1,12 +1,10 @@
-" fireplace.vim - Clojure REPL support
-" Maintainer:   Tim Pope <http://tpo.pe/>
-" Version:      1.2
-" GetLatestVimScripts: 4978 1 :AutoInstall: fireplace.vim
+" Location: autoload/fireplace.vim
+" Author: Tim Pope <http://tpo.pe/>
 
-if exists("g:loaded_fireplace") || v:version < 800 || &compatible
+if exists('g:autoloaded_fireplace')
   finish
 endif
-let g:loaded_fireplace = 1
+let g:autoloaded_fireplace = 1
 
 " Section: Utilities
 
@@ -1964,16 +1962,3 @@ function! fireplace#activate() abort
   call s:set_up_tests()
   doautocmd <nomodeline> User FireplaceActivate
 endfunction
-
-augroup fireplace
-  autocmd!
-  autocmd FileType clojure call fireplace#activate()
-
-  autocmd QuickFixCmdPost make,cfile,cgetfile
-        \ if &efm =~# 'classpath' | call fireplace#massage_list() | endif
-  autocmd QuickFixCmdPost lmake,lfile,lgetfile
-        \ if &efm =~# 'classpath' | call fireplace#massage_list(0) | endif
-augroup END
-
-command! -bar -bang -complete=customlist,fireplace#connect_complete -nargs=* FireplaceConnect
-      \ exe fireplace#connect_command(<line1>, <line2>, +'<range>', <count>, <bang>0, '<mods>', <q-reg>, <q-args>, [<f-args>])
