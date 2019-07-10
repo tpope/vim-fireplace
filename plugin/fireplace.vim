@@ -11,7 +11,7 @@ let g:loaded_fireplace = 1
 augroup fireplace
   autocmd!
 
-  if has('job') || exists('*jobstart')
+  if v:version >= 800
     autocmd FileType clojure call fireplace#activate()
 
     autocmd QuickFixCmdPost make,cfile,cgetfile
