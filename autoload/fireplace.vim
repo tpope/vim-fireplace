@@ -1894,8 +1894,8 @@ function! s:handle_test_response(buffer, id, path, expr, message) abort
     if &buftype ==# 'quickfix' && !was_qf
       wincmd p
     endif
+    echo a:expr
   endif
-  echo a:expr
 endfunction
 
 function! s:RunTests(bang, count, ...) abort
