@@ -1841,11 +1841,6 @@ function! fireplace#capture_test_run(expr, ...) abort
         \ . '   (clojure.core/println (clojure.core/str e))'
         \ . '   (clojure.core/println (clojure.string/join "\n" (.getStackTrace e)))))'
   call setqflist([], ' ', {'title': a:expr})
-  let was_qf = &buftype ==# 'quickfix'
-  botright copen
-  if &buftype ==# 'quickfix' && !was_qf
-    wincmd p
-  endif
   echo 'Started: ' . a:expr
   call fireplace#message({'op': 'eval', 'code': expr, 'session': 0},
         \ function('s:handle_test_response', [[], get(getqflist({'id': 0}), 'id'), fireplace#path(), a:expr]))
@@ -1890,17 +1885,17 @@ function! s:handle_test_response(buffer, id, path, expr, message) abort
     call setqflist(entries, 'a')
   endif
   if has_key(a:message, 'status')
-    if get(getqflist({'id': 0}), 'id') ==# a:id
-      let was_qf = &buftype ==# 'quickfix'
-      botright cwindow
-      if &buftype ==# 'quickfix' && !was_qf
-        wincmd p
-      endif
-    endif
     let list = a:id ? getqflist({'id': a:id, 'items': 1}).items : getqflist()
     if empty(filter(list, 'v:val.valid'))
       echo 'Success: ' . a:expr
     else
+      if get(getqflist({'id': 0}), 'id') ==# a:id
+        let was_qf = &buftype ==# 'quickfix'
+        botright copen
+        if &buftype ==# 'quickfix' && !was_qf
+          wincmd p
+        endif
+      endif
       echo 'Failure: ' . a:expr
     endif
   endif
