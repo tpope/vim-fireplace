@@ -1960,5 +1960,5 @@ function! fireplace#activate() abort
   call s:set_up_spec()
   call s:set_up_doc()
   call s:set_up_tests()
-  doautocmd <nomodeline> User FireplaceActivate
+  silent doautocmd <nomodeline> User FireplaceActivate
 endfunction
