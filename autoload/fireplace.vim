@@ -1840,17 +1840,17 @@ function! fireplace#capture_test_run(expr, ...) abort
         \ . ' (catch Exception e'
         \ . '   (clojure.core/println (clojure.core/str e))'
         \ . '   (clojure.core/println (clojure.string/join "\n" (.getStackTrace e)))))'
-  call setqflist([], ' ', {'title': a:expr})
   let was_qf = &buftype ==# 'quickfix'
-  botright copen
+  botright cwindow
   if &buftype ==# 'quickfix' && !was_qf
     wincmd p
   endif
+  call setqflist([], ' ', {'title': a:expr})
   call fireplace#message({'op': 'eval', 'code': expr, 'session': 0},
-        \ function('s:handle_test_response', [[], get(getqflist({'id': 0}), 'id'), fireplace#path()]))
+        \ function('s:handle_test_response', [[], get(getqflist({'id': 0}), 'id'), fireplace#path(), a:expr]))
 endfunction
 
-function! s:handle_test_response(buffer, id, path, message) abort
+function! s:handle_test_response(buffer, id, path, expr, message) abort
   let str = get(a:message, 'out', '') . get(a:message, 'err', '')
   if empty(a:buffer)
     let str = substitute(str, "^\r\\=\n", "", "")
@@ -1895,6 +1895,7 @@ function! s:handle_test_response(buffer, id, path, message) abort
       wincmd p
     endif
   endif
+  echo a:expr
 endfunction
 
 function! s:RunTests(bang, count, ...) abort
