@@ -1889,10 +1889,12 @@ function! s:handle_test_response(buffer, id, path, message) abort
     call setqflist(entries, 'a')
   endif
   if has_key(a:message, 'status')
-    let was_qf = &buftype ==# 'quickfix'
-    botright cwindow
-    if &buftype ==# 'quickfix' && !was_qf
-      wincmd p
+    if get(getqflist({'id': 0}), 'id') ==# a:id
+      let was_qf = &buftype ==# 'quickfix'
+      botright cwindow
+      if &buftype ==# 'quickfix' && !was_qf
+        wincmd p
+      endif
     endif
   endif
 endfunction
