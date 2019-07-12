@@ -1846,11 +1846,12 @@ function! fireplace#capture_test_run(expr, ...) abort
   if &buftype ==# 'quickfix' && !was_qf
     wincmd p
   endif
+  echo 'Started: ' . a:expr
   call fireplace#message({'op': 'eval', 'code': expr, 'session': 0},
-        \ function('s:handle_test_response', [[], get(getqflist({'id': 0}), 'id'), fireplace#path()]))
+        \ function('s:handle_test_response', [[], get(getqflist({'id': 0}), 'id'), fireplace#path(), a:expr]))
 endfunction
 
-function! s:handle_test_response(buffer, id, path, message) abort
+function! s:handle_test_response(buffer, id, path, expr, message) abort
   let str = get(a:message, 'out', '') . get(a:message, 'err', '')
   if empty(a:buffer)
     let str = substitute(str, "^\r\\=\n", "", "")
@@ -1896,6 +1897,12 @@ function! s:handle_test_response(buffer, id, path, message) abort
         wincmd p
       endif
     endif
+    let list = a:id ? getqflist({'id': a:id, 'items': 1}).items : getqflist()
+    if empty(filter(list, 'v:val.valid'))
+      echo 'Success: ' . a:expr
+    else
+      echo 'Failure: ' . a:expr
+    endif
   endif
 endfunction
 
@@ -1938,7 +1945,6 @@ function! s:RunTests(bang, count, ...) abort
     endif
   endif
   call fireplace#capture_test_run(join(expr, ' '), pre)
-  echo join(expr, ' ')
 endfunction
 
 function! s:set_up_tests() abort
