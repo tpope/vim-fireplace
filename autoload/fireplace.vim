@@ -1,10 +1,10 @@
 " Location: autoload/fireplace.vim
 " Author: Tim Pope <http://tpo.pe/>
 
-if exists('g:autoloaded_fireplace')
-  finish
-endif
-let g:autoloaded_fireplace = 1
+" if exists('g:autoloaded_fireplace')
+"   finish
+" endif
+" let g:autoloaded_fireplace = 1
 
 " Section: Utilities
 
@@ -1844,20 +1844,17 @@ function! fireplace#capture_test_run(expr, ...) abort
   echo 'Started: ' . a:expr
   let buffer = bufnr('%')
   let id = get(getqflist({'id': 0}), 'id')
-  let timer = timer_start(250, function('s:open_test_progress', [buffer, id]))
+  let timer = timer_start(250, function('s:open_test_progress'))
   call fireplace#message({'op': 'eval', 'code': expr, 'session': 0},
         \ function('s:handle_test_response', [[], id, fireplace#path(), a:expr, timer]))
 endfunction
 
-function! s:open_test_progress(buffer, id, timer)
-  let items = get(getqflist({'id': a:id, 'items': 1}), 'items')
-  if len(items) <= 1
-    " test still running; show the quickfix window
-    let was_qf = &buftype ==# 'quickfix'	
-    botright copen
-    if &buftype ==# 'quickfix' && !was_qf	
-      wincmd p	
-    endif
+function! s:open_test_progress(timer)
+  " if this function was called, the test is still running; open quickfix
+  let was_qf = &buftype ==# 'quickfix'
+  botright copen
+  if &buftype ==# 'quickfix' && !was_qf
+      wincmd p
   endif
 endfunction
 
@@ -1900,10 +1897,10 @@ function! s:handle_test_response(buffer, id, path, expr, timer, message) abort
     call setqflist(entries, 'a')
   endif
   if has_key(a:message, 'status')
+    call timer_stop(a:timer)
     let list = a:id ? getqflist({'id': a:id, 'items': 1}).items : getqflist()
     if empty(filter(list, 'v:val.valid'))
       echo 'Success: ' . a:expr
-      call timer_stop(a:timer)
       cwindow
     else
       if get(getqflist({'id': 0}), 'id') ==# a:id
