@@ -1,10 +1,10 @@
 " Location: autoload/fireplace.vim
 " Author: Tim Pope <http://tpo.pe/>
 
-" if exists('g:autoloaded_fireplace')
-"   finish
-" endif
-" let g:autoloaded_fireplace = 1
+if exists('g:autoloaded_fireplace')
+  finish
+endif
+let g:autoloaded_fireplace = 1
 
 " Section: Utilities
 
