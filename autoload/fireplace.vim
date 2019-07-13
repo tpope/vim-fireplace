@@ -1842,11 +1842,9 @@ function! fireplace#capture_test_run(expr, ...) abort
         \ . '   (clojure.core/println (clojure.string/join "\n" (.getStackTrace e)))))'
   call setqflist([], ' ', {'title': a:expr})
   echo 'Started: ' . a:expr
-  let buffer = bufnr('%')
-  let id = get(getqflist({'id': 0}), 'id')
   let timer = timer_start(250, function('s:open_test_progress'))
   call fireplace#message({'op': 'eval', 'code': expr, 'session': 0},
-        \ function('s:handle_test_response', [[], id, fireplace#path(), a:expr, timer]))
+        \ function('s:handle_test_response', [[], get(getqflist({'id': 0}), 'id'), fireplace#path(), a:expr, timer]))
 endfunction
 
 function! s:open_test_progress(timer)
