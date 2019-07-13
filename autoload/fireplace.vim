@@ -1842,11 +1842,26 @@ function! fireplace#capture_test_run(expr, ...) abort
         \ . '   (clojure.core/println (clojure.string/join "\n" (.getStackTrace e)))))'
   call setqflist([], ' ', {'title': a:expr})
   echo 'Started: ' . a:expr
+  let buffer = bufnr('%')
+  let id = get(getqflist({'id': 0}), 'id')
+  let timer = timer_start(250, function('s:open_test_progress', [buffer, id]))
   call fireplace#message({'op': 'eval', 'code': expr, 'session': 0},
-        \ function('s:handle_test_response', [[], get(getqflist({'id': 0}), 'id'), fireplace#path(), a:expr]))
+        \ function('s:handle_test_response', [[], id, fireplace#path(), a:expr, timer]))
 endfunction
 
-function! s:handle_test_response(buffer, id, path, expr, message) abort
+function! s:open_test_progress(buffer, id, timer)
+  let items = get(getqflist({'id': a:id, 'items': 1}), 'items')
+  if len(items) <= 1
+    " test still running; show the quickfix window
+    let was_qf = &buftype ==# 'quickfix'	
+    botright copen
+    if &buftype ==# 'quickfix' && !was_qf	
+      wincmd p	
+    endif
+  endif
+endfunction
+
+function! s:handle_test_response(buffer, id, path, expr, timer, message) abort
   let str = get(a:message, 'out', '') . get(a:message, 'err', '')
   if empty(a:buffer)
     let str = substitute(str, "^\r\\=\n", "", "")
@@ -1888,6 +1903,8 @@ function! s:handle_test_response(buffer, id, path, expr, message) abort
     let list = a:id ? getqflist({'id': a:id, 'items': 1}).items : getqflist()
     if empty(filter(list, 'v:val.valid'))
       echo 'Success: ' . a:expr
+      call timer_stop(a:timer)
+      cwindow
     else
       if get(getqflist({'id': 0}), 'id') ==# a:id
         let was_qf = &buftype ==# 'quickfix'
