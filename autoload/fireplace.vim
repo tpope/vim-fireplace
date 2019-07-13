@@ -1847,7 +1847,7 @@ function! fireplace#capture_test_run(expr, ...) abort
         \ function('s:handle_test_response', [[], get(getqflist({'id': 0}), 'id'), fireplace#path(), a:expr, timer]))
 endfunction
 
-function! s:open_test_progress(timer)
+function! s:open_test_progress(timer) abort
   " if this function was called, the test is still running; open quickfix
   let was_qf = &buftype ==# 'quickfix'
   botright copen
