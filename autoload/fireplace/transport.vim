@@ -150,7 +150,9 @@ function! s:json_callback(url, state, requests, sessions, job, msg) abort
 endfunction
 
 function! s:exit_callback(url, state, requests, sessions, job, status) abort
-  call remove(s:urls, a:url)
+  if has_key(s:urls, a:url)
+    call remove(s:urls, a:url)
+  endif
   let a:state.exit = a:status
 endfunction
 
