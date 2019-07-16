@@ -1893,6 +1893,7 @@ function! s:handle_test_response(buffer, id, path, expr, message) abort
       endif
     endif
     let list = a:id ? getqflist({'id': a:id, 'items': 1}).items : getqflist()
+    redraw
     if empty(filter(list, 'v:val.valid'))
       echo 'Success: ' . a:expr
     else
