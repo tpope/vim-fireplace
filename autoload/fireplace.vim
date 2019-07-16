@@ -909,7 +909,7 @@ function! fireplace#echo_session_eval(expr, ...) abort
       echo "No return value"
       echohl NONE
     else
-      echo value
+      echo substitute(value, "\n*$", '', '')
     endif
   catch /^Clojure:/
   catch
