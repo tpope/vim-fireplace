@@ -1885,17 +1885,17 @@ function! s:handle_test_response(buffer, id, path, expr, message) abort
     call setqflist(entries, 'a')
   endif
   if has_key(a:message, 'status')
+    if get(getqflist({'id': 0}), 'id') ==# a:id
+      let my_winid = win_getid()
+      botright cwindow
+      if my_winid !=# win_getid()
+        call win_gotoid(my_winid)
+      endif
+    endif
     let list = a:id ? getqflist({'id': a:id, 'items': 1}).items : getqflist()
     if empty(filter(list, 'v:val.valid'))
       echo 'Success: ' . a:expr
     else
-      if get(getqflist({'id': 0}), 'id') ==# a:id
-        let was_qf = &buftype ==# 'quickfix'
-        botright copen
-        if &buftype ==# 'quickfix' && !was_qf
-          wincmd p
-        endif
-      endif
       echo 'Failure: ' . a:expr
     endif
   endif
