@@ -1820,9 +1820,9 @@ endfunction
 
 " Section: Tests
 
-function! fireplace#capture_test_run(expr, ...) abort
+function! s:capture_test_run(expr, pre, bang) abort
   let expr = '(try'
-        \ . ' ' . (a:0 ? a:1 : '')
+        \ . ' ' . a:pre
         \ . ' (clojure.core/require ''clojure.test)'
         \ . ' (clojure.core/binding [clojure.test/report (fn [m]'
         \ .  ' (clojure.core/case (:type m)'
@@ -1843,10 +1843,10 @@ function! fireplace#capture_test_run(expr, ...) abort
   call setqflist([], ' ', {'title': a:expr})
   echo 'Started: ' . a:expr
   call fireplace#message({'op': 'eval', 'code': expr, 'session': 0},
-        \ function('s:handle_test_response', [[], get(getqflist({'id': 0}), 'id'), fireplace#path(), a:expr]))
+        \ function('s:handle_test_response', [[], get(getqflist({'id': 0}), 'id'), fireplace#path(), a:expr, a:bang]))
 endfunction
 
-function! s:handle_test_response(buffer, id, path, expr, message) abort
+function! s:handle_test_response(buffer, id, path, expr, bang, message) abort
   let str = get(a:message, 'out', '') . get(a:message, 'err', '')
   if empty(a:buffer)
     let str = substitute(str, "^\r\\=\n", "", "")
@@ -1885,7 +1885,7 @@ function! s:handle_test_response(buffer, id, path, expr, message) abort
     call setqflist(entries, 'a')
   endif
   if has_key(a:message, 'status')
-    if get(getqflist({'id': 0}), 'id') ==# a:id
+    if !a:bang && get(getqflist({'id': 0}), 'id') ==# a:id
       let my_winid = win_getid()
       botright cwindow
       if my_winid !=# win_getid()
@@ -1940,7 +1940,7 @@ function! s:RunTests(bang, count, ...) abort
       call add(expr, join(['(clojure.test/run-tests'] + nses, ' ').')')
     endif
   endif
-  call fireplace#capture_test_run(join(expr, ' '), pre)
+  call s:capture_test_run(join(expr, ' '), pre, a:bang)
 endfunction
 
 function! s:set_up_tests() abort
