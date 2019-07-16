@@ -874,6 +874,7 @@ function! fireplace#session_eval(expr, ...) abort
     endif
     if nr != -1
       call setloclist(nr, fireplace#quickfix_for(response.stacktrace))
+      call setloclist(nr, [], 'a', {'title': a:expr})
     endif
   endif
 
