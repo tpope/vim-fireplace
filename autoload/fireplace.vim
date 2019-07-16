@@ -1290,6 +1290,7 @@ endfunction
 function! s:set_up_eval() abort
   command! -buffer -bang -range=0 -nargs=? -complete=customlist,fireplace#eval_complete Eval :exe s:Eval(<bang>0, <line1>, <line2>, <count>, <q-args>)
   command! -buffer -bang -bar -count=1 Last exe s:Last(<bang>0, <count>)
+  command! -buffer -bang -bar Stacktrace lopen
 
   if get(g:, 'fireplace_no_maps') | return | endif
 

@@ -119,8 +119,7 @@ EVALUATING CODE                                 *fireplace-eval*
 
 All code is evaluated in the namespace of the current file, requiring it if
 necessary.  If the current file sits outside the class path (project.clj, for
-example), the user namespace is used instead.  If an exception occurs, the
-stack trace is loaded into the |location-list|.  Use |:lopen| to view it.
+example), the user namespace is used instead.
 
                                                 *fireplace-:Require*
 :Require [ns]           Require :reload the given/current namespace.
@@ -199,6 +198,10 @@ cq{motion}              Bring up a |command-line-window| with text indicated
                         window.  Use :2Last to get the next-to-last result,
                         and so on.  Once the window is open, cycle to older
                         and newer entries with |:lprevious| and |:lnext|.
+
+                                                *fireplace-:Stacktrace*
+:Stacktrace             Use |:lopen| to open the location list with the most
+                        recent stacktrace.
 
 And insert mode:
 
