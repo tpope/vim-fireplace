@@ -837,7 +837,7 @@ function! s:qfentry(entry) abort
     let a:entry.tempfile = s:temp_response(a:entry.response)
   endif
   let s:qffiles[a:entry.tempfile] = a:entry
-  return {'filename': a:entry.tempfile, 'text': a:entry.code, 'type': 'E'}
+  return {'filename': a:entry.tempfile, 'text': a:entry.code, 'type': 'E', 'module': a:entry.response.id}
 endfunction
 
 function! s:qfhistory() abort
