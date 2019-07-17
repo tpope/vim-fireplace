@@ -173,8 +173,8 @@ function! fireplace#transport#connect(arg) abort
     let host = 'localhost'
     let port = arg
   elseif arg =~# '^[^:/@]\+:\d\+\%(/\|$\)'
-    let host = matchstr(a:arg, '^[^:/@]\+')
-    let port = matchstr(a:arg, ':\zs\d\+')
+    let host = matchstr(arg, '^[^:/@]\+')
+    let port = matchstr(arg, ':\zs\d\+')
   else
     throw "Fireplace: invalid connection string " . string(a:arg)
   endif
