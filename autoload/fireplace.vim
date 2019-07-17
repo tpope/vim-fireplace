@@ -416,8 +416,8 @@ function! s:repl.eval(expr, options) dict abort
   return s:conn_try(get(self, 'session', get(self, 'connection', {})), 'eval', a:expr, a:options)
 endfunction
 
-function! s:register(transport, ...) abort
-  call insert(s:repls, extend({'session': a:transport.clone(), 'transport': a:transport, 'piggiebacks': []}, deepcopy(s:repl)))
+function! s:register(session, ...) abort
+  call insert(s:repls, extend({'session': a:session, 'transport': a:session.transport, 'piggiebacks': []}, deepcopy(s:repl)))
   if a:0 && a:1 !=# ''
     let s:repl_paths[a:1] = s:repls[0]
   endif
@@ -442,10 +442,12 @@ function! fireplace#register_port_file(portfile, ...) abort
     let port = matchstr(readfile(portfile, 'b', 1)[0], '\d\+')
     try
       let transport = fireplace#transport#connect(port)
+      let session = transport.clone()
       let s:repl_portfiles[portfile] = {
             \ 'time': getftime(portfile),
+            \ 'session': session,
             \ 'transport': transport}
-      call s:register(transport, a:0 ? a:1 : '')
+      call s:register(session, a:0 ? a:1 : '')
       return transport
     catch /^Fireplace:/
       if &verbose
@@ -496,7 +498,7 @@ function! fireplace#connect_command(line1, line2, range, count, bang, mods, reg,
   if type(transport) !=# type({}) || empty(transport)
     return ''
   endif
-  let client = s:register(transport)
+  let client = s:register(transport.clone())
   echo 'Connected to ' . transport.url
   let root = len(a:args) > 1 ? expand(a:args[1]) : input('Scope connection to: ', path, 'dir')
   if root !=# '' && root !=# '-'
