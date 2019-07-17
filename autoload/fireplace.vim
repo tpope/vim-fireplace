@@ -94,16 +94,21 @@ function! fireplace#jar_contents(path) abort
     endif
   endif
 
-  if !has_key(s:jar_contents, a:path) && has('python') && !$FIREPLACE_NO_IF_PYTHON
-    python import vim, zipfile
-    python vim.command("let s:jar_contents[a:path] = split('" + "\n".join(zipfile.ZipFile(vim.eval('a:path')).namelist()) + "', \"\n\")")
-  elseif !has_key(s:jar_contents, a:path) && has('python3') && !$FIREPLACE_NO_IF_PYTHON
-    python3 import vim, zipfile
-    python3 vim.command("let s:jar_contents[a:path] = split('" + "\n".join(zipfile.ZipFile(vim.eval('a:path')).namelist()) + "', \"\n\")")
-  elseif !has_key(s:jar_contents, a:path) && !empty(s:zipinfo)
-    let s:jar_contents[a:path] = split(system(s:zipinfo.shellescape(a:path)), "\n")
-    if v:shell_error
+  if !has_key(s:jar_contents, a:path)
+    if !filereadable(a:path)
       let s:jar_contents[a:path] = []
+    elseif has('pythonx') && !$FIREPLACE_NO_IF_PYTHON
+      pythonx import zipfile
+      try
+        let s:jar_contents[a:path] = pyxeval('zipfile.ZipFile(' . json_encode(a:path) . ').namelist()')
+      catch /^Vim(let):Traceback/
+        let s:jar_contents[a:path] = []
+      endtry
+    elseif !empty(s:zipinfo)
+      let s:jar_contents[a:path] = split(system(s:zipinfo . shellescape(a:path)), "\n")
+      if v:shell_error
+        let s:jar_contents[a:path] = []
+      endif
     endif
   endif
 
