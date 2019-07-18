@@ -128,7 +128,7 @@ endfunction
 function! fireplace#eval_complete(A, L, P) abort
   let prefix = matchstr(a:A, '\%(.* \|^\)\%(#\=[\[{('']\)*')
   let keyword = a:A[strlen(prefix) : -1]
-  return sort(map(fireplace#omnicomplete(0, keyword, 1), 'prefix . v:val.word'))
+  return sort(map(fireplace#omnicomplete(-1, keyword, ''), 'prefix . v:val.word'))
 endfunction
 
 function! fireplace#ns_complete(A, L, P) abort
@@ -225,22 +225,32 @@ function! s:complete_add(msg) abort
   endfor
 endfunction
 
-function! fireplace#omnicomplete(findstart, base, ...) abort
-  if a:findstart
-    let line = getline('.')[0 : col('.')-2]
+function! s:complete_delegate(queue, callback, msg) abort
+  call extend(a:queue, s:complete_extract(a:msg))
+  if index(get(a:msg, 'status', []), 'done') !=# -1
+    call a:callback(a:queue)
+  endif
+endfunction
+
+function! fireplace#omnicomplete(findstart, ...) abort
+  if a:findstart is# 1
+    let line = strpart(getline('.'), 0, col('.') - 1)
     return col('.') - strlen(matchstr(line, '\k\+$')) - 1
   else
+    let base = a:0 ? a:1 : matchstr(strpart(getline('.'), 0, col('.') - 1), '\k\+$')
     try
 
-      if fireplace#op_available('complete')
+      if fireplace#op_available('complete') || type(a:findstart) == v:t_func
         let request = {
               \ 'op': 'complete',
-              \ 'symbol': a:base,
+              \ 'symbol': base,
               \ 'extra-metadata': ['arglists', 'doc'],
-              \ 'context': a:0 ? '' : s:get_complete_context()
+              \ 'context': a:0 > 1 ? a:2 : s:get_complete_context()
               \ }
-        if a:0
+        if a:findstart is# -1
           return s:complete_extract(fireplace#message(request, v:t_dict))
+        elseif type(a:findstart) == v:t_func
+          return fireplace#message(request, function('s:complete_delegate', [[], a:findstart]))
         endif
         let id = fireplace#message(request, function('s:complete_add')).id
         while !fireplace#client().done(id)
@@ -259,25 +269,20 @@ function! fireplace#omnicomplete(findstart, base, ...) abort
             \ '[(ns-aliases '.s:qsym(ns).') (all-ns) '.
             \ '(sort-by :word (map '.omnifier.' (ns-map '.s:qsym(ns).')))]')
 
-      if a:base =~# '^[^/]*/[^/]*$'
-        let ns = matchstr(a:base, '^.*\ze/')
+      if base =~# '^[^/]*/[^/]*$'
+        let ns = matchstr(base, '^.*\ze/')
         let prefix = ns . '/'
         let ns = get(aliases, ns, ns)
-        let keyword = matchstr(a:base, '.*/\zs.*')
         let results = fireplace#evalparse(
               \ '(sort-by :word (map '.omnifier.' (ns-publics '.s:qsym(ns).')))')
         for r in results
           let r.word = prefix . r.word
         endfor
       else
-        let keyword = a:base
         let results = maps + map(sort(keys(aliases) + namespaces), '{"word": v:val."/", "kind": "t", "info": ""}')
       endif
-      if type(results) == type([])
-        return filter(results, 'a:base ==# "" || a:base ==# v:val.word[0 : strlen(a:base)-1]')
-      else
-        return []
-      endif
+      call filter(results, 'base ==# strpart(v:val.word, 0, strlen(base))')
+      return results
     catch /.*/
       return []
     endtry
