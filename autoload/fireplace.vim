@@ -229,6 +229,13 @@ function! s:complete_add(msg) abort
   endfor
 endfunction
 
+function! s:complete_delegate(queue, callback, msg) abort
+  call extend(a:queue, s:complete_extract(a:msg))
+  if index(get(a:msg, 'status', []), 'done') !=# -1
+    call a:callback(a:queue)
+  endif
+endfunction
+
 function! fireplace#omnicomplete(findstart, base, ...) abort
   if a:findstart is# 1
     let line = strpart(getline('.'), 0, col('.') - 1)
@@ -244,7 +251,9 @@ function! fireplace#omnicomplete(findstart, base, ...) abort
           \ 'extra-metadata': ['arglists', 'doc'],
           \ 'context': a:0 ? a:1 : s:get_complete_context()
           \ }
-    if a:findstart isnot# 0
+    if type(a:findstart) == v:t_func
+      return fireplace#message(request, function('s:complete_delegate', [[], a:findstart]))
+    elseif a:findstart isnot# 0
       return s:complete_extract(fireplace#message(request, v:t_dict))
     endif
     let id = fireplace#message(request, function('s:complete_add')).id
