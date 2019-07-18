@@ -534,7 +534,6 @@ endfunction
 
 let s:oneoff_pr  = tempname()
 let s:oneoff_ex  = tempname()
-let s:oneoff_stk = tempname()
 let s:oneoff_in  = tempname()
 let s:oneoff_out = tempname()
 let s:oneoff_err = tempname()
@@ -547,7 +546,6 @@ function! s:spawning_eval(classpath, expr, ns) abort
   endif
   call writefile([], s:oneoff_pr, 'b')
   call writefile([], s:oneoff_ex, 'b')
-  call writefile([], s:oneoff_stk, 'b')
   call writefile(split('(do '.a:expr.')', "\n"), s:oneoff_in, 'b')
   call writefile([], s:oneoff_out, 'b')
   call writefile([], s:oneoff_err, 'b')
@@ -560,8 +558,7 @@ function! s:spawning_eval(classpath, expr, ns) abort
         \   '    (require ''clojure.repl ''clojure.java.javadoc) '.ns.'(spit '.s:str(s:oneoff_pr).' (pr-str (eval (read-string (slurp '.s:str(s:oneoff_in).')))))' .
         \   '    (catch Exception e' .
         \   '      (spit *err* (.toString e))' .
-        \   '      (spit '.s:str(s:oneoff_ex).' (class e))' .
-        \   '      (spit '.s:str(s:oneoff_stk).' (apply str (interpose "\n" (.getStackTrace e))))))' .
+        \   '      (spit '.s:str(s:oneoff_ex).' (class e))))' .
         \   '  nil)')
   let captured = system(command)
   let result = {}
@@ -569,7 +566,6 @@ function! s:spawning_eval(classpath, expr, ns) abort
   let result.out   = join(readfile(s:oneoff_out, 'b'), "\n")
   let result.err   = join(readfile(s:oneoff_err, 'b'), "\n")
   let result.ex    = join(readfile(s:oneoff_ex, 'b'), "\n")
-  let result.stacktrace = readfile(s:oneoff_stk)
   if empty(result.ex)
     let result.status = ['done']
   else
