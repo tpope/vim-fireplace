@@ -271,7 +271,7 @@ function! s:transport_message(request, ...) dict abort
   endif
   call s:json_send(self.job, request)
   if !exists('msgs')
-    return request.id
+    return {'id': request.id}
   endif
   try
     while has_key(self.requests, request.id)

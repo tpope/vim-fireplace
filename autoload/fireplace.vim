@@ -232,7 +232,7 @@ function! fireplace#omnicomplete(findstart, base, ...) abort
         if a:0
           return s:complete_extract(fireplace#message(request, v:t_dict))
         endif
-        let id = fireplace#message(request, function('s:complete_add'))
+        let id = fireplace#message(request, function('s:complete_add')).id
         while !fireplace#client().done(id)
           call complete_check()
           sleep 1m
