@@ -202,7 +202,7 @@ function! fireplace#transport#connect(arg) abort
     let s:urls[transport.url] = {'transport': transport}
     let transport.describe = transport.message({'op': 'describe', 'verbose?': 1}, v:t_dict)
     if transport.has_op('classpath')
-      let response = transport.message({'op': 'classpath', 'session': ''})[0]
+      let response = transport.message({'op': 'classpath', 'session': ''}, v:t_dict)
       if type(get(response, 'classpath')) == type([])
         let transport._path = response.classpath
       endif

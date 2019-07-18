@@ -1378,7 +1378,7 @@ endfunction
 
 function! fireplace#info(symbol) abort
   if fireplace#op_available('info')
-    let response = fireplace#message({'op': 'info', 'symbol': a:symbol})[0]
+    let response = fireplace#message({'op': 'info', 'symbol': a:symbol}, v:t_dict)
     if type(get(response, 'value')) == type({})
       return response.value
     elseif has_key(response, 'file') || has_key(response, 'doc')
@@ -1598,8 +1598,8 @@ function! fireplace#cfile() abort
     let [file, jump] = split(file, "/")
     let file = fireplace#resolve_alias(file)
     if file !~# '\.' && fireplace#op_available('info')
-      let res = fireplace#message({'op': 'info', 'symbol': file})
-      let file = get(get(res, 0, {}), 'ns', file)
+      let res = fireplace#message({'op': 'info', 'symbol': file}, v:t_dict)
+      let file = get(res, 'ns', file)
     endif
     let file = tr(file, '.-', '/_')
   elseif file =~# '^\w[[:alnum:].-]*''\=$'
@@ -1716,7 +1716,7 @@ function! fireplace#format(lnum, count, char) abort
     set selection=inclusive clipboard-=unnamed clipboard-=unnamedplus
     silent exe "normal! " . string(a:lnum) . "ggV" . string(a:count-1) . "jy"
     let code = @@
-    let response = fireplace#message({'op': 'format-code', 'code': code})[0]
+    let response = fireplace#message({'op': 'format-code', 'code': code}, v:t_dict)
     if !empty(get(response, 'formatted-code'))
       let @@ = get(response, 'formatted-code')
       if @@ !~# '^\n*$' && @@ !=# code
