@@ -250,6 +250,9 @@ function! s:transport_has_op(op) dict abort
 endfunction
 
 function! s:transport_message(request, ...) dict abort
+  if !a:0
+    throw 'Fireplace: change .message({...}) to .message({...}, v:t_list)'
+  endif
   let request = copy(a:request)
   if empty(get(request, 'id'))
     let request.id = fireplace#transport#id()

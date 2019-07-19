@@ -761,7 +761,10 @@ function! fireplace#message(payload, ...) abort
   elseif empty(payload.ns)
     unlet payload.ns
   endif
-  return call(client.message, [payload] + a:000, client)
+  if a:0
+    return call(client.message, [payload] + a:000, client)
+  endif
+  throw 'Fireplace: change fireplace#message({...}) to fireplace#message({...}, v:t_list)'
 endfunction
 
 function! fireplace#op_available(op) abort
