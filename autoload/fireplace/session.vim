@@ -14,10 +14,10 @@ function! fireplace#session#for(transport, ...) abort
   let session = copy(s:session)
   let session.callbacks = []
   if a:0 > 1 && type(a:2) == v:t_func
-    call add(session.callbacks(function(a:2, a:000[2:-1])))
+    call add(session.callbacks, function(a:2, a:000[2:-1]))
   endif
   let session.transport = a:transport
-  let session.id = session.message({'op': 'clone', 'session': a:0 ? a:1 : ''}, v:t_dict)['new-session']
+  let session.id = a:transport.message({'op': 'clone', 'session': a:0 ? a:1 : ''}, v:t_dict)['new-session']
   let session.session = session.id
   let session.url = a:transport.url . '/#' . session.id
   let a:transport.sessions[session.id] = function('s:session_callback', [], session)
@@ -31,7 +31,7 @@ function! s:session_callback(msg) dict abort
   for Callback in self.callbacks
     try
       call call(Callback, [a:msg])
-      exe &debug =~# 'throw' ? '' : 'catch'
+    catch
     endtry
   endfor
 endfunction
@@ -106,26 +106,28 @@ function! s:session_stacktrace_lines() dict abort
         \                    ' (seq (amap st idx ret (str (aget st idx)))))]' .
         \        ' (apply str (interpose "\n" (cons *e parts)))))' .
         \    '))'
-  try
-    let session = self.clone()
-    let response = self.message({'op': 'eval', 'code': format_st, 'ns': 'user'}, v:t_dict)
-    return split(response.value[0], "\n", 1)
-  finally
-    call session.close()
-  endtry
+  let response = self.message({'op': 'eval', 'code': format_st, 'ns': 'user', 'session': ''}, v:t_dict)
+  return split(response.value[0], "\n", 1)
 endfunction
 
-let s:keepalive = tempname()
-call writefile([getpid()], s:keepalive)
+function! s:close_on_first_done(transport, msg) abort
+  if index(get(a:msg, 'status', []), 'done') >= 0
+    call a:transport.message({'op': 'close', 'session': a:msg.session}, '')
+  endif
+endfunction
 
 function! s:session_message(msg, ...) dict abort
+  if !has_key(self, 'id')
+    throw 'Fireplace: session closed'
+  endif
   let msg = a:msg
   if !has_key(msg, 'session')
-    if !has_key(self, 'id')
-      throw 'Fireplace: session closed'
-    endif
     let msg = copy(msg)
     let msg.session = self.id
+  elseif empty(msg.session) && msg.session isnot# v:none || msg.session is# v:true
+    let session = self.clone(function('s:close_on_first_done', [self.transport]))
+    let msg = copy(msg)
+    let msg.session = session.id
   endif
   return call(self.transport.message, [msg] + a:000, self.transport)
 endfunction

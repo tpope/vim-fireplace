@@ -337,11 +337,7 @@ function! s:repl.preload(lib) dict abort
     else
       let expr = '(ns '.self.user_ns().' (:require '.a:lib.reload.'))'
     endif
-    try
-      let result = clone.eval(expr, {'ns': self.user_ns()})
-    finally
-      call clone.close()
-    endtry
+    let result = self.session.message({'op': 'eval', 'code': expr, 'ns': self.user_ns(), 'session': ''}, v:t_dict)
     let self.requires[a:lib] = !has_key(result, 'ex')
     if has_key(result, 'ex')
       return result
@@ -1749,7 +1745,7 @@ endfunction
 
 function! s:Lookup(ns, macro, arg) abort
   try
-    let response = s:eval('('.a:ns.'/'.a:macro.' '.a:arg.')')
+    let response = s:eval('('.a:ns.'/'.a:macro.' '.a:arg.')', {'session': ''})
     call s:output_response(response)
   catch /^Clojure:/
   catch /.*/
