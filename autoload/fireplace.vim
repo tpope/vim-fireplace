@@ -577,6 +577,8 @@ function! s:spawning_eval(classpath, expr, ns) abort
   endif
 endfunction
 
+let s:no_repl = 'Fireplace: no live REPL connection'
+
 let s:oneoff = {}
 
 function! s:oneoff.user_ns() abort
@@ -589,7 +591,7 @@ endfunction
 
 function! s:oneoff.eval(expr, options) dict abort
   if !empty(get(a:options, 'session', 1))
-    throw 'Fireplace: no live REPL connection'
+    throw s:no_repl
   endif
   let result = s:spawning_eval(join(self.path(), has('win32') ? ';' : ':'),
         \ a:expr, get(a:options, 'ns', self.user_ns()))
@@ -600,7 +602,7 @@ function! s:oneoff.eval(expr, options) dict abort
 endfunction
 
 function! s:oneoff.message(...) abort
-  throw 'Fireplace: no live REPL connection'
+  throw s:no_repl
 endfunction
 
 let s:oneoff.piggieback = s:oneoff.message
@@ -730,7 +732,7 @@ function! fireplace#platform(...) abort
   if !empty(path) && fnamemodify(bufname(buf), ':e') =~# '^clj[cx]\=$'
     return extend({'_path': path, 'nr': bufnr(buf)}, s:oneoff)
   endif
-  throw 'Fireplace: :Connect to a REPL or install classpath.vim'
+  throw s:no_repl
 endfunction
 
 function! fireplace#client(...) abort
@@ -738,7 +740,7 @@ function! fireplace#client(...) abort
   let client = fireplace#platform(buf)
   if fnamemodify(bufname(buf), ':e') ==# 'cljs'
     if !has_key(client, 'transport')
-      throw 'Fireplace: no live REPL connection'
+      throw s:no_repl
     endif
     if empty(client.piggiebacks)
       let result = client.piggieback('')
@@ -768,7 +770,7 @@ function! fireplace#op_available(op) abort
     if has_key(client, 'transport')
       return client.transport.has_op(a:op)
     endif
-  catch /^Fireplace: :Connect to a REPL/
+  catch /^Fireplace: no live REPL connection/
   endtry
 endfunction
 
@@ -1511,7 +1513,7 @@ function! s:read_token(str, pos) abort
     let pos += len(match)
   endwhile
   if empty(match)
-    throw 'fireplace: Clojure parse error'
+    throw 'Fireplace: Clojure parse error'
   endif
   return [match, pos]
 endfunction
@@ -1545,7 +1547,7 @@ function! s:ns(...) abort
   if len(match)
     try
       return s:read(match, 0)[0]
-    catch /^fireplace: Clojure parse error$/
+    catch /^Fireplace: Clojure parse error$/
     endtry
   endif
   return []
