@@ -100,7 +100,7 @@ function! s:session_stacktrace_lines() dict abort
         \             ' (.getStackTrace *e))]' .
         \  ' (symbol' .
         \    ' (if (string? st)' .
-        \      ' (.replace st #"^(\S.*\n)*" "")' .
+        \      ' st' .
         \      ' (let [parts (if (= "class [Ljava.lang.StackTraceElement;" (str (type st)))' .
         \                    ' (map str st)' .
         \                    ' (seq (amap st idx ret (str (aget st idx)))))]' .
