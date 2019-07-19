@@ -80,6 +80,17 @@ endfunction
 let s:jar_contents = {}
 
 function! fireplace#jar_contents(path) abort
+  if !exists('s:pythonx')
+    let s:pythonx = 0
+    if has('pythonx')
+      try
+        pythonx import zipfile
+        let s:pythonx = 1
+      catch /^Vim(pythonx):Traceback/
+      endtry
+    endif
+  endif
+
   if !exists('s:zipinfo')
     if executable('zipinfo')
       let s:zipinfo = 'zipinfo -1 '
@@ -97,8 +108,7 @@ function! fireplace#jar_contents(path) abort
   if !has_key(s:jar_contents, a:path)
     if !filereadable(a:path)
       let s:jar_contents[a:path] = []
-    elseif has('pythonx') && !$FIREPLACE_NO_IF_PYTHON
-      pythonx import zipfile
+    elseif s:pythonx
       try
         let s:jar_contents[a:path] = pyxeval('zipfile.ZipFile(' . json_encode(a:path) . ').namelist()')
       catch /^Vim(let):Traceback/
