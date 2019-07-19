@@ -865,6 +865,23 @@ function! s:qfhistory() abort
   return list
 endfunction
 
+function! s:stacktrace() abort
+  let format_st =
+        \ '(let [st (or (when (= "#''cljs.core/str" (str #''str))' .
+        \               ' (.-stack *e))' .
+        \             ' (.getStackTrace *e))]' .
+        \  ' (symbol' .
+        \    ' (if (string? st)' .
+        \      ' st' .
+        \      ' (let [parts (if (= "class [Ljava.lang.StackTraceElement;" (str (type st)))' .
+        \                    ' (map str st)' .
+        \                    ' (seq (amap st idx ret (str (aget st idx)))))]' .
+        \        ' (apply str (interpose "\n" (cons *e parts)))))' .
+        \    '))'
+  let response = fireplace#message({'op': 'eval', 'code': format_st, 'ns': 'user', 'session': v:true}, v:t_dict)
+  return split(response.value[0], "\n", 1)
+endfunction
+
 function! fireplace#session_eval(expr, ...) abort
   if type(a:expr) ==# type({})
     let opts = copy(a:expr)
@@ -881,14 +898,15 @@ function! fireplace#session_eval(expr, ...) abort
     call remove(s:history, &history, -1)
   endif
 
-  if !empty(get(response, 'stacktrace', []))
+  if !empty(get(response, 'ex', ''))
     let nr = 0
     if has_key(s:qffiles, expand('%:p'))
       let nr = winbufnr(s:qffiles[expand('%:p')].buffer)
     endif
-    if nr != -1
-      call setloclist(nr, fireplace#quickfix_for(response.stacktrace))
-      call setloclist(nr, [], 'a', {'title': a:expr})
+    let stacktrace = s:stacktrace()
+    if nr != -1 && len(stacktrace)
+      call setloclist(nr, fireplace#quickfix_for(stacktrace[1:-1]))
+      call setloclist(nr, [], 'a', {'title': stacktrace[0]})
     endif
   endif
 

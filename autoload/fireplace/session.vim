@@ -79,10 +79,6 @@ function! s:session_eval(expr, ...) dict abort
     let self.ns = response.ns
   endif
 
-  if has_key(response, 'ex') && get(msg, 'session', self.id) ==# self.id
-    let response.stacktrace = call('s:session_stacktrace_lines', [], self)
-  endif
-
   if has_key(response, 'value')
     let response.value = response.value[-1]
   endif
@@ -91,23 +87,6 @@ function! s:session_eval(expr, ...) dict abort
     return response
   endif
   throw 'Fireplace: namespace not found: ' . get(msg, 'ns', 'user')
-endfunction
-
-function! s:session_stacktrace_lines() dict abort
-  let format_st =
-        \ '(let [st (or (when (= "#''cljs.core/str" (str #''str))' .
-        \               ' (.-stack *e))' .
-        \             ' (.getStackTrace *e))]' .
-        \  ' (symbol' .
-        \    ' (if (string? st)' .
-        \      ' st' .
-        \      ' (let [parts (if (= "class [Ljava.lang.StackTraceElement;" (str (type st)))' .
-        \                    ' (map str st)' .
-        \                    ' (seq (amap st idx ret (str (aget st idx)))))]' .
-        \        ' (apply str (interpose "\n" (cons *e parts)))))' .
-        \    '))'
-  let response = self.message({'op': 'eval', 'code': format_st, 'ns': 'user', 'session': ''}, v:t_dict)
-  return split(response.value[0], "\n", 1)
 endfunction
 
 function! s:close_on_first_done(transport, msg) abort
@@ -142,5 +121,4 @@ let s:session = {
       \ 'message': s:function('s:session_message'),
       \ 'eval': s:function('s:session_eval'),
       \ 'has_op': s:function('s:session_has_op'),
-      \ 'path': s:function('s:session_path'),
-      \ 'stacktrace_lines': s:function('s:session_stacktrace_lines')}
+      \ 'path': s:function('s:session_path')}
