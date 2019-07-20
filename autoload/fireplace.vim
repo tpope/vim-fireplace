@@ -406,7 +406,12 @@ function! s:piggieback.user_ns() abort
 endfunction
 
 function! s:piggieback.eval(expr, options) abort
-  return call(s:repl.eval, [a:expr, a:options], self)
+  let result = call(s:repl.eval, [a:expr, a:options], self)
+  if a:expr =~# '^\s*:cljs/quit\s*$'
+    let session = remove(self, 'session')
+    call session.close()
+  endif
+  return result
 endfunction
 
 function! s:repl.user_ns() abort
@@ -749,6 +754,7 @@ function! fireplace#client(...) abort
     if !has_key(client, 'transport')
       throw s:no_repl
     endif
+    call filter(client.piggiebacks, 'has_key(v:val, "session")')
     if empty(client.piggiebacks)
       let result = client.piggieback('')
       if has_key(result, 'ex')
