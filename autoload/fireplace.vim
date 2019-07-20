@@ -421,9 +421,6 @@ function! s:repl.eval(expr, options) dict abort
     endif
   endif
   let response = self.message(extend({'op': 'eval', 'code': a:expr}, a:options), v:t_dict)
-  if has_key(response, 'value')
-    let response.value = get(response.value, -1, '')
-  endif
   if index(response.status, 'namespace-not-found') < 0
     return response
   endif
@@ -570,7 +567,7 @@ function! s:spawning_eval(classpath, expr, ns) abort
         \   '  nil)')
   let captured = system(command)
   let result = {}
-  let result.value = join(readfile(s:oneoff_pr, 'b'), "\n")
+  let result.value = [join(readfile(s:oneoff_pr, 'b'), "\n")]
   let result.out   = join(readfile(s:oneoff_out, 'b'), "\n")
   let result.err   = join(readfile(s:oneoff_err, 'b'), "\n")
   let result.ex    = join(readfile(s:oneoff_ex, 'b'), "\n")
@@ -886,7 +883,7 @@ function! s:stacktrace() abort
   return split(response.value[0], "\n", 1)
 endfunction
 
-function! fireplace#session_eval(expr, ...) abort
+function! fireplace#eval(expr, ...) abort
   if type(a:expr) ==# type({})
     let opts = copy(a:expr)
     let code = get(opts, 'code', '')
@@ -926,27 +923,27 @@ function! fireplace#session_eval(expr, ...) abort
 
   if get(response, 'ex', '') !=# ''
     let err = 'Clojure: '.response.ex
-  elseif has_key(response, 'value')
-    return response.value
   else
-    return ''
+    return get(response, 'value', [])
   endif
   throw err
 endfunction
 
-function! fireplace#eval(...) abort
-  return call('fireplace#session_eval', a:000)
+function! fireplace#session_eval(...) abort
+  return get(call('fireplace#eval', a:000), -1, '')
 endfunction
 
 function! fireplace#echo_session_eval(expr, ...) abort
   try
-    let value = fireplace#session_eval(a:expr, s:add_pprint_opts(a:0 ? a:1 : {}))
-    if empty(value)
+    let values = fireplace#eval(a:expr, s:add_pprint_opts(a:0 ? a:1 : {}))
+    if empty(values)
       echohl WarningMsg
       echo "No return value"
       echohl NONE
     else
-      echo substitute(value, "\n*$", '', '')
+      for value in values
+        echo substitute(value, "\n*$", '', '')
+      endfor
     endif
   catch /^Clojure:/
   catch
@@ -976,7 +973,7 @@ function! fireplace#evalparse(expr, ...) abort
   if get(response, 'ex', '') !=# ''
     let err = 'Clojure: '.response.ex
   elseif has_key(response, 'value')
-    return empty(response.value) ? '' : eval(response.value)
+    return empty(response.value) ? '' : eval(response.value[0])
   else
     let err = 'fireplace.vim: No value in '.string(response)
   endif
@@ -1390,7 +1387,7 @@ function! s:Require(bang, echo, ns) abort
     echo cmd
   endif
   try
-    call fireplace#session_eval(cmd, {'ns': fireplace#client().user_ns()})
+    call fireplace#eval(cmd, {'ns': fireplace#client().user_ns()})
     return ''
   catch /^Clojure:.*/
     return ''
