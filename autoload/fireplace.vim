@@ -459,7 +459,7 @@ function! fireplace#register_port_file(portfile, ...) abort
             \ 'session': session,
             \ 'transport': transport}
       call s:register(session, a:0 ? a:1 : '')
-      return transport
+      return session
     catch /^Fireplace:/
       if &verbose
         echohl WarningMSG
