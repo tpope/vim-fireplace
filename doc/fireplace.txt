@@ -54,7 +54,9 @@ properly, and that not all operations are supported.
 :Piggieback             If no argument is given, :Piggieback defaults to a
                         to the ClojureScript environment specified in
                         *b:fireplace_cljs_repl* or *g:fireplace_cljs_repl* .
-                        This will also happen automatically on first eval in a
+                        If projectionist.vim is installed, the "cljsRepl"
+                        projectionist key is also checked.  This default will
+                        be invoked automatically on first eval in a
                         ClojureScript buffer if :Piggieback is not invoked
                         explicitly.  To restore the old behavior of defaulting
                         to Nashorn, add this line to your vimrc:

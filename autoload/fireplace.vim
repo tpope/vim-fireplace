@@ -359,8 +359,16 @@ function! s:repl.piggieback(arg, ...) abort
   endif
 
   let session = s:conn_try(get(self, 'session', get(self, 'connection', {})), 'clone')
-  if empty(a:arg)
-    let arg = get(b:, 'fireplace_cljs_repl', get(g:, 'fireplace_cljs_repl', ''))
+  if empty(a:arg) && exists('b:fireplace_cljs_repl')
+    let arg = b:fireplace_cljs_repl
+  elseif empty(a:arg)
+    let arg = ''
+    if exists('*projectionist#query_scalar')
+      let arg = get(projectionist#query_scalar('fireplaceCljsRepl') + projectionist#query_scalar('cljsRepl'), 0, '')
+    endif
+    if empty(arg)
+      let arg = get(g:, 'fireplace_cljs_repl', '')
+    endif
   elseif a:arg =~# '^\d\{1,5}$'
     if len(fireplace#findresource('weasel/repl/websocket.clj', self.path()))
       let arg = '(weasel.repl.websocket/repl-env :port ' . a:arg . ')'
