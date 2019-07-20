@@ -825,15 +825,11 @@ endfunction
 
 function! s:temp_response(response) abort
   let output = []
-  if get(a:response, 'err', '') !=# ''
-    let output = map(split(a:response.err, "\n"), '";!".v:val')
-  endif
-  if get(a:response, 'out', '') !=# ''
-    let output = map(split(a:response.out, "\n"), '";=".v:val')
-  endif
-  if has_key(a:response, 'value')
-    let output += split(a:response.value, "\n")
-  endif
+  call extend(output, map(split(get(a:response, 'err', ''), "\n"), '";!".v:val'))
+  call extend(output, map(split(get(a:response, 'out', ''), "\n"), '";=".v:val'))
+  for str in type(get(a:response, 'value')) == v:t_string ? [a:response.value] : get(a:response, 'value', [])
+    call extend(output, split(str, "\n"))
+  endfor
   let temp = tempname().'.clj'
   call writefile(output, temp)
   return temp
