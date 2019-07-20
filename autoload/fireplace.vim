@@ -427,6 +427,10 @@ function! s:repl.eval(expr, options) dict abort
     endif
   endif
   let response = self.message(extend({'op': 'eval', 'code': a:expr}, a:options), v:t_dict)
+  if has_key(self, 'piggiebacks') && get(response, 'ns', '') ==# 'cljs.user'
+    call insert(self.piggiebacks, extend({'session': self.session.clone(), 'transport': self.session.transport}, deepcopy(s:piggieback)))
+    call self.message({'op': 'eval', 'code': ':cljs/quit'}, v:t_dict)
+  endif
   if index(response.status, 'namespace-not-found') < 0
     return response
   endif
@@ -907,9 +911,24 @@ function! fireplace#eval(...) abort
     endif
   endfor
   let code = remove(opts, 'code')
-  let response = s:eval(code, opts)
 
-  call insert(s:history, {'buffer': bufnr(''), 'ext': s:impl_ns() ==# 'cljs' ? 'cljs' : 'clj', 'code': code, 'ns': fireplace#ns(), 'response': response})
+  let ns = fireplace#ns()
+  let platform = fireplace#platform()
+  if !has_key(opts, 'session') && has_key(platform, 'piggiebacks') && bufname(s:buf()) =~# '\.clj[csx]$' && code =~# '^\s*(\S\+/cljs-repl'
+    let client = platform
+    if ext ==# 'cljs'
+      let ns = 'user'
+    endif
+  else
+    let client = fireplace#client()
+  endif
+  if !has_key(opts, 'ns')
+    let opts.ns = ns
+  endif
+  let ext = client.user_ns() ==# 'cljs.user' ? 'cljs' : 'clj'
+  let response = client.eval(code, opts)
+
+  call insert(s:history, {'buffer': bufnr(''), 'ext': ext, 'code': code, 'ns': fireplace#ns(), 'response': response})
   if len(s:history) > &history
     call remove(s:history, &history, -1)
   endif
