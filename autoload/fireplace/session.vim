@@ -124,7 +124,7 @@ function! s:session_message(msg, ...) dict abort
   if !has_key(msg, 'session')
     let msg = copy(msg)
     let msg.session = self.id
-  elseif empty(msg.session) && msg.session isnot# v:none || msg.session is# v:true
+  elseif empty(msg.session) && msg.session isnot# v:null || msg.session is# v:true
     let session = self.clone(function('s:close_on_first_done', [self.transport]))
     let msg = copy(msg)
     let msg.session = session.id

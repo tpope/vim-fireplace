@@ -263,6 +263,7 @@ function! s:transport_message(request, ...) dict abort
   if empty(get(request, 'ns', 1))
     unlet request.ns
   endif
+  let message = {'id': request.id}
 
   if !a:0 || type(a:1) == v:t_number
     let msgs = []
@@ -274,7 +275,7 @@ function! s:transport_message(request, ...) dict abort
   endif
   call s:json_send(self.job, request)
   if !exists('msgs')
-    return {'id': request.id}
+    return message
   endif
   try
     while has_key(self.requests, request.id)
