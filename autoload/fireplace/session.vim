@@ -60,35 +60,6 @@ function! s:session_path() dict abort
   return self.transport._path
 endfunction
 
-function! s:session_eval(expr, ...) dict abort
-  let msg = {"op": "eval"}
-  let msg.code = a:expr
-  let options = a:0 ? a:1 : {}
-
-  for [k, v] in items(options)
-    let msg[tr(k, '_', '-')] = v
-  endfor
-
-  if !has_key(msg, 'ns') && has_key(self, 'ns')
-    let msg.ns = self.ns
-  endif
-
-  let response = self.message(msg, v:t_dict)
-
-  if has_key(response, 'ns') && empty(get(options, 'ns'))
-    let self.ns = response.ns
-  endif
-
-  if has_key(response, 'value')
-    let response.value = response.value[-1]
-  endif
-
-  if index(response.status, 'namespace-not-found') < 0
-    return response
-  endif
-  throw 'Fireplace: namespace not found: ' . get(msg, 'ns', 'user')
-endfunction
-
 function! s:close_on_first_done(transport, msg) abort
   if index(get(a:msg, 'status', []), 'done') >= 0
     call a:transport.message({'op': 'close', 'session': a:msg.session}, '')
@@ -119,6 +90,5 @@ let s:session = {
       \ 'close': s:function('s:session_close'),
       \ 'clone': s:function('s:session_clone'),
       \ 'message': s:function('s:session_message'),
-      \ 'eval': s:function('s:session_eval'),
       \ 'has_op': s:function('s:session_has_op'),
       \ 'path': s:function('s:session_path')}

@@ -382,7 +382,7 @@ function! s:repl.piggieback(arg, ...) abort
   endif
   let replns = matchstr(arg, '^(\=\zs[a-z][a-z0-9-]\+\.[a-z0-9.-]\+\ze/')
   if len(replns)
-    call session.eval("(require '" . replns . ")")
+    call session.message({'op': 'eval', 'code': "(require '" . replns . ")"}, v:t_dict)
   endif
   if arg =~# '^\S*repl-env\>' || arg !~# '('
     if len(fireplace#findresource('cemerick/piggieback.clj', self.path())) && !len(fireplace#findresource('cider/piggieback.clj', self.path()))
@@ -391,7 +391,7 @@ function! s:repl.piggieback(arg, ...) abort
       let arg = '(cider.piggieback/cljs-repl ' . arg . ')'
     endif
   endif
-  let response = session.eval(arg)
+  let response = session.message({'op': 'eval', 'code': arg}, v:t_dict)
 
   if empty(get(response, 'ex'))
     call insert(self.piggiebacks, extend({'session': session, 'transport': session.transport}, deepcopy(s:piggieback)))
@@ -420,7 +420,14 @@ function! s:repl.eval(expr, options) dict abort
       return error
     endif
   endif
-  return s:conn_try(get(self, 'session', get(self, 'connection', {})), 'eval', a:expr, a:options)
+  let response = self.message(extend({'op': 'eval', 'code': a:expr}, a:options), v:t_dict)
+  if has_key(response, 'value')
+    let response.value = get(response.value, -1, '')
+  endif
+  if index(response.status, 'namespace-not-found') < 0
+    return response
+  endif
+  throw 'Fireplace: namespace not found: ' . get(a:options, 'ns', 'user')
 endfunction
 
 function! s:register(session, ...) abort
