@@ -903,6 +903,7 @@ endfunction
 
 function! s:stacktrace() abort
   let format_st =
+        \ '(if-not *e (symbol "") ' .
         \ '(let [st (or (when (= "#''cljs.core/str" (str #''str))' .
         \               ' (.-stack *e))' .
         \             ' (.getStackTrace *e))]' .
@@ -913,9 +914,9 @@ function! s:stacktrace() abort
         \                    ' (map str st)' .
         \                    ' (seq (amap st idx ret (str (aget st idx)))))]' .
         \        ' (apply str (interpose "\n" (cons *e parts)))))' .
-        \    '))'
+        \    ')))'
   let response = fireplace#message({'op': 'eval', 'code': format_st, 'ns': 'user', 'session': v:true}, v:t_dict)
-  return split(response.value[0], "\n", 1)
+  return split(join(get(response, 'value', []), "\n"), "\n")
 endfunction
 
 function! fireplace#eval(...) abort
@@ -957,10 +958,9 @@ function! fireplace#eval(...) abort
     if has_key(s:qffiles, expand('%:p'))
       let nr = winbufnr(s:qffiles[expand('%:p')].buffer)
     endif
-    let stacktrace = s:stacktrace()
-    if nr != -1 && len(stacktrace)
-      call setloclist(nr, fireplace#quickfix_for(stacktrace[1:-1]))
-      call setloclist(nr, [], 'a', {'title': stacktrace[0]})
+    if nr != -1
+      call setloclist(nr, [{'text': 'Use :Stacktrace to see most recent error'}])
+      call setloclist(nr, [], 'a', {'title': code})
     endif
   endif
 
@@ -1259,6 +1259,20 @@ function! s:Eval(bang, line1, line2, count, args) abort
   return ''
 endfunction
 
+function! s:StacktraceCommand(bang, args) abort
+  try
+    let stacktrace = s:stacktrace()
+    if empty(stacktrace)
+      return 'echoerr ' . string('Fireplace: no error available')
+    endif
+    call setqflist(fireplace#quickfix_for(stacktrace[1:-1]))
+    call setqflist([], 'a', {'title': stacktrace[0]})
+    return 'copen'
+  catch /^Fireplace:/
+    return 'echoerr ' . string(v:exception)
+  endtry
+endfunction
+
 " If we call input() directly inside a try, and the user opens the command
 " line window and tries to switch out of it (such as with ctrl-w), Vim will
 " crash when the command line window closes.  Adding an indirect function call
@@ -1380,7 +1394,7 @@ endfunction
 function! s:set_up_eval() abort
   command! -buffer -bang -range=0 -nargs=? -complete=customlist,fireplace#eval_complete Eval :exe s:Eval(<bang>0, <line1>, <line2>, <count>, <q-args>)
   command! -buffer -bang -bar -count=1 Last exe s:Last(<bang>0, <count>)
-  command! -buffer -bang -bar Stacktrace lopen
+  command! -buffer -bang -bar -nargs=* Stacktrace exe s:StacktraceCommand(<bang>0, [<f-args>])
 
   if get(g:, 'fireplace_no_maps') | return | endif
 

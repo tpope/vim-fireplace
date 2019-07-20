@@ -205,8 +205,8 @@ cq{motion}              Bring up a |command-line-window| with text indicated
                         and newer entries with |:lprevious| and |:lnext|.
 
                                                 *fireplace-:Stacktrace*
-:Stacktrace             Use |:lopen| to open the location list with the most
-                        recent stacktrace.
+:Stacktrace             Retrieve the most recent Clojure error and load the
+                        stacktrace into the quickfix list.
 
 And insert mode:
 
