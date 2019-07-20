@@ -290,7 +290,7 @@ function! s:transport_message(request, ...) dict abort
   elseif a:1 is# v:t_dict
     return fireplace#transport#combine(msgs)
   else
-    return v:null
+    return message
   endif
 endfunction
 
