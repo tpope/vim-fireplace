@@ -890,16 +890,19 @@ function! s:stacktrace() abort
   return split(response.value[0], "\n", 1)
 endfunction
 
-function! fireplace#eval(expr, ...) abort
-  if type(a:expr) ==# type({})
-    let opts = copy(a:expr)
-    let code = get(opts, 'code', '')
-    unlet! opts.code
-  else
-    let code = a:expr
-    let opts = {}
-  endif
-  let response = s:eval(code, extend(opts, a:0 ? a:1 : {}))
+function! fireplace#eval(...) abort
+  let opts = {}
+  for arg in a:000
+    if type(arg) == v:t_string
+      let opts.code = arg
+    elseif type(arg) == v:t_dict
+      call extend(opts, arg)
+    elseif type(arg) == v:t_number
+      call s:add_pprint_opts(opts, arg)
+    endif
+  endfor
+  let code = remove(opts, 'code')
+  let response = s:eval(code, opts)
 
   call insert(s:history, {'buffer': bufnr(''), 'code': code, 'ns': fireplace#ns(), 'response': response})
   if len(s:history) > &history
@@ -940,9 +943,9 @@ function! fireplace#session_eval(...) abort
   return get(call('fireplace#eval', a:000), -1, '')
 endfunction
 
-function! fireplace#echo_session_eval(expr, ...) abort
+function! fireplace#echo_session_eval(...) abort
   try
-    let values = fireplace#eval(a:expr, s:add_pprint_opts(a:0 ? a:1 : {}))
+    let values = call('fireplace#eval', [&columns] + a:000)
     if empty(values)
       echohl WarningMsg
       echo "No return value"
@@ -1097,7 +1100,7 @@ function! s:filterop(type) abort
   try
     set selection=inclusive clipboard-=unnamed clipboard-=unnamedplus
     let opts = s:opfunc(a:type)
-    let @@ = matchstr(opts.code, '^\n\+') . fireplace#session_eval(opts) . matchstr(opts.code, '\n\+$')
+    let @@ = matchstr(opts.code, '^\n\+') . join(fireplace#eval(opts), ' ') . matchstr(opts.code, '\n\+$')
     if @@ !~# '^\n*$'
       normal! gvp
     endif
@@ -1127,11 +1130,14 @@ function! s:printop(type) abort
   call feedkeys("\<Plug>FireplacePrintLast")
 endfunction
 
-function! s:add_pprint_opts(msg) abort
+function! s:add_pprint_opts(msg, width) abort
   let a:msg['nrepl.middleware.print/stream?'] = 1
   if fireplace#op_available('info')
     let a:msg['nrepl.middleware.print/print'] = 'cider.nrepl.pprint/fipp-pprint'
-    let a:msg['nrepl.middleware.print/options'] = {'width': &columns}
+    let a:msg['nrepl.middleware.print/options'] = {}
+    if a:width > 0
+      let a:msg['nrepl.middleware.print/options'].width = a:width
+    endif
   endif
   return a:msg
 endfunction
@@ -1194,7 +1200,7 @@ function! s:Eval(bang, line1, line2, count, args) abort
   endif
   if a:bang
     try
-      let result = fireplace#session_eval(expr, options)
+      let result = split(join(map(fireplace#eval(expr, &textwidth, options), 'substitute(v:val, "\n*$", "", "")'), "\n"), "\n")
       if a:args !=# ''
         call append(a:line1, result)
         exe a:line1
@@ -1262,7 +1268,7 @@ function! s:recall() abort
     if input =~# '^(\=$'
       return ''
     else
-      return fireplace#session_eval(input)
+      return join(fireplace#eval(input), ' ')
     endif
   catch /^Clojure:/
     return ''
