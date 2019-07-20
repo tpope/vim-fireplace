@@ -360,14 +360,7 @@ function! s:repl.piggieback(arg, ...) abort
 
   let session = s:conn_try(get(self, 'session', get(self, 'connection', {})), 'clone')
   if empty(a:arg)
-    let arg = get(b:, 'fireplace_cljs_repl', get(g:, 'fireplace_cljs_repl'))
-    if arg is# 0
-      if len(fireplace#findresource('cljs/repl/nashorn.clj'))
-        let arg = '(cljs.repl.nashorn/repl-env)'
-      else
-        let arg = ''
-      endif
-    endif
+    let arg = get(b:, 'fireplace_cljs_repl', get(g:, 'fireplace_cljs_repl', ''))
   elseif a:arg =~# '^\d\{1,5}$'
     if len(fireplace#findresource('weasel/repl/websocket.clj', self.path()))
       let arg = '(weasel.repl.websocket/repl-env :port ' . a:arg . ')'
@@ -380,7 +373,7 @@ function! s:repl.piggieback(arg, ...) abort
   if empty(arg)
     throw 'Fireplace: no default ClojureScript REPL'
   endif
-  let replns = matchstr(arg, '^(\=\zs[a-z][a-z0-9-]\+\.[a-z0-9.-]\+\ze/')
+  let replns = matchstr(arg, '^\%((\w\+\.piggieback/cljs-repl \)\=(\=\zs[a-z][a-z0-9-]\+\.[a-z0-9.-]\+\ze/')
   if len(replns)
     call session.message({'op': 'eval', 'code': "(require '" . replns . ")"}, v:t_dict)
   endif

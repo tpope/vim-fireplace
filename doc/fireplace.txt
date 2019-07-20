@@ -52,13 +52,16 @@ properly, and that not all operations are supported.
                         environment.
 
 :Piggieback             If no argument is given, :Piggieback defaults to a
-                        Nashorn REPL environment.  This will also happen
-                        automatically on first eval in a ClojureScript buffer
-                        if :Piggieback is not invoked explicitly.  Override
-                        this default with *b:fireplace_cljs_repl* or
-                        *g:fireplace_cljs_repl* .  Use an empty string to
-                        always require an argument.
-
+                        to the ClojureScript environment specified in
+                        *b:fireplace_cljs_repl* or *g:fireplace_cljs_repl* .
+                        This will also happen automatically on first eval in a
+                        ClojureScript buffer if :Piggieback is not invoked
+                        explicitly.  To restore the old behavior of defaulting
+                        to Nashorn, add this line to your vimrc:
+>
+        let g:fireplace_cljs_repl =
+              \ '(cider.piggieback/cljs-repl (cljs.repl.nashorn/repl-env))'
+<
 :Piggieback!            Terminate the most recently created piggieback
                         session.
 
