@@ -654,7 +654,7 @@ function! fireplace#ns(...) abort
     return ns
   endif
   let path = s:buffer_path(buffer)
-  return s:to_ns(path ==# '' ? fireplace#client(buffer).user_ns() : path)
+  return s:to_ns(path ==# '' ? s:user_ns(buffer) : path)
 endfunction
 
 function! s:buf() abort
@@ -667,12 +667,20 @@ function! s:buf() abort
   endif
 endfunction
 
-function! s:repl_ns(...) abort
+function! s:impl_ns(...) abort
   let buf = a:0 ? a:1 : s:buf()
   if fnamemodify(bufname(buf), ':e') ==# 'cljs'
-    return 'cljs.repl'
+    return 'cljs'
   endif
-  return 'clojure.repl'
+  return 'clojure'
+endfunction
+
+function! s:repl_ns(...) abort
+  return s:impl_ns(a:0 ? a:1 : s:buf()) . '.repl'
+endfunction
+
+function! s:user_ns(...) abort
+  return s:impl_ns(a:0 ? a:1 : s:buf()) ==# 'cljs' ? 'cljs.user' : 'user'
 endfunction
 
 function! s:slash() abort
@@ -751,7 +759,7 @@ endfunction
 function! fireplace#client(...) abort
   let buf = a:0 ? a:1 : s:buf()
   let client = fireplace#platform(buf)
-  if fnamemodify(bufname(buf), ':e') ==# 'cljs'
+  if s:impl_ns(buf) ==# 'cljs'
     if !has_key(client, 'transport')
       throw s:no_repl
     endif
@@ -834,14 +842,14 @@ function! s:eval(expr, ...) abort
   return client.eval(a:expr, options)
 endfunction
 
-function! s:temp_response(response) abort
+function! s:temp_response(response, ext) abort
   let output = []
   call extend(output, map(split(get(a:response, 'err', ''), "\n"), '";!".v:val'))
   call extend(output, map(split(get(a:response, 'out', ''), "\n"), '";=".v:val'))
   for str in type(get(a:response, 'value')) == v:t_string ? [a:response.value] : get(a:response, 'value', [])
     call extend(output, split(str, "\n"))
   endfor
-  let temp = tempname().'.clj'
+  let temp = tempname() . '.' . a:ext
   call writefile(output, temp)
   return temp
 endfunction
@@ -856,7 +864,7 @@ endif
 
 function! s:qfentry(entry) abort
   if !has_key(a:entry, 'tempfile')
-    let a:entry.tempfile = s:temp_response(a:entry.response)
+    let a:entry.tempfile = s:temp_response(a:entry.response, get(a:entry, 'ext', 'clj'))
   endif
   let s:qffiles[a:entry.tempfile] = a:entry
   return {'filename': a:entry.tempfile, 'text': a:entry.code, 'type': 'E', 'module': a:entry.response.id}
@@ -865,9 +873,6 @@ endfunction
 function! s:qfhistory() abort
   let list = []
   for entry in reverse(s:history)
-    if !has_key(entry, 'tempfile')
-      let entry.tempfile = s:temp_response(entry.response)
-    endif
     call extend(list, [s:qfentry(entry)])
   endfor
   return list
@@ -904,7 +909,7 @@ function! fireplace#eval(...) abort
   let code = remove(opts, 'code')
   let response = s:eval(code, opts)
 
-  call insert(s:history, {'buffer': bufnr(''), 'code': code, 'ns': fireplace#ns(), 'response': response})
+  call insert(s:history, {'buffer': bufnr(''), 'ext': s:impl_ns() ==# 'cljs' ? 'cljs' : 'clj', 'code': code, 'ns': fireplace#ns(), 'response': response})
   if len(s:history) > &history
     call remove(s:history, &history, -1)
   endif
@@ -1391,7 +1396,7 @@ function! s:Require(bang, echo, ns) abort
   if &autowrite || &autowriteall
     silent! wall
   endif
-  if expand('%:e') ==# 'cljs'
+  if s:impl_ns() ==# 'cljs'
     let cmd = '(load-file '.s:str(tr(a:ns ==# '' ? fireplace#ns() : a:ns, '-.', '_/').'.cljs').')'
   else
     let cmd = ('(clojure.core/require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
@@ -1400,7 +1405,7 @@ function! s:Require(bang, echo, ns) abort
     echo cmd
   endif
   try
-    call fireplace#eval(cmd, {'ns': fireplace#client().user_ns()})
+    call fireplace#eval(cmd, {'ns': s:user_ns()})
     return ''
   catch /^Clojure:.*/
     return ''
@@ -1410,7 +1415,7 @@ endfunction
 function! s:set_up_require() abort
   command! -buffer -bar -bang -complete=customlist,fireplace#ns_complete -nargs=? Require :exe s:Require(<bang>0, 1, <q-args>)
 
-  call s:map('n', 'cpr', ":<C-R>=expand('%:e') ==# 'cljs' ? 'Require' : 'RunTests'<CR><CR>", '<silent>')
+  call s:map('n', 'cpr', ":<C-R>=<SID>impl_ns() ==# 'cljs' ? 'Require' : 'RunTests'<CR><CR>", '<silent>')
 endfunction
 
 " Section: Go to source
