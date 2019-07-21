@@ -676,7 +676,11 @@ function! s:impl_ns(...) abort
   let ext = fnamemodify(bufname(buf), ':e')
   if ext ==# 'cljs'
     return 'cljs'
-  elseif ext =~# '^clj[cx]$' && len(get(fireplace#platform(buf), 'piggiebacks', []))
+  elseif ext !~# '^clj[cx]$'
+    return 'clojure'
+  elseif !empty(get(b:, 'fireplace_cljc_platform', ''))
+    return b:fireplace_cljc_platform is# 'cljs' ? 'cljs' : 'clj'
+  elseif len(get(fireplace#platform(buf), 'piggiebacks', []))
     return 'cljs'
   else
     return 'clojure'
