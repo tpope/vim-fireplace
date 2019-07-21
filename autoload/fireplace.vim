@@ -673,10 +673,14 @@ endfunction
 
 function! s:impl_ns(...) abort
   let buf = a:0 ? a:1 : s:buf()
-  if fnamemodify(bufname(buf), ':e') ==# 'cljs'
+  let ext = fnamemodify(bufname(buf), ':e')
+  if ext ==# 'cljs'
     return 'cljs'
+  elseif ext =~# '^clj[cx]$' && len(get(fireplace#platform(buf), 'piggiebacks', []))
+    return 'cljs'
+  else
+    return 'clojure'
   endif
-  return 'clojure'
 endfunction
 
 function! s:repl_ns(...) abort
@@ -725,6 +729,13 @@ function! fireplace#path(...) abort
   return s:path_extract(getbufvar(buf, '&path'))
 endfunction
 
+function! s:remove_stale_cljs_sessions(platform) abort
+  if has_key(a:platform, 'piggiebacks')
+    call filter(a:platform.piggiebacks, 'has_key(v:val, "session")')
+  endif
+  return a:platform
+endfunction
+
 function! fireplace#platform(...) abort
   for [k, v] in items(s:repl_portfiles)
     if getftime(k) != v.time || !has_key(v, 'transport') || !v.transport.alive()
@@ -743,14 +754,14 @@ function! fireplace#platform(...) abort
   let previous = ""
   while root !=# previous
     if has_key(s:repl_paths, root)
-      return s:repl_paths[root]
+      return s:remove_stale_cljs_sessions(s:repl_paths[root])
     endif
     let previous = root
     let root = fnamemodify(root, ':h')
   endwhile
   for repl in s:repls
     if s:includes_file(fnamemodify(bufname(buf), ':p'), repl.path())
-      return repl
+      return s:remove_stale_cljs_sessions(repl)
     endif
   endfor
   let path = s:path_extract(getbufvar(buf, '&path'))
@@ -763,17 +774,19 @@ endfunction
 function! fireplace#client(...) abort
   let buf = a:0 ? a:1 : s:buf()
   let client = fireplace#platform(buf)
-  if s:impl_ns(buf) ==# 'cljs'
-    if !has_key(client, 'transport')
+  let ext = fnamemodify(bufname(buf), ':e')
+  if ext ==# 'cljs'
+    if !has_key(client, 'piggiebacks')
       throw s:no_repl
     endif
-    call filter(client.piggiebacks, 'has_key(v:val, "session")')
     if empty(client.piggiebacks)
       let result = client.piggieback('')
       if has_key(result, 'ex')
         throw 'Fireplace: '.result.ex
       endif
     endif
+    return client.piggiebacks[0]
+  elseif ext =~# '^clj[cx]$' && len(get(client, 'piggiebacks', []))
     return client.piggiebacks[0]
   endif
   return client
