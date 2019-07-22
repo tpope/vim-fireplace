@@ -747,9 +747,12 @@ function! fireplace#platform(...) abort
     endif
   endfor
 
-  let portfile = findfile('.nrepl-port', '.;')
-  if !empty(portfile)
-    call fireplace#register_port_file(portfile, fnamemodify(portfile, ':p:h'))
+  if !a:0
+    let portfile = findfile('.nrepl-port', '.;')
+    if !empty(portfile)
+      call fireplace#register_port_file(portfile, fnamemodify(portfile, ':p:h'))
+    endif
+    silent doautocmd User FireplacePreConnect
   endif
 
   let buf = a:0 ? a:1 : s:buf()
