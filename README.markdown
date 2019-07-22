@@ -6,8 +6,8 @@ Clojure.
 
 ## Installation
 
-First, set up [cider-nrepl][].  (If you skip this step, fireplace.vim will
-make do with eval, which mostly works.)
+First, set up [cider-nrepl][].  (If you skip this step, only a subset of
+functionality will be available.)
 
 Install Fireplace using your favorite package manager, or use Vim's built-in
 package support:
