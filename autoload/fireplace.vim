@@ -676,11 +676,11 @@ function! s:impl_ns(...) abort
   let ext = fnamemodify(bufname(buf), ':e')
   if ext ==# 'cljs'
     return 'cljs'
-  elseif ext !~# '^clj[cx]$'
+  elseif ext ==# 'clj'
     return 'clojure'
   elseif !empty(get(b:, 'fireplace_cljc_platform', ''))
     return b:fireplace_cljc_platform is# 'cljs' ? 'cljs' : 'clj'
-  elseif len(get(fireplace#platform(buf), 'piggiebacks', []))
+  elseif len(get(call('fireplace#platform', a:000), 'piggiebacks', []))
     return 'cljs'
   else
     return 'clojure'
@@ -751,7 +751,6 @@ function! fireplace#platform(...) abort
   if !empty(portfile)
     call fireplace#register_port_file(portfile, fnamemodify(portfile, ':p:h'))
   endif
-  silent doautocmd User FireplacePreConnect
 
   let buf = a:0 ? a:1 : s:buf()
   let root = simplify(fnamemodify(bufname(buf), ':p:s?[\/]$??'))
@@ -769,7 +768,7 @@ function! fireplace#platform(...) abort
     endif
   endfor
   let path = s:path_extract(getbufvar(buf, '&path'))
-  if !empty(path) && fnamemodify(bufname(buf), ':e') =~# '^clj[cx]\=$'
+  if !empty(path)
     return extend({'_path': path, 'nr': bufnr(buf)}, s:oneoff)
   endif
   throw s:no_repl
@@ -777,7 +776,7 @@ endfunction
 
 function! fireplace#client(...) abort
   let buf = a:0 ? a:1 : s:buf()
-  let client = fireplace#platform(buf)
+  let client = call('fireplace#platform', a:000)
   let ext = fnamemodify(bufname(buf), ':e')
   if ext ==# 'cljs'
     if !has_key(client, 'piggiebacks')
@@ -790,7 +789,7 @@ function! fireplace#client(...) abort
       endif
     endif
     return client.piggiebacks[0]
-  elseif ext =~# '^clj[cx]$' && len(get(client, 'piggiebacks', []))
+  elseif ext !=# 'clj' && len(get(client, 'piggiebacks', []))
     return client.piggiebacks[0]
   endif
   return client
