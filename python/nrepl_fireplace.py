@@ -1,6 +1,5 @@
 import json
 import os
-import select
 import socket
 import sys
 import traceback
@@ -109,10 +108,6 @@ class Connection:
             self.connected = True
         return self._socket
 
-    def poll(self):
-        if self.keepalive_file and not os.path.exists(self.keepalive_file):
-            os._exit(0)
-
     def close(self):
         if self.connected:
             return self.socket().close()
@@ -130,8 +125,6 @@ class Connection:
 
     def receive(self, char=None):
         f = self.socket().makefile('rb', False)
-        while len(select.select([f], [], [], 0.1)[0]) == 0:
-            self.poll()
         try:
             return bdecode(f)
         finally:
@@ -182,9 +175,9 @@ class Connection:
             self.notify(["exception", quickfix(*sys.exc_info())])
             os._exit(3)
 
-def main(host = None, port = None, keepalive = None, *args):
+def main(host = None, port = None, *args):
     try:
-        conn = Connection(host, port, keepalive)
+        conn = Connection(host, port)
         try:
             conn.tunnel()
         finally:

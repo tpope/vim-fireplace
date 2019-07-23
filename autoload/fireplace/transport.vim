@@ -11,11 +11,6 @@ if !exists('g:fireplace_python_executable')
   let g:fireplace_python_executable = executable('python3') ? 'python3' : 'python'
 endif
 
-if !exists('s:keepalive')
-  let s:keepalive = tempname()
-  call writefile([getpid()], s:keepalive)
-endif
-
 if !exists('s:id')
   let s:vim_id = 'fireplace-' . hostname() . '-' . localtime()
   let s:id = 0
@@ -185,8 +180,7 @@ function! fireplace#transport#connect(arg) abort
   let command = [g:fireplace_python_executable,
         \ s:python_dir.'/nrepl_fireplace.py',
         \ host,
-        \ port,
-        \ s:keepalive]
+        \ port]
   let transport = deepcopy(s:transport)
   let transport.url = url
   let transport.state = {}
