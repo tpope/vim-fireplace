@@ -1850,46 +1850,6 @@ function! s:inputlist(label, entries) abort
   endif
 endfunction
 
-function! s:Doc(symbol) abort
-  let info = fireplace#info(a:symbol)
-  if has_key(info, 'ns') && has_key(info, 'name')
-    echo info.ns . '/' . info.name
-  elseif has_key(info, 'ns')
-    echo info.ns
-  elseif has_key(info, 'name')
-    echo info.name
-  endif
-
-  if get(info, 'forms-str', 'nil') !=# 'nil'
-    echo info['forms-str']
-  endif
-
-  if get(info, 'arglists-str', '') !=# ''
-    echo info['arglists-str']
-  endif
-
-  if get(info, 'special-form', 'nil') !=# 'nil'
-    echo "Special Form"
-
-    if has_key(info, 'url')
-      if !empty(get(info, 'url', ''))
-        echo '  Please see http://clojure.org/' . info.url
-      else
-        echo '  Please see http://clojure.org/special_forms#' . info.name
-      endif
-    endif
-
-  elseif get(info, 'macro', '') !=# ''
-    echo "Macro"
-  endif
-
-  if !empty(get(info, 'doc', ''))
-    echo '  ' . info.doc
-  endif
-
-  return ''
-endfunction
-
 function! s:K() abort
   let word = s:cword()
   let java_candidate = matchstr(word, '^\%(\w\+\.\)*\u\l[[:alnum:]$]*\ze\%(\.\|\/\w\+\)\=$')
@@ -1908,7 +1868,7 @@ nnoremap <Plug>FireplaceSource :Source <C-R>=<SID>cword()<CR><CR>
 function! s:set_up_doc() abort
   command! -buffer -nargs=1 FindDoc :exe s:Lookup(s:repl_ns(), 'find-doc', printf('#"%s"', <q-args>))
   command! -buffer -bar -nargs=1 Javadoc :exe s:Lookup('clojure.java.javadoc', 'javadoc', <q-args>)
-  command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Doc     :exe s:Doc(<q-args>)
+  command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Doc     :exe s:Lookup(s:repl_ns(), 'doc', <q-args>)
   command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Source  :exe s:Lookup(s:repl_ns(), 'source', <q-args>)
   command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Dlist   :exe s:Lookup(s:repl_ns(), 'source', <q-args>)
   command! -buffer -bar -nargs=1 -complete=customlist,fireplace#eval_complete Dsearch :exe s:Lookup(s:repl_ns(), 'source', <q-args>)
