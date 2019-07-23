@@ -6,7 +6,7 @@ if exists('g:autoloaded_fireplace_transport')
 endif
 let g:autoloaded_fireplace_transport = 1
 
-let s:python_dir = fnamemodify(expand("<sfile>"), ':p:h:h:h') . '/python'
+let s:python_dir = fnamemodify(expand("<sfile>"), ':p:h:h:h') . '/pythonx'
 if !exists('g:fireplace_python_executable')
   let g:fireplace_python_executable = executable('python3') ? 'python3' : 'python'
 endif
@@ -178,7 +178,7 @@ function! fireplace#transport#connect(arg) abort
     return s:urls[url].transport
   endif
   let command = [g:fireplace_python_executable,
-        \ s:python_dir.'/nrepl_fireplace.py',
+        \ s:python_dir.'/fireplace.py',
         \ url]
   let transport = deepcopy(s:transport)
   let transport.url = url
