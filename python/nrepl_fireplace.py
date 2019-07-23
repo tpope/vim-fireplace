@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import socket
 import sys
 import traceback
@@ -177,6 +178,10 @@ class Connection:
 
 def main(host = None, port = None, *args):
     try:
+        match = re.search('//([^:/@]+):(\d+)', host)
+        if match:
+            host = match.groups()[0]
+            port = match.groups()[1]
         conn = Connection(host, port)
         try:
             conn.tunnel()

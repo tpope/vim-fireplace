@@ -163,7 +163,7 @@ augroup fireplace_transport
 augroup END
 
 function! fireplace#transport#connect(arg) abort
-  let arg = substitute(a:arg, '^nrepl://', '', '')
+  let arg = substitute(substitute(a:arg, '#.*', '', ''), '^nrepl://', '', '')
   if arg =~# '^\d\+$'
     let host = 'localhost'
     let port = arg
@@ -179,8 +179,7 @@ function! fireplace#transport#connect(arg) abort
   endif
   let command = [g:fireplace_python_executable,
         \ s:python_dir.'/nrepl_fireplace.py',
-        \ host,
-        \ port]
+        \ url]
   let transport = deepcopy(s:transport)
   let transport.url = url
   let transport.state = {}
