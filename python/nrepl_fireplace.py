@@ -4,16 +4,7 @@ import select
 import socket
 import sys
 import traceback
-import uuid
 import threading
-
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
-
-def noop():
-    pass
 
 def bencode(data, f):
     if isinstance(data, list):
@@ -85,14 +76,6 @@ def bdecode(f, char=None):
     else:
         raise TypeError("unexpected type "+char.decode('UTF-8')+" in bencode data")
 
-def decode_string(s):
-    if s[0] in ['{', '[', '"']:
-        return json.loads(s)
-    elif s[0] in ['d', 'l', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
-        return bdecode(StringIO(s))
-    else:
-        raise TypeError("bad json/bencode argument " + s)
-
 def quickfix(t, e, tb):
     items = []
     stack = traceback.extract_tb(tb)
@@ -110,8 +93,7 @@ def quickfix(t, e, tb):
     return {'title': str(e), 'items': items}
 
 class Connection:
-    def __init__(self, host, port, custom_poll=noop, keepalive_file=None):
-        self.custom_poll = custom_poll
+    def __init__(self, host, port, keepalive_file=None):
         self.keepalive_file = keepalive_file
         self.connected = False
         self.host = host
@@ -128,7 +110,6 @@ class Connection:
         return self._socket
 
     def poll(self):
-        self.custom_poll()
         if self.keepalive_file and not os.path.exists(self.keepalive_file):
             os._exit(0)
 
@@ -155,24 +136,6 @@ class Connection:
             return bdecode(f)
         finally:
             f.close()
-
-    def call(self, payload, terminators = ['done'], selectors = None):
-        if selectors is None:
-            payload.setdefault("id", str(uuid.uuid1()))
-            selectors = {'id': payload['id']}
-        self.send(payload)
-        responses = []
-        while True:
-            response = self.receive()
-            for key in selectors:
-                if response[key] != selectors[key]:
-                    continue
-            responses.append(response)
-            if 'status' in response and set(terminators) & set(response['status']):
-                return responses
-
-    def message(self, payload):
-        return self.call(payload)
 
     def notify(self, data, i = 0):
         json.dump([i, data], sys.stdout)
@@ -219,18 +182,13 @@ class Connection:
             self.notify(["exception", quickfix(*sys.exc_info())])
             os._exit(3)
 
-def dispatch(host, port, poll, keepalive, command, *args):
-    conn = Connection(host, port, poll, keepalive)
+def main(host = None, port = None, keepalive = None, *args):
     try:
-        return getattr(conn, command)(*args)
-    finally:
-        conn.close()
-
-def main(host = None, port = None, keepalive = None, command = None, *args):
-    try:
-        result = dispatch(host, port, noop, keepalive, command, *[decode_string(arg) for arg in args])
-        if result is not None:
-            json.dump(result, sys.stdout)
+        conn = Connection(host, port, keepalive)
+        try:
+            conn.tunnel()
+        finally:
+            conn.close()
     except Exception:
         json.dump([0, ["exception", quickfix(*sys.exc_info())]], sys.stdout)
         exit(1)

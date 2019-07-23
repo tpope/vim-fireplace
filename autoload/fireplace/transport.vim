@@ -186,8 +186,7 @@ function! fireplace#transport#connect(arg) abort
         \ s:python_dir.'/nrepl_fireplace.py',
         \ host,
         \ port,
-        \ s:keepalive,
-        \ 'tunnel']
+        \ s:keepalive]
   let transport = deepcopy(s:transport)
   let transport.url = url
   let transport.state = {}
