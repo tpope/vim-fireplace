@@ -812,14 +812,33 @@ function! fireplace#message(payload, ...) abort
   throw 'Fireplace: change fireplace#message({...}) to fireplace#message({...}, v:t_list)'
 endfunction
 
-function! fireplace#op_available(op) abort
+function! s:op_missing_error(op, ...) abort
   try
     let client = fireplace#platform()
-    if has_key(client, 'transport')
-      return client.transport.has_op(a:op)
+    if !has_key(client, 'transport')
+      return s:no_repl
+    elseif client.transport.has_op(a:op)
+      return ''
+    elseif a:0
+      return 'Fireplace: no ' . string(a:op) . ' nREPL op available (is ' . a:1 . ' installed?)'
+    else
+      return 'Fireplace: no ' . string(a:op) . ' nREPL op available'
     endif
   catch /^Fireplace: no live REPL connection/
+    return s:no_repl
   endtry
+endfunction
+
+function! s:op_guard(...) abort
+  let err = call('s:op_missing_error', a:000)
+  if empty(err)
+    return ''
+  endif
+  return 'return ' . string('echoerr ' . string(err))
+endfunction
+
+function! fireplace#op_available(op) abort
+  return empty(s:op_missing_error(a:op))
 endfunction
 
 function! fireplace#findresource(resource, ...) abort
@@ -1764,13 +1783,12 @@ endfunction
 
 function! s:SpecForm(kw) abort
   let op = "spec-form"
+  exe s:op_guard(op, 'cider-nrepl')
   try
     let symbol = fireplace#qualify_keyword(a:kw)
     let response = fireplace#message({'op': op, 'spec-name': symbol}, v:t_dict)
     if !empty(get(response, op))
-      echo s:pr(get(response, op))
-    elseif has_key(response, 'op')
-      return 'echoerr ' . string('Fireplace: no nREPL op available for ' . op)
+      echo s:pr(response.op)
     endif
   catch /^Fireplace:/
     return 'echoerr ' . string(v:exception)
@@ -1780,14 +1798,11 @@ endfunction
 
 function! s:SpecExample(kw) abort
   let op = "spec-example"
+  exe s:op_guard(op, 'cider-nrepl')
   try
     let symbol = fireplace#qualify_keyword(a:kw)
     let response = fireplace#message({'op': op, 'spec-name': symbol}, v:t_dict)
-    if !empty(get(response, op))
-      echo get(response, op)
-    elseif has_key(response, 'op')
-      return 'echoerr ' . string('Fireplace: no nREPL op available for ' . op)
-    endif
+    echo get(response, op, '')
   catch /^Fireplace:/
     return 'echoerr ' . string(v:exception)
   endtry
