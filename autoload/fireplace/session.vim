@@ -19,7 +19,7 @@ function! fireplace#session#for(transport, ...) abort
   let session.transport = a:transport
   let session.id = a:transport.message({'op': 'clone', 'session': a:0 ? a:1 : ''}, v:t_dict)['new-session']
   let session.session = session.id
-  let session.url = a:transport.url . '/#' . session.id
+  let session.url = a:transport.url . '#' . session.id
   let a:transport.sessions[session.id] = function('s:session_callback', [], session)
   return session
 endfunction
