@@ -127,8 +127,12 @@ endfunction
 
 function! fireplace#eval_complete(A, L, P) abort
   let prefix = matchstr(a:A, '\%(.* \|^\)\%(#\=[\[{('']\)*')
-  let keyword = a:A[strlen(prefix) : -1]
-  return sort(map(fireplace#omnicomplete(0, keyword, 1), 'prefix . v:val.word'))
+  let keyword = strpart(a:A, strlen(prefix))
+  try
+    return sort(map(fireplace#omnicomplete(-1, keyword, ''), 'prefix . v:val.word'))
+  catch /^Fireplace:/
+    return []
+  endtry
 endfunction
 
 function! fireplace#ns_complete(A, L, P) abort
@@ -226,61 +230,29 @@ function! s:complete_add(msg) abort
 endfunction
 
 function! fireplace#omnicomplete(findstart, base, ...) abort
-  if a:findstart
-    let line = getline('.')[0 : col('.')-2]
+  if a:findstart is# 1
+    let line = strpart(getline('.'), 0, col('.') - 1)
     return col('.') - strlen(matchstr(line, '\k\+$')) - 1
   else
-    try
-
-      if fireplace#op_available('complete')
-        let request = {
-              \ 'op': 'complete',
-              \ 'symbol': a:base,
-              \ 'extra-metadata': ['arglists', 'doc'],
-              \ 'context': a:0 ? '' : s:get_complete_context()
-              \ }
-        if a:0
-          return s:complete_extract(fireplace#message(request, v:t_dict))
-        endif
-        let id = fireplace#message(request, function('s:complete_add')).id
-        while !fireplace#client().done(id)
-          call complete_check()
-          sleep 1m
-        endwhile
-        return []
-      endif
-
-      let omnifier = '(fn [[k v]] (let [{:keys [arglists] :as m} (meta v)]' .
-            \ ' {:word k :menu (pr-str (or arglists (symbol ""))) :info (str (when arglists (str arglists "\n")) "  " (:doc m)) :kind (if arglists "f" "v")}))'
-
-      let ns = fireplace#ns()
-
-      let [aliases, namespaces, maps] = fireplace#evalparse(
-            \ '[(ns-aliases '.s:qsym(ns).') (all-ns) '.
-            \ '(sort-by :word (map '.omnifier.' (ns-map '.s:qsym(ns).')))]')
-
-      if a:base =~# '^[^/]*/[^/]*$'
-        let ns = matchstr(a:base, '^.*\ze/')
-        let prefix = ns . '/'
-        let ns = get(aliases, ns, ns)
-        let keyword = matchstr(a:base, '.*/\zs.*')
-        let results = fireplace#evalparse(
-              \ '(sort-by :word (map '.omnifier.' (ns-publics '.s:qsym(ns).')))')
-        for r in results
-          let r.word = prefix . r.word
-        endfor
-      else
-        let keyword = a:base
-        let results = maps + map(sort(keys(aliases) + namespaces), '{"word": v:val."/", "kind": "t", "info": ""}')
-      endif
-      if type(results) == type([])
-        return filter(results, 'a:base ==# "" || a:base ==# v:val.word[0 : strlen(a:base)-1]')
-      else
-        return []
-      endif
-    catch /.*/
-      return []
-    endtry
+    let err = s:op_missing_error('complete', 'cider-nrepl')
+    if len(err)
+      throw err
+    endif
+    let request = {
+          \ 'op': 'complete',
+          \ 'symbol': a:base,
+          \ 'extra-metadata': ['arglists', 'doc'],
+          \ 'context': a:0 ? a:1 : s:get_complete_context()
+          \ }
+    if a:findstart isnot# 0
+      return s:complete_extract(fireplace#message(request, v:t_dict))
+    endif
+    let id = fireplace#message(request, function('s:complete_add')).id
+    while !fireplace#client().done(id)
+      call complete_check()
+      sleep 1m
+    endwhile
+    return []
   endif
 endfunction
 
