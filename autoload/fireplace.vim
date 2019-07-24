@@ -275,6 +275,10 @@ if !exists('s:repls')
   let s:repl_portfiles = {}
 endif
 
+function! s:repl.Session() dict abort
+  return self.session
+endfunction
+
 function! s:repl.path() dict abort
   return self.transport._path
 endfunction
@@ -283,8 +287,11 @@ function! s:repl.message(payload, ...) dict abort
   if has_key(a:payload, 'ns') && a:payload.ns !=# self.user_ns()
     let ignored_error = self.preload(a:payload.ns)
   endif
-  return call(self.session.message, [a:payload] + a:000, self.session)
+  let session = self.Session()
+  return call(session.message, [a:payload] + a:000, session)
 endfunction
+
+let s:repl.Message = s:repl.message
 
 function! s:repl.done(id) dict abort
   if type(a:id) == v:t_string
@@ -319,21 +326,18 @@ endfunction
 
 let s:piggieback = copy(s:repl)
 
-function! s:repl.piggieback(arg, ...) abort
+function! s:piggieback.Piggieback(arg, ...) abort
   if a:0 && a:1
-    if len(self.piggiebacks)
-      let piggieback = remove(self.piggiebacks, 0)
-      call piggieback.message({'op': 'eval', 'code': ':cljs/quit'}, v:t_list)
-      call piggieback.session.close()
+    if len(self.sessions)
+      let session = remove(self.sessions, 0)
+      call session.message({'op': 'eval', 'code': ':cljs/quit'}, v:t_list)
+      call session.close()
     endif
     return {}
   endif
-
-  let session = self.session.clone()
-  if empty(a:arg) && exists('b:fireplace_cljs_repl')
-    let arg = b:fireplace_cljs_repl
-  elseif empty(a:arg)
-    let arg = get(g:, 'fireplace_cljs_repl', '')
+  let session = self.clj_session.clone()
+  if empty(a:arg)
+    let arg = get(self, 'default', '')
   elseif a:arg =~# '^\d\{1,5}$'
     if len(fireplace#findresource('weasel/repl/websocket.clj', self.path()))
       let arg = '(weasel.repl.websocket/repl-env :port ' . a:arg . ')'
@@ -358,13 +362,23 @@ function! s:repl.piggieback(arg, ...) abort
     endif
   endif
   let response = session.message({'op': 'eval', 'code': arg}, v:t_dict)
-
   if empty(get(response, 'ex'))
-    call insert(self.piggiebacks, extend({'session': session, 'transport': session.transport}, deepcopy(s:piggieback)))
+    call insert(self.sessions, session)
     return {}
   endif
   call session.close()
   return response
+endfunction
+
+function! s:piggieback.Session() abort
+  if len(self.sessions)
+    return self.sessions[0]
+  endif
+  let result = self.Piggieback('')
+  if has_key(result, 'ex')
+    throw 'Fireplace: ' . substitute(get(result, 'err', result.ex), "\n$", '', '')
+  endif
+  return self.sessions[0]
 endfunction
 
 function! s:piggieback.user_ns() abort
@@ -374,7 +388,7 @@ endfunction
 function! s:piggieback.eval(expr, options) abort
   let result = call(s:repl.eval, [a:expr, a:options], self)
   if a:expr =~# '^\s*:cljs/quit\s*$'
-    let session = remove(self, 'session')
+    let session = remove(self.sessions, 0)
     call session.close()
   endif
   return result
@@ -392,18 +406,18 @@ function! s:repl.eval(expr, options) dict abort
     endif
   endif
   let response = self.message(extend({'op': 'eval', 'code': a:expr}, a:options), v:t_dict)
-  if has_key(self, 'piggiebacks') && get(response, 'ns', '') ==# 'cljs.user'
-    call insert(self.piggiebacks, extend({'session': self.session.clone(), 'transport': self.transport}, deepcopy(s:piggieback)))
+  if has_key(self, 'cljs_sessions') && get(response, 'ns', '') ==# 'cljs.user'
+    call insert(self.cljs_sessions, self.Session().clone())
     call self.message({'op': 'eval', 'code': ':cljs/quit'}, v:t_dict)
   endif
   if index(response.status, 'namespace-not-found') < 0
     return response
   endif
-  throw 'Fireplace: namespace not found: ' . get(a:options, 'ns', 'user')
+  throw 'Fireplace: namespace not found: ' . get(a:options, 'ns', self.user_ns())
 endfunction
 
 function! s:register(session, ...) abort
-  call insert(s:repls, extend({'session': a:session, 'transport': a:session.transport, 'piggiebacks': []}, deepcopy(s:repl)))
+  call insert(s:repls, extend({'session': a:session, 'transport': a:session.transport, 'cljs_sessions': []}, deepcopy(s:repl)))
   if a:0 && a:1 !=# ''
     let s:repl_paths[a:1] = s:repls[0]
   endif
@@ -506,7 +520,7 @@ endfunction
 
 function! s:piggieback(count, arg, remove) abort
   try
-    let response = fireplace#clj().piggieback(a:arg, a:remove)
+    let response = fireplace#cljs().Piggieback(a:arg, a:remove)
     call s:output_response(response)
     return ''
   catch /^Fireplace:/
@@ -594,11 +608,12 @@ function! s:oneoff.eval(expr, options) dict abort
   return result
 endfunction
 
-function! s:oneoff.message(...) abort
+function! s:oneoff.Session(...) abort
   throw s:no_repl
 endfunction
 
-let s:oneoff.piggieback = s:oneoff.message
+let s:oneoff.message = s:oneoff.Session
+let s:oneoff.Message = s:oneoff.Session
 
 " Section: Client
 
@@ -656,7 +671,7 @@ function! s:impl_ns(...) abort
     return 'clojure'
   elseif !empty(get(b:, 'fireplace_cljc_platform', ''))
     return b:fireplace_cljc_platform is# 'cljs' ? 'cljs' : 'clj'
-  elseif len(get(call('fireplace#clj', a:000), 'piggiebacks', []))
+  elseif len(get(call('fireplace#clj', a:000), 'cljs_sessions', []))
     return 'cljs'
   else
     return 'clojure'
@@ -709,13 +724,6 @@ function! fireplace#path(...) abort
   return s:path_extract(getbufvar(buf, '&path'))
 endfunction
 
-function! s:remove_stale_cljs_sessions(platform) abort
-  if has_key(a:platform, 'piggiebacks')
-    call filter(a:platform.piggiebacks, 'has_key(v:val, "session")')
-  endif
-  return a:platform
-endfunction
-
 function! fireplace#clj(...) abort
   for [k, v] in items(s:repl_portfiles)
     if getftime(k) != v.time || !has_key(v, 'transport') || !v.transport.alive()
@@ -736,14 +744,14 @@ function! fireplace#clj(...) abort
   let previous = ""
   while root !=# previous
     if has_key(s:repl_paths, root)
-      return s:remove_stale_cljs_sessions(s:repl_paths[root])
+      return s:repl_paths[root]
     endif
     let previous = root
     let root = fnamemodify(root, ':h')
   endwhile
   for repl in s:repls
     if s:includes_file(fnamemodify(bufname(buf), ':p'), repl.path())
-      return s:remove_stale_cljs_sessions(repl)
+      return repl
     endif
   endfor
   let path = s:path_extract(getbufvar(buf, '&path'))
@@ -759,17 +767,13 @@ endfunction
 
 function! fireplace#cljs(...) abort
   let client = call('fireplace#clj', a:000)
-  if !has_key(client, 'piggiebacks')
+  if !has_key(client, 'cljs_sessions')
     throw s:no_repl
   endif
-  if len(client.piggiebacks)
-    return client.piggiebacks[0]
-  endif
-  let result = client.piggieback('')
-  if has_key(result, 'ex')
-    throw 'Fireplace: ' . substitute(get(result, 'err', result.ex), "\n$", '', '')
-  endif
-  return client.piggiebacks[0]
+  let buf = bufnr(a:0 ? a:1 : s:buf())
+  let default = getbufvar(buf, 'fireplace_cljs_repl', get(g:, 'fireplace_cljs_repl', ''))
+  let cljs = extend({'default': default, 'transport': client.transport, 'sessions': client.cljs_sessions, 'clj_session': client.session}, s:piggieback)
+  return cljs
 endfunction
 
 function! fireplace#client(...) abort
@@ -779,8 +783,8 @@ function! fireplace#client(...) abort
     return call('fireplace#cljs', a:000)
   endif
   let client = call('fireplace#clj', a:000)
-  if ext !=# 'clj' && len(get(client, 'piggiebacks', []))
-    return client.piggiebacks[0]
+  if ext !=# 'clj' && len(get(client, 'cljs_sessions', []))
+    return call('fireplace#cljs', a:000)
   endif
   return client
 endfunction
@@ -940,7 +944,7 @@ function! fireplace#eval(...) abort
 
   let ns = fireplace#ns()
   let platform = fireplace#clj()
-  if !has_key(opts, 'session') && has_key(platform, 'piggiebacks') && bufname(s:buf()) =~# '\.clj[csx]$' && code =~# '^\s*(\S\+/cljs-repl'
+  if !has_key(opts, 'session') && has_key(platform, 'cljs_sessions') && bufname(s:buf()) =~# '\.clj[csx]$' && code =~# '^\s*(\S\+/cljs-repl'
     let client = platform
     if ext ==# 'cljs'
       let ns = 'user'
