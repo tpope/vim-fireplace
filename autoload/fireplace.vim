@@ -506,7 +506,7 @@ endfunction
 
 function! s:piggieback(count, arg, remove) abort
   try
-    let response = fireplace#platform().piggieback(a:arg, a:remove)
+    let response = fireplace#clj().piggieback(a:arg, a:remove)
     call s:output_response(response)
     return ''
   catch /^Fireplace:/
@@ -656,7 +656,7 @@ function! s:impl_ns(...) abort
     return 'clojure'
   elseif !empty(get(b:, 'fireplace_cljc_platform', ''))
     return b:fireplace_cljc_platform is# 'cljs' ? 'cljs' : 'clj'
-  elseif len(get(call('fireplace#platform', a:000), 'piggiebacks', []))
+  elseif len(get(call('fireplace#clj', a:000), 'piggiebacks', []))
     return 'cljs'
   else
     return 'clojure'
@@ -716,7 +716,7 @@ function! s:remove_stale_cljs_sessions(platform) abort
   return a:platform
 endfunction
 
-function! fireplace#platform(...) abort
+function! fireplace#clj(...) abort
   for [k, v] in items(s:repl_portfiles)
     if getftime(k) != v.time || !has_key(v, 'transport') || !v.transport.alive()
       call s:unregister(v)
@@ -753,22 +753,33 @@ function! fireplace#platform(...) abort
   throw s:no_repl
 endfunction
 
+function! fireplace#platform(...) abort
+  return call('fireplace#clj', a:000)
+endfunction
+
+function! fireplace#cljs(...) abort
+  let client = call('fireplace#clj', a:000)
+  if !has_key(client, 'piggiebacks')
+    throw s:no_repl
+  endif
+  if len(client.piggiebacks)
+    return client.piggiebacks[0]
+  endif
+  let result = client.piggieback('')
+  if has_key(result, 'ex')
+    throw 'Fireplace: ' . substitute(get(result, 'err', result.ex), "\n$", '', '')
+  endif
+  return client.piggiebacks[0]
+endfunction
+
 function! fireplace#client(...) abort
   let buf = a:0 ? a:1 : s:buf()
-  let client = call('fireplace#platform', a:000)
   let ext = fnamemodify(bufname(buf), ':e')
   if ext ==# 'cljs'
-    if !has_key(client, 'piggiebacks')
-      throw s:no_repl
-    endif
-    if empty(client.piggiebacks)
-      let result = client.piggieback('')
-      if has_key(result, 'ex')
-        throw 'Fireplace: '.result.ex
-      endif
-    endif
-    return client.piggiebacks[0]
-  elseif ext !=# 'clj' && len(get(client, 'piggiebacks', []))
+    return call('fireplace#cljs', a:000)
+  endif
+  let client = call('fireplace#clj', a:000)
+  if ext !=# 'clj' && len(get(client, 'piggiebacks', []))
     return client.piggiebacks[0]
   endif
   return client
@@ -790,7 +801,7 @@ endfunction
 
 function! s:op_missing_error(op, ...) abort
   try
-    let client = fireplace#platform()
+    let client = fireplace#clj()
     if !has_key(client, 'transport')
       return s:no_repl
     elseif client.transport.has_op(a:op)
@@ -928,7 +939,7 @@ function! fireplace#eval(...) abort
   let code = remove(opts, 'code')
 
   let ns = fireplace#ns()
-  let platform = fireplace#platform()
+  let platform = fireplace#clj()
   if !has_key(opts, 'session') && has_key(platform, 'piggiebacks') && bufname(s:buf()) =~# '\.clj[csx]$' && code =~# '^\s*(\S\+/cljs-repl'
     let client = platform
     if ext ==# 'cljs'
