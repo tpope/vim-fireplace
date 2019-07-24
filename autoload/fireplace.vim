@@ -279,20 +279,11 @@ function! s:repl.path() dict abort
   return self.transport._path
 endfunction
 
-function! s:conn_try(connection, function, ...) abort
-  try
-    return call(a:connection[a:function], a:000, a:connection)
-  catch /^\w\+ Connection Error:/
-    call s:unregister(a:connection)
-    throw v:exception
-  endtry
-endfunction
-
 function! s:repl.message(payload, ...) dict abort
   if has_key(a:payload, 'ns') && a:payload.ns !=# self.user_ns()
     let ignored_error = self.preload(a:payload.ns)
   endif
-  return call('s:conn_try', [get(self, 'session', get(self, 'connection', {})), 'message', a:payload] + a:000, self)
+  return call(self.session.message, [a:payload] + a:000, self.session)
 endfunction
 
 function! s:repl.done(id) dict abort
@@ -309,7 +300,6 @@ function! s:repl.preload(lib) dict abort
   if !empty(a:lib) && a:lib !=# self.user_ns() && !get(self.requires, a:lib)
     let reload = has_key(self.requires, a:lib) ? ' :reload' : ''
     let self.requires[a:lib] = 0
-    let clone = s:conn_try(get(self, 'session', get(self, 'connection', {})), 'clone')
     if self.user_ns() ==# 'user'
       let qsym = s:qsym(a:lib)
       let expr = '(when-not (find-ns '.qsym.') (try'
@@ -318,7 +308,7 @@ function! s:repl.preload(lib) dict abort
     else
       let expr = '(ns '.self.user_ns().' (:require '.a:lib.reload.'))'
     endif
-    let result = self.session.message({'op': 'eval', 'code': expr, 'ns': self.user_ns(), 'session': ''}, v:t_dict)
+    let result = self.message({'op': 'eval', 'code': expr, 'ns': self.user_ns(), 'session': ''}, v:t_dict)
     let self.requires[a:lib] = !has_key(result, 'ex')
     if has_key(result, 'ex')
       return result
@@ -339,7 +329,7 @@ function! s:repl.piggieback(arg, ...) abort
     return {}
   endif
 
-  let session = s:conn_try(get(self, 'session', get(self, 'connection', {})), 'clone')
+  let session = self.session.clone()
   if empty(a:arg) && exists('b:fireplace_cljs_repl')
     let arg = b:fireplace_cljs_repl
   elseif empty(a:arg)
@@ -403,7 +393,7 @@ function! s:repl.eval(expr, options) dict abort
   endif
   let response = self.message(extend({'op': 'eval', 'code': a:expr}, a:options), v:t_dict)
   if has_key(self, 'piggiebacks') && get(response, 'ns', '') ==# 'cljs.user'
-    call insert(self.piggiebacks, extend({'session': self.session.clone(), 'transport': self.session.transport}, deepcopy(s:piggieback)))
+    call insert(self.piggiebacks, extend({'session': self.session.clone(), 'transport': self.transport}, deepcopy(s:piggieback)))
     call self.message({'op': 'eval', 'code': ':cljs/quit'}, v:t_dict)
   endif
   if index(response.status, 'namespace-not-found') < 0
@@ -422,16 +412,17 @@ endfunction
 
 function! s:unregister(transport) abort
   let transport = get(a:transport, 'transport', a:transport)
-  call filter(s:repl_paths, 'get(v:val, "connection", v:val).transport isnot# transport')
-  call filter(s:repls, 'get(v:val, "connection", v:val).transport isnot# transport')
-  call filter(s:repl_portfiles, 'get(v:val, "connection", v:val).transport isnot# transport')
+  let criteria = '!has_key(v:val, "transport") || v:val.transport isnot# transport'
+  call filter(s:repl_paths, criteria)
+  call filter(s:repls, criteria)
+  call filter(s:repl_portfiles, criteria)
 endfunction
 
 function! fireplace#register_port_file(portfile, ...) abort
   let portfile = fnamemodify(a:portfile, ':p')
   let old = get(s:repl_portfiles, portfile, {})
   if has_key(old, 'time') && getftime(portfile) !=# old.time
-    call s:unregister(get(old, 'transport', get(old, 'connection', {})))
+    call s:unregister(old)
     let old = {}
   endif
   if empty(old) && getfsize(portfile) > 0
@@ -728,7 +719,7 @@ endfunction
 function! fireplace#platform(...) abort
   for [k, v] in items(s:repl_portfiles)
     if getftime(k) != v.time || !has_key(v, 'transport') || !v.transport.alive()
-      call s:unregister(get(v, 'transport', get(v, 'connection', {})))
+      call s:unregister(v)
     endif
   endfor
 
