@@ -343,13 +343,7 @@ function! s:repl.piggieback(arg, ...) abort
   if empty(a:arg) && exists('b:fireplace_cljs_repl')
     let arg = b:fireplace_cljs_repl
   elseif empty(a:arg)
-    let arg = ''
-    if exists('*projectionist#query_scalar')
-      let arg = get(projectionist#query_scalar('fireplaceCljsRepl') + projectionist#query_scalar('cljsRepl'), 0, '')
-    endif
-    if empty(arg)
-      let arg = get(g:, 'fireplace_cljs_repl', '')
-    endif
+    let arg = get(g:, 'fireplace_cljs_repl', '')
   elseif a:arg =~# '^\d\{1,5}$'
     if len(fireplace#findresource('weasel/repl/websocket.clj', self.path()))
       let arg = '(weasel.repl.websocket/repl-env :port ' . a:arg . ')'

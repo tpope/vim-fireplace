@@ -27,6 +27,11 @@ augroup fireplace
           \    echohl None
           \ endif
   endif
+
+  autocmd User ProjectionistActivate
+        \ for b:fireplace_cljs_repl in projectionist#query_scalar('fireplaceCljsRepl') + projectionist#query_scalar('cljsRepl') |
+        \   break |
+        \ endfor
 augroup END
 
 command! -bar -bang -complete=customlist,fireplace#connect_complete -nargs=* FireplaceConnect
