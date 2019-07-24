@@ -237,7 +237,7 @@ function! s:complete_delegate(queue, callback, msg) abort
 endfunction
 
 function! fireplace#omnicomplete(findstart, base, ...) abort
-  if a:findstart is# 1
+  if a:findstart is# 1 || a:findstart is# '1'
     let line = strpart(getline('.'), 0, col('.') - 1)
     return col('.') - strlen(matchstr(line, '\k\+$')) - 1
   else
