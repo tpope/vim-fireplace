@@ -373,6 +373,10 @@ function! s:repl.piggieback(arg, ...) abort
       let arg = '(cider.piggieback/cljs-repl ' . arg . ')'
     endif
   endif
+  let piggiens = matchstr(arg, '^(\zs\w\+\.piggieback\ze/cljs-repl\>')
+  if len(piggiens) && piggiens !=# replns
+    call session.message({'op': 'eval', 'code': "(require '" . piggiens . ")"}, v:t_dict)
+  endif
   let response = session.message({'op': 'eval', 'code': arg}, v:t_dict)
 
   if empty(get(response, 'ex'))
