@@ -476,15 +476,25 @@ function! fireplace#connect_complete(A, L, P) abort
 endfunction
 
 function! fireplace#connect_command(line1, line2, range, count, bang, mods, reg, arg, args) abort
-  let str = substitute(get(a:args, 0, ''), '^file:[\/]\{' . (has('win32') ? '3' : '2') . '\}', '', '')
-  if str !~# ':\d\|:[\/][\/]' && filereadable(str)
+  let str = get(a:args, 0, '')
+  if empty(str)
+    let str = input('Port or URL: ')
+    if empty(str)
+      return ''
+    endif
+  endif
+  let str = substitute(str, '^file:[\/]\{' . (has('win32') ? '3' : '2') . '\}', '', '')
+  if str =~# '^[%#]'
+    let str = expand(str)
+  endif
+  if str !~# '^\d\+$\|:\d\|:[\/][\/]' && filereadable(str)
     let path = fnamemodify(str, ':p:h')
     let str = readfile(str, '', 1)[0]
-  elseif str !~# ':\d\|:[\/][\/]' && filereadable(str . '/.nrepl-port')
+  elseif str !~# '^\d\+$\|:\d\|:[\/][\/]' && filereadable(str . '/.nrepl-port')
     let path = fnamemodify(str, ':p:h')
     let str = readfile(str . '/.nrepl-port', '', 1)[0]
   else
-    let path = fnamemodify(exists('b:java_root') ? b:java_root : fnamemodify(expand('%'), ':p:s?.*\zs[\/]src[\/].*??'), ':~')
+    let path = fnamemodify(exists('b:java_root') ? b:java_root : getcwd(), ':~')
   endif
   try
     let transport = fireplace#transport#connect(str)

@@ -15,12 +15,10 @@ Connecting to lein repl happens automatically.  If you have a different setup,
 you can connect by hand.
 
                                                 *fireplace-:Connect*
-:Connect {proto}://{host}:{port} {path}
+:Connect nrepl://{host}:{port} [path]
+:Connect {port} [path]
                         Connect to a REPL server.  The path is the root of the
-                        project that the REPL applies to.
-
-:Connect                Interactively prompt for the options to connect to a
-                        REPL server.
+                        project that the REPL applies to (try ".").
 
 The REPL is used for the commands below. If no REPL is found for the current
 buffer and 'path' contains at least one jar file, java (or $JAVA_CMD) is
