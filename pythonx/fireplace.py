@@ -178,11 +178,11 @@ class Connection:
 
 def main(host = None, port = None, *args):
     try:
-        match = re.search('//([^:/@]+):(\d+)', host)
+        match = re.search('//([^:/@]+)(?::(\d+))?', host)
         if match:
             host = match.groups()[0]
             port = match.groups()[1]
-        conn = Connection(host, port)
+        conn = Connection(host, int(port or 7888))
         try:
             conn.tunnel()
         finally:

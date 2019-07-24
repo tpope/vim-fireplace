@@ -166,12 +166,13 @@ function! fireplace#transport#connect(arg) abort
   let url = substitute(a:arg, '#.*', '', '')
   if url =~# '^\d\+$'
     let url = 'nrepl://localhost:' . url
-  elseif url =~# '^[^:/@]\+:\d\+$'
+  elseif url =~# '^[^:/@]\+\(:\d\+\)\=$'
     let url = 'nrepl://' . url
   elseif url !~# '^\a\+://'
     throw "Fireplace: invalid connection string " . string(a:arg)
   endif
   let url = substitute(url, '^\a\+://[^/]*\zs$', '/', '')
+  let url = substitute(url, '^nrepl://[^/:]*\zs/', ':7888/', '')
   if has_key(s:urls, url)
     return s:urls[url].transport
   endif
