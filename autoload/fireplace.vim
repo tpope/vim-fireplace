@@ -480,7 +480,7 @@ function! fireplace#connect_complete(A, L, P) abort
   return options
 endfunction
 
-function! fireplace#connect_command(line1, line2, range, count, bang, mods, reg, arg, args) abort
+function! fireplace#ConnectCommand(line1, line2, range, bang, mods, arg, args) abort
   let str = get(a:args, 0, '')
   if empty(str)
     let str = input('Port or URL: ')
@@ -938,6 +938,8 @@ function! fireplace#eval(...) abort
   for arg in a:000
     if type(arg) == v:t_string
       let opts.code = arg
+    elseif type(arg) == v:t_dict && type(get(arg, 'Session')) ==# v:t_func
+      let client = arg
     elseif type(arg) == v:t_dict
       call extend(opts, arg)
     elseif type(arg) == v:t_number
@@ -948,13 +950,16 @@ function! fireplace#eval(...) abort
 
   let ns = fireplace#ns()
   let platform = fireplace#clj()
-  if !has_key(opts, 'session') && has_key(platform, 'cljs_sessions') && bufname(s:buf()) =~# '\.clj[csx]$' && code =~# '^\s*(\S\+/cljs-repl'
+  let ext = matchstr(bufname(s:buf()), '\.\zs\w\+$')
+  if !exists('client') && !has_key(opts, 'session') && has_key(platform, 'cljs_sessions') && ext =~# '^clj[csx]$' && code =~# '^\s*(\S\+/cljs-repl'
     let client = platform
-    if ext ==# 'cljs'
-      let ns = 'user'
-    endif
-  else
+  elseif !exists('client')
     let client = fireplace#client()
+  endif
+  if client.user_ns() ==# 'user' && ext !~# '^clj[cx]\=$'
+    let ns = 'user'
+  elseif client.user_ns() ==# 'cljs.user' && ext !~# '^clj[scx]$'
+    let ns = 'cljs.user'
   endif
   if !has_key(opts, 'ns')
     let opts.ns = ns
@@ -1215,12 +1220,12 @@ function! s:editop(type) abort
   endif
 endfunction
 
-function! s:Eval(bang, line1, line2, count, args) abort
+function! s:Eval(type, line1, line2, range, bang, mods, args) abort
   let options = {}
   if a:args !=# ''
     let expr = a:args
   else
-    if a:count ==# 0
+    if a:line2 < 0
       let open = '[[{(]'
       let close = '[]})]'
       let [line1, col1] = searchpairpos(open, '', close, 'bcrn', g:fireplace#skip)
@@ -1255,9 +1260,10 @@ function! s:Eval(bang, line1, line2, count, args) abort
       exe line1.','.line2.'delete _'
     endif
   endif
-  if a:bang
-    try
-      let result = split(join(map(fireplace#eval(expr, &textwidth, options), 'substitute(v:val, "\n*$", "", "")'), "\n"), "\n")
+  try
+    let client = fireplace#{a:type}()
+    if a:bang
+      let result = split(join(map(fireplace#eval(client, expr, &textwidth, options), 'substitute(v:val, "\n*$", "", "")'), "\n"), "\n")
       if a:args !=# ''
         call append(a:line1, result)
         exe a:line1
@@ -1265,12 +1271,22 @@ function! s:Eval(bang, line1, line2, count, args) abort
         call append(a:line1-1, result)
         exe a:line1-1
       endif
-    catch /^Clojure:/
-    endtry
-  else
-    call fireplace#echo_session_eval(expr, options)
-  endif
+    else
+      call fireplace#echo_session_eval(client, expr, options)
+    endif
+  catch /^Clojure:/
+  catch /^Fireplace:/
+    return 'echoerr ' . string(v:exception)
+  endtry
   return ''
+endfunction
+
+function! fireplace#CljEvalCommand(line1, line2, range, bang, mods, args) abort
+  return s:Eval('clj', a:line1, a:line2, a:range, a:bang, a:mods, a:args)
+endfunction
+
+function! fireplace#CljsEvalCommand(line1, line2, range, bang, mods, args) abort
+  return s:Eval('cljs', a:line1, a:line2, a:range, a:bang, a:mods, a:args)
 endfunction
 
 function! s:StacktraceCommand(bang, args) abort
@@ -1406,7 +1422,7 @@ function! s:Last(bang, count) abort
 endfunction
 
 function! s:set_up_eval() abort
-  command! -buffer -bang -range=0 -nargs=? -complete=customlist,fireplace#eval_complete Eval :exe s:Eval(<bang>0, <line1>, <line2>, <count>, <q-args>)
+  command! -buffer -bang -range -nargs=? -complete=customlist,fireplace#eval_complete Eval :exe s:Eval('client', <line1>, <count>, +'<range>', <bang>0, <q-mods>, <q-args>)
   command! -buffer -bang -bar -count=1 Last exe s:Last(<bang>0, <count>)
   command! -buffer -bang -bar -nargs=* Stacktrace exe s:StacktraceCommand(<bang>0, [<f-args>])
 

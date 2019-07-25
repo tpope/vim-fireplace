@@ -144,6 +144,14 @@ example), the user namespace is used instead.
 :[range]Eval! {expr}    Eval the given expression and insert it after
                         the given range or current line.
 
+                                                *fireplace-:CljEval*
+:CljEval [...]          Like :Eval, but always use Clojure, never
+                        ClojureScript.  This command is available globally.
+
+                                                *fireplace-:CljsEval*
+:CljsEval [...]         Like :Eval, but always use ClojureScript, never
+                        Clojure.  This command is available globally.
+
                                                 *fireplace-:RunTests*
 :RunTests [ns] [...]    Call clojure.test/run-tests on the given namespaces
                         and load the results into the quickfix list.
