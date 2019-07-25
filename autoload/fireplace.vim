@@ -761,6 +761,10 @@ function! fireplace#clj(...) abort
   throw s:no_repl
 endfunction
 
+function! fireplace#native(...) abort
+  return call('fireplace#clj', a:000)
+endfunction
+
 function! fireplace#platform(...) abort
   return call('fireplace#clj', a:000)
 endfunction
