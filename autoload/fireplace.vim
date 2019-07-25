@@ -284,6 +284,19 @@ endfunction
 
 " Section: REPL client
 
+function! s:NormalizeNs(client, payload) abort
+  if get(a:payload, 'ns') is# v:true
+    let a:payload.ns = a:client.BufferNs()
+  elseif get(a:payload, 'ns') is# v:false
+    let a:payload.ns = a:client.UserNs()
+  elseif type(get(a:payload, 'ns', '')) == v:t_number
+    let a:payload.ns = a:client.BufferNs(a:payload.ns)
+  elseif empty(get(a:payload, 'ns', 1))
+    call remove(a:payload, 'ns')
+  endif
+  return a:payload
+endfunction
+
 let s:clj = {}
 
 function! s:CljBufferNs(...) dict abort
@@ -332,15 +345,7 @@ function! s:repl.Path() dict abort
 endfunction
 
 function! s:repl.message(payload, ...) dict abort
-  if get(a:payload, 'ns') is# v:true
-    let a:payload.ns = self.BufferNs()
-  elseif get(a:payload, 'ns') is# v:false
-    let a:payload.ns = self.UserNs()
-  elseif type(get(a:payload, 'ns', '')) == v:t_number
-    let a:payload.ns = self.BufferNs(a:payload.ns)
-  elseif empty(get(a:payload, 'ns', 1))
-    call remove(a:payload, 'ns')
-  endif
+  call s:NormalizeNs(self, a:payload)
   if has_key(a:payload, 'ns') && a:payload.ns !=# self.UserNs()
     let ignored_error = self.preload(a:payload.ns)
   endif
@@ -464,13 +469,14 @@ function! s:piggieback.eval(expr, options) abort
 endfunction
 
 function! s:repl.eval(expr, options) dict abort
-  if has_key(a:options, 'ns') && a:options.ns !=# self.user_ns()
-    let error = self.preload(a:options.ns)
+  let options = s:NormalizeNs(self, a:options)
+  if has_key(options, 'ns') && options.ns !=# self.user_ns()
+    let error = self.preload(options.ns)
     if !empty(error)
       return error
     endif
   endif
-  let response = self.message(extend({'op': 'eval', 'code': a:expr}, a:options), v:t_dict)
+  let response = self.message(extend({'op': 'eval', 'code': a:expr}, options), v:t_dict)
   if has_key(self, 'cljs_sessions') && get(response, 'ns', '') ==# 'cljs.user'
     call insert(self.cljs_sessions, self.Session().clone())
     call self.message({'op': 'eval', 'code': ':cljs/quit'}, v:t_dict)
@@ -478,7 +484,7 @@ function! s:repl.eval(expr, options) dict abort
   if index(response.status, 'namespace-not-found') < 0
     return response
   endif
-  throw 'Fireplace: namespace not found: ' . get(a:options, 'ns', self.user_ns())
+  throw 'Fireplace: namespace not found: ' . get(options, 'ns', self.user_ns())
 endfunction
 
 function! s:register(session, ...) abort
@@ -699,7 +705,8 @@ function! s:oneoff.eval(expr, options) dict abort
   endif
   let id = has_key(a:options, 'id') ? a:options.id : fireplace#transport#id()
   let path = join(self.path(), has('win32') ? ';' : ':')
-  let ns = get(a:options, 'ns', self.user_ns())
+  let options = s:NormalizeNs(self, a:options)
+  let ns = get(options, 'ns', self.user_ns())
   let queue = []
   call s:spawn_eval(id, path, a:expr, ns, function('add', [queue]))
   call s:spawn_wait(id)
