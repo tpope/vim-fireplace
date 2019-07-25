@@ -1152,20 +1152,20 @@ function! fireplace#massage_list(...) abort
     return
   endif
   if a:0
-    let GetList = function('getloclist', [a:1])
-    let SetList = function('setloclist', [a:1])
+    let l:GetList = function('getloclist', [a:1])
+    let l:SetList = function('setloclist', [a:1])
   else
-    let GetList = function('getqflist', [])
-    let SetList = function('setqflist', [])
+    let l:GetList = function('getqflist', [])
+    let l:SetList = function('setqflist', [])
   endif
   let path = p =~# '^[:;]' ? split(p[1:-1], p[0]) : p[0] ==# ',' ? s:path_extract(p[1:-1], 1) : s:path_extract(p, 1)
-  let qflist = GetList()
+  let qflist = l:GetList()
   for entry in qflist
     call extend(entry, s:qfmassage(get(entry, 'text', ''), path))
   endfor
-  let attrs = GetList({'title': 1})
-  call SetList(qflist, 'r')
-  call SetList([], 'r', attrs)
+  let attrs = l:GetList({'title': 1})
+  call l:SetList(qflist, 'r')
+  call l:SetList([], 'r', attrs)
 endfunction
 
 " Section: Eval

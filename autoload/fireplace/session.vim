@@ -9,7 +9,6 @@ function! s:function(name) abort
   return function(substitute(a:name,'^s:',matchstr(expand('<sfile>'), '.*\zs<SNR>\d\+_'),''))
 endfunction
 
-
 function! fireplace#session#for(transport, ...) abort
   let session = copy(s:session)
   let session.callbacks = []
@@ -28,7 +27,7 @@ function! s:session_callback(msg) dict abort
   if index(get(a:msg, 'status', []), 'session-closed') >= 0
     call filter(self, 'v:key !=# "id" && v:key !=# "session"')
   endif
-  for Callback in self.callbacks
+  for l:Callback in self.callbacks
     try
       call call(Callback, [a:msg])
     catch
