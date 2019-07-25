@@ -1479,31 +1479,31 @@ function! fireplace#info(symbol) abort
 
   let sym = s:qsym(a:symbol)
   let cmd =
-        \ '(cond'
-        \ . '(not (symbol? ' . sym . '))'
+        \ '(clojure.core/cond'
+        \ . '(clojure.core/not (clojure.core/symbol? ' . sym . '))'
         \ . '{}'
-        \ . '(special-symbol? ' . sym . ')'
-        \ . "(if-let [m (#'clojure.repl/special-doc " . sym . ")]"
+        \ . '(clojure.core/special-symbol? ' . sym . ')'
+        \ . "(clojure.core/if-let [m (#'clojure.repl/special-doc " . sym . ")]"
         \ .   ' {:name (:name m)'
         \ .    ' :special-form "true"'
         \ .    ' :doc (:doc m)'
         \ .    ' :url (:url m)'
-        \ .    ' :forms-str (str "  " (:forms m))}'
+        \ .    ' :forms-str (clojure.core/str "  " (:forms m))}'
         \ .   ' {})'
-        \ . '(find-ns ' . sym . ')'
-        \ . "(if-let [m (#'clojure.repl/namespace-doc (find-ns " . sym . "))]"
+        \ . '(clojure.core/find-ns ' . sym . ')'
+        \ . "(clojure.core/if-let [m (#'clojure.repl/namespace-doc (clojure.core/find-ns " . sym . "))]"
         \ .   ' {:ns (:name m)'
         \ .   '  :doc (:doc m)}'
         \ .   ' {})'
         \ . ':else'
-        \ . '(if-let [m (meta (resolve ' . sym .'))]'
+        \ . '(clojure.core/if-let [m (clojure.core/meta (clojure.core/resolve ' . sym .'))]'
         \ .   ' {:name (:name m)'
         \ .    ' :ns (:ns m)'
-        \ .    ' :macro (when (:macro m) true)'
+        \ .    ' :macro (clojure.core/when (:macro m) true)'
         \ .    ' :resource (:file m)'
         \ .    ' :line (:line m)'
         \ .    ' :doc (:doc m)'
-        \ .    ' :arglists-str (str (:arglists m))}'
+        \ .    ' :arglists-str (clojure.core/str (:arglists m))}'
         \ .   ' {})'
         \ . ' )'
   return fireplace#evalparse(cmd)
