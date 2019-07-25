@@ -34,9 +34,9 @@ augroup fireplace
         \ endfor
 augroup END
 
-command! -bar -bang -complete=customlist,fireplace#connect_complete -nargs=* FireplaceConnect
+command! -bar -bang -complete=customlist,fireplace#ConnectComplete -nargs=* FireplaceConnect
       \ exe fireplace#ConnectCommand(<line1>, <count>, +'<range>', <bang>0, <q-mods>, <q-args>, [<f-args>])
-command! -bang -range -nargs=* CljEval
+command! -bang -range -complete=customlist,fireplace#CljEvalComplete -nargs=* CljEval
       \ exe fireplace#CljEvalCommand( <line1>, <count>, +'<range>', <bang>0, <q-mods>, <q-args>)
-command! -bang -range -nargs=* CljsEval
+command! -bang -range -complete=customlist,fireplace#CljsEvalComplete -nargs=* CljsEval
       \ exe fireplace#CljsEvalCommand(<line1>, <count>, +'<range>', <bang>0, <q-mods>, <q-args>)

@@ -125,17 +125,29 @@ function! fireplace#jar_contents(path) abort
   return copy(get(s:jar_contents, a:path, []))
 endfunction
 
-function! fireplace#eval_complete(A, L, P) abort
+function! fireplace#EvalComplete(A, L, P, ...) abort
   let prefix = matchstr(a:A, '\%(.* \|^\)\%(#\=[\[{('']\)*')
   let keyword = strpart(a:A, strlen(prefix))
   try
-    return sort(map(fireplace#omnicomplete(-1, keyword, ''), 'prefix . v:val.word'))
+    return sort(map(fireplace#omnicomplete(a:0 ? a:1() : fireplace#client(), keyword, ''), 'prefix . v:val.word'))
   catch /^Fireplace:/
     return []
   endtry
 endfunction
 
-function! fireplace#ns_complete(A, L, P) abort
+function! fireplace#eval_complete(A, L, P) abort
+  return fireplace#EvalComplete(a:A, a:L, a:P)
+endfunction
+
+function! fireplace#CljEvalComplete(A, L, P) abort
+  return fireplace#EvalComplete(a:A, a:L, a:P, function('fireplace#clj'))
+endfunction
+
+function! fireplace#CljsEvalComplete(A, L, P) abort
+  return fireplace#EvalComplete(a:A, a:L, a:P, function('fireplace#cljs'))
+endfunction
+
+function! fireplace#NsComplete(A, L, P) abort
   let matches = []
   for dir in fireplace#path()
     if dir =~# '\.jar$'
@@ -147,6 +159,10 @@ function! fireplace#ns_complete(A, L, P) abort
     let matches += files
   endfor
   return filter(map(matches, 's:to_ns(v:val)'), 'a:A ==# "" || a:A ==# v:val[0 : strlen(a:A)-1]')
+endfunction
+
+function! fireplace#ns_complete(A, L, P) abort
+  return fireplace#NsComplete(a:A, a:L, a:P)
 endfunction
 
 let s:short_types = {
@@ -248,13 +264,14 @@ function! fireplace#omnicomplete(findstart, base, ...) abort
     let request = {
           \ 'op': 'complete',
           \ 'symbol': a:base,
+          \ 'ns': v:true,
           \ 'extra-metadata': ['arglists', 'doc'],
           \ 'context': a:0 ? a:1 : s:get_complete_context()
           \ }
     if type(a:findstart) == v:t_func
       return fireplace#message(request, function('s:complete_delegate', [[], a:findstart]))
-    elseif a:findstart isnot# 0
-      return s:complete_extract(fireplace#message(request, v:t_dict))
+    elseif type(a:findstart) == v:t_dict
+      return s:complete_extract(a:findstart.message(request, v:t_dict))
     endif
     let id = fireplace#message(request, function('s:complete_add')).id
     while !fireplace#client().done(id)
@@ -267,7 +284,38 @@ endfunction
 
 " Section: REPL client
 
-let s:repl = {"requires": {}}
+let s:clj = {}
+
+function! s:CljBufferNs(...) dict abort
+  if call('s:bufext', a:000) =~# '^clj[cx]\=$'
+    return call('fireplace#ns', a:000)
+  else
+    return self.UserNs()
+  endif
+endfunction
+
+function! s:CljExt() dict abort
+  return 'clj'
+endfunction
+
+function! s:CljUserNs() dict abort
+  return 'user'
+endfunction
+
+let s:clj = {
+      \ 'BufferNs': function('s:CljBufferNs'),
+      \ 'Ext': function('s:CljExt'),
+      \ 'UserNs': function('s:CljUserNs')}
+
+function! s:clj.path() abort
+  return self.Path()
+endfunction
+
+function! s:clj.user_ns() abort
+  return self.UserNs()
+endfunction
+
+let s:repl = extend({"requires": {}}, s:clj)
 
 if !exists('s:repls')
   let s:repls = []
@@ -279,12 +327,21 @@ function! s:repl.Session() dict abort
   return self.session
 endfunction
 
-function! s:repl.path() dict abort
+function! s:repl.Path() dict abort
   return self.transport._path
 endfunction
 
 function! s:repl.message(payload, ...) dict abort
-  if has_key(a:payload, 'ns') && a:payload.ns !=# self.user_ns()
+  if get(a:payload, 'ns') is# v:true
+    let a:payload.ns = self.BufferNs()
+  elseif get(a:payload, 'ns') is# v:false
+    let a:payload.ns = self.UserNs()
+  elseif type(get(a:payload, 'ns', '')) == v:t_number
+    let a:payload.ns = self.BufferNs(a:payload.ns)
+  elseif empty(get(a:payload, 'ns', 1))
+    call remove(a:payload, 'ns')
+  endif
+  if has_key(a:payload, 'ns') && a:payload.ns !=# self.UserNs()
     let ignored_error = self.preload(a:payload.ns)
   endif
   let session = self.Session()
@@ -325,6 +382,22 @@ function! s:repl.preload(lib) dict abort
 endfunction
 
 let s:piggieback = copy(s:repl)
+
+function! s:piggieback.BufferNs(...) abort
+  if call('s:bufext', a:000) =~# '^clj[scx]$'
+    return call('fireplace#ns', a:000)
+  else
+    return self.UserNs()
+  endif
+endfunction
+
+function! s:clj.Ext() abort
+  return 'cljs'
+endfunction
+
+function! s:piggieback.UserNs() abort
+  return 'cljs.user'
+endfunction
 
 function! s:piggieback.Piggieback(arg, ...) abort
   if a:0 && a:1
@@ -381,10 +454,6 @@ function! s:piggieback.Session() abort
   return self.sessions[0]
 endfunction
 
-function! s:piggieback.user_ns() abort
-  return 'cljs.user'
-endfunction
-
 function! s:piggieback.eval(expr, options) abort
   let result = call(s:repl.eval, [a:expr, a:options], self)
   if a:expr =~# '^\s*:cljs/quit\s*$'
@@ -392,10 +461,6 @@ function! s:piggieback.eval(expr, options) abort
     call session.close()
   endif
   return result
-endfunction
-
-function! s:repl.user_ns() abort
-  return 'user'
 endfunction
 
 function! s:repl.eval(expr, options) dict abort
@@ -465,7 +530,7 @@ endfunction
 
 " Section: :Connect
 
-function! fireplace#connect_complete(A, L, P) abort
+function! fireplace#ConnectComplete(A, L, P) abort
   let proto = matchstr(a:A, '\w\+\ze://')
   if proto ==# ''
     let options = map(['nrepl'], 'v:val."://"')
@@ -586,13 +651,9 @@ endfunction
 
 let s:no_repl = 'Fireplace: no live REPL connection'
 
-let s:oneoff = {}
+let s:oneoff = copy(s:clj)
 
-function! s:oneoff.user_ns() abort
-  return 'user'
-endfunction
-
-function! s:oneoff.path() dict abort
+function! s:oneoff.Path() dict abort
   return self._path
 endfunction
 
@@ -632,7 +693,7 @@ function! s:buffer_path(...) abort
 endfunction
 
 function! fireplace#ns(...) abort
-  let buffer = a:0 ? a:1 : s:buf()
+  let buffer = call('s:buf', a:000)
   if !empty(getbufvar(buffer, 'fireplace_ns'))
     return getbufvar(buffer, 'fireplace_ns')
   endif
@@ -652,14 +713,21 @@ function! fireplace#ns(...) abort
   return s:to_ns(path ==# '' ? s:user_ns(buffer) : path)
 endfunction
 
-function! s:buf() abort
-  if exists('s:input')
+function! s:buf(...) abort
+  if exists('s:input') && !a:0
     return s:input
-  elseif has_key(s:qffiles, expand('%:p'))
-    return s:qffiles[expand('%:p')].buffer
-  else
-    return '%'
   endif
+  let bufnr = a:0 && a:1 >= 0 && a:1 isnot# v:true ? a:1 : bufnr('')
+  let fullname = fnamemodify(bufname(bufnr), ':p')
+  if has_key(s:qffiles, fullname)
+    return s:qffiles[fullname].buffer
+  else
+    return bufnr
+  endif
+endfunction
+
+function! s:bufext(...) abort
+  return matchstr(bufname(call('s:buf', a:000)), '\.\zs\w\+$')
 endfunction
 
 function! s:impl_ns(...) abort
@@ -797,9 +865,7 @@ function! fireplace#message(payload, ...) abort
   let client = fireplace#client()
   let payload = copy(a:payload)
   if !has_key(payload, 'ns')
-    let payload.ns = fireplace#ns()
-  elseif empty(payload.ns)
-    unlet payload.ns
+    let payload.ns = v:true
   endif
   if a:0
     return call(client.message, [payload] + a:000, client)
@@ -874,7 +940,7 @@ function! s:eval(expr, ...) abort
   let options = a:0 ? copy(a:1) : {}
   let client = fireplace#client()
   if !has_key(options, 'ns')
-    let options.ns = fireplace#ns()
+    let options.ns = client.BufferNs()
   endif
   return client.eval(a:expr, options)
 endfunction
@@ -948,7 +1014,6 @@ function! fireplace#eval(...) abort
   endfor
   let code = remove(opts, 'code')
 
-  let ns = fireplace#ns()
   let platform = fireplace#clj()
   let ext = matchstr(bufname(s:buf()), '\.\zs\w\+$')
   if !exists('client') && !has_key(opts, 'session') && has_key(platform, 'cljs_sessions') && ext =~# '^clj[csx]$' && code =~# '^\s*(\S\+/cljs-repl'
@@ -956,15 +1021,10 @@ function! fireplace#eval(...) abort
   elseif !exists('client')
     let client = fireplace#client()
   endif
-  if client.user_ns() ==# 'user' && ext !~# '^clj[cx]\=$'
-    let ns = 'user'
-  elseif client.user_ns() ==# 'cljs.user' && ext !~# '^clj[scx]$'
-    let ns = 'cljs.user'
-  endif
   if !has_key(opts, 'ns')
-    let opts.ns = ns
+    let opts.ns = client.BufferNs()
   endif
-  let ext = client.user_ns() ==# 'cljs.user' ? 'cljs' : 'clj'
+  let ext = client.Ext()
   let response = client.eval(code, opts)
 
   call insert(s:history, {'buffer': bufnr(''), 'ext': ext, 'code': code, 'ns': fireplace#ns(), 'response': response})
