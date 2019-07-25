@@ -609,51 +609,80 @@ endfunction
 
 " Section: Java runner
 
-let s:oneoff_pr  = tempname()
-let s:oneoff_ex  = tempname()
-let s:oneoff_in  = tempname()
-let s:oneoff_out = tempname()
-let s:oneoff_err = tempname()
+if !exists('s:spawns')
+  let s:spawns = {}
+endif
 
-function! s:spawning_eval(classpath, expr, ns) abort
-  if a:ns !=# '' && a:ns !=# 'user'
-    let ns = '(require '.s:qsym(a:ns).') (in-ns '.s:qsym(a:ns).') '
-  else
-    let ns = ''
+function! s:spawn_wait(id) abort
+  let message = get(s:spawns, a:id, {})
+  if type(get(message, 'job', '')) == v:t_number
+    while jobwait([message.job])[0] == -1
+      sleep 1m
+    endwhile
+  elseif type(get(message, 'job', '')) != v:t_string
+    while job_status(message.job) ==# 'run'
+      sleep 1m
+    endwhile
   endif
-  call writefile([], s:oneoff_pr, 'b')
-  call writefile([], s:oneoff_ex, 'b')
-  call writefile(split('(do '.a:expr.')', "\n"), s:oneoff_in, 'b')
-  call writefile([], s:oneoff_out, 'b')
-  call writefile([], s:oneoff_err, 'b')
-  let java_cmd = exists('$JAVA_CMD') ? $JAVA_CMD : 'java'
-  let command = java_cmd.' -cp '.shellescape(a:classpath).' clojure.main -e ' .
-        \ shellescape(
-        \   '(binding [*out* (java.io.FileWriter. '.s:str(s:oneoff_out).')' .
-        \   '          *err* (java.io.FileWriter. '.s:str(s:oneoff_err).')]' .
-        \   '  (try' .
-        \   '    (require ''clojure.repl ''clojure.java.javadoc) '.ns.'(spit '.s:str(s:oneoff_pr).' (pr-str (eval (read-string (slurp '.s:str(s:oneoff_in).')))))' .
-        \   '    (catch Exception e' .
-        \   '      (spit *err* (.toString e))' .
-        \   '      (spit '.s:str(s:oneoff_ex).' (class e))))' .
-        \   '  nil)')
-  let captured = system(command)
-  let result = {}
-  let result.value = [join(readfile(s:oneoff_pr, 'b'), "\n")]
-  let result.out   = join(readfile(s:oneoff_out, 'b'), "\n")
-  let result.err   = join(readfile(s:oneoff_err, 'b'), "\n")
-  let result.ex    = join(readfile(s:oneoff_ex, 'b'), "\n")
+  while has_key(s:spawns, a:id)
+    sleep 1m
+  endwhile
+endfunction
+
+function! s:spawn_complete(id, name, callback) abort
+  let result = {'id': a:id}
+  let result.value = join(readfile(a:name . '.pr' , 'b'), "\n")
+  let result.out   = join(readfile(a:name . '.out', 'b'), "\n")
+  let result.err   = join(readfile(a:name . '.err', 'b'), "\n")
+  let result.ex    = join(readfile(a:name . '.ex' , 'b'), "\n")
   if empty(result.ex)
     let result.status = ['done']
   else
     let result.status = ['eval-error', 'done']
   endif
   call filter(result, '!empty(v:val)')
-  if v:shell_error && get(result, 'ex', '') ==# ''
-    throw 'Error running Java: '.get(split(captured, "\n"), -1, '')
+  call remove(s:spawns, a:id)
+  try
+    call a:callback(result)
+  catch
+  endtry
+endfunction
+
+function! s:spawn_eval(id, classpath, expr, ns, callback) abort
+  if a:ns !=# '' && a:ns !=# 'user'
+    let ns = '(require '.s:qsym(a:ns).') (in-ns '.s:qsym(a:ns).') '
   else
-    return result
+    let ns = ''
   endif
+  let tempname = tempname()
+  call writefile([], tempname . '.pr', 'b')
+  call writefile([], tempname . '.ex', 'b')
+  call writefile(split('(do '.a:expr.')', "\n"), tempname . '.in', 'b')
+  call writefile([], tempname . '.out', 'b')
+  call writefile([], tempname . '.err', 'b')
+  let java_cmd = split(exists('$JAVA_CMD') ? $JAVA_CMD : 'java', ' ')
+  let command = java_cmd + ['-cp', a:classpath, 'clojure.main', '-e',
+        \   '  (try' .
+        \   '    (require ''clojure.repl ''clojure.java.javadoc) '. ns .
+        \   '    (spit '.s:str(tempname . '.pr').' (pr-str (eval (read-string (slurp '.s:str(tempname . '.in').')))))' .
+        \   '    (catch Exception e' .
+        \   '      (spit *err* (.toString e))' .
+        \   '      (spit '.s:str(tempname . '.ex').' (class e))))']
+  let s:spawns[a:id] = {}
+  if has('job')
+    let opts = {
+          \ 'out_io': 'file', 'out_name': tempname . '.out',
+          \ 'err_io': 'file', 'err_name': tempname . '.err',
+          \ 'exit_cb': { j, data -> s:spawn_complete(a:id, tempname, a:callback) }}
+    let s:spawns[a:id].job = job_start(command, opts)
+  elseif exists('*jobstart')
+    let opts = {
+          \ 'on_stdout': { j, data, type -> writefile(data, tempname . '.out', 'ab') },
+          \ 'on_stderr': { j, data, type -> writefile(data, tempname . '.err', 'ab') },
+          \ 'on_exit': { j, data, type -> s:spawn_complete(a:id, tempname, a:callback) }}
+    let s:spawns[a:id].job = jobstart(command, opts)
+  endif
+  return {'id': a:id}
 endfunction
 
 let s:no_repl = 'Fireplace: no live REPL connection'
@@ -668,12 +697,13 @@ function! s:oneoff.eval(expr, options) dict abort
   if !empty(get(a:options, 'session', 1))
     throw s:no_repl
   endif
-  let result = s:spawning_eval(join(self.path(), has('win32') ? ';' : ':'),
-        \ a:expr, get(a:options, 'ns', self.user_ns()))
-  if has_key(a:options, 'id')
-    let result.id = a:options.id
-  endif
-  return result
+  let id = has_key(a:options, 'id') ? a:options.id : fireplace#transport#id()
+  let path = join(self.path(), has('win32') ? ';' : ':')
+  let ns = get(a:options, 'ns', self.user_ns())
+  let queue = []
+  call s:spawn_eval(id, path, a:expr, ns, function('add', [queue]))
+  call s:spawn_wait(id)
+  return fireplace#transport#combine(queue)
 endfunction
 
 function! s:oneoff.Session(...) abort
