@@ -491,7 +491,14 @@ endfunction
 
 function! s:unregister(transport) abort
   let transport = get(a:transport, 'transport', a:transport)
-  let criteria = '!has_key(v:val, "transport") || v:val.transport isnot# transport'
+  let criteria = 'has_key(v:val, "transport") && v:val.transport isnot# transport'
+  call filter(s:repl_paths, criteria)
+  call filter(s:repls, criteria)
+  call filter(s:repl_portfiles, criteria)
+endfunction
+
+function! s:unregister_dead() abort
+  let criteria = 'has_key(v:val, "transport") && v:val.transport.alive()'
   call filter(s:repl_paths, criteria)
   call filter(s:repls, criteria)
   call filter(s:repl_portfiles, criteria)
@@ -793,8 +800,9 @@ function! fireplace#path(...) abort
 endfunction
 
 function! fireplace#clj(...) abort
+  call s:unregister_dead()
   for [k, v] in items(s:repl_portfiles)
-    if getftime(k) != v.time || !has_key(v, 'transport') || !v.transport.alive()
+    if getftime(k) != v.time
       call s:unregister(v)
     endif
   endfor
