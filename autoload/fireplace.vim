@@ -386,6 +386,21 @@ function! s:repl.preload(lib) dict abort
   return {}
 endfunction
 
+function! s:repl.eval(expr, options) dict abort
+  let options = s:NormalizeNs(self, a:options)
+  if has_key(options, 'ns') && options.ns !=# self.user_ns()
+    let error = self.preload(options.ns)
+    if !empty(error)
+      return error
+    endif
+  endif
+  let response = self.message(extend({'op': 'eval', 'code': a:expr}, options), v:t_dict)
+  if index(response.status, 'namespace-not-found') < 0
+    return response
+  endif
+  throw 'Fireplace: namespace not found: ' . get(options, 'ns', self.user_ns())
+endfunction
+
 let s:piggieback = copy(s:repl)
 
 function! s:piggieback.BufferNs(...) abort
@@ -396,7 +411,7 @@ function! s:piggieback.BufferNs(...) abort
   endif
 endfunction
 
-function! s:clj.Ext() abort
+function! s:piggieback.Ext() abort
   return 'cljs'
 endfunction
 
@@ -457,34 +472,6 @@ function! s:piggieback.Session() abort
     throw 'Fireplace: ' . substitute(get(result, 'err', result.ex), "\n$", '', '')
   endif
   return self.sessions[0]
-endfunction
-
-function! s:piggieback.eval(expr, options) abort
-  let result = call(s:repl.eval, [a:expr, a:options], self)
-  if a:expr =~# '^\s*:cljs/quit\s*$'
-    let session = remove(self.sessions, 0)
-    call session.close()
-  endif
-  return result
-endfunction
-
-function! s:repl.eval(expr, options) dict abort
-  let options = s:NormalizeNs(self, a:options)
-  if has_key(options, 'ns') && options.ns !=# self.user_ns()
-    let error = self.preload(options.ns)
-    if !empty(error)
-      return error
-    endif
-  endif
-  let response = self.message(extend({'op': 'eval', 'code': a:expr}, options), v:t_dict)
-  if has_key(self, 'cljs_sessions') && get(response, 'ns', '') ==# 'cljs.user'
-    call insert(self.cljs_sessions, self.Session().clone())
-    call self.message({'op': 'eval', 'code': ':cljs/quit'}, v:t_dict)
-  endif
-  if index(response.status, 'namespace-not-found') < 0
-    return response
-  endif
-  throw 'Fireplace: namespace not found: ' . get(options, 'ns', self.user_ns())
 endfunction
 
 function! s:register(session, ...) abort
@@ -1070,7 +1057,18 @@ function! fireplace#eval(...) abort
     let opts.ns = client.BufferNs()
   endif
   let ext = client.Ext()
+
   let response = client.eval(code, opts)
+
+  if !has_key(opts, 'session')
+    if len(get(client, 'sessions', [])) && code =~# '^\s*:cljs/quit\s*$' && !has_key(response, 'ex')
+      let old_session = remove(client.sessions, 0)
+      call old_session.close()
+    elseif has_key(client, 'cljs_sessions') && get(response, 'ns', '') ==# 'cljs.user'
+      call insert(client.cljs_sessions, client.Session().clone())
+      call client.message({'op': 'eval', 'code': ':cljs/quit'}, v:t_dict)
+    endif
+  endif
 
   call insert(s:history, {'buffer': bufnr(''), 'ext': ext, 'code': code, 'ns': fireplace#ns(), 'response': response})
   if len(s:history) > &history
@@ -1366,9 +1364,9 @@ function! s:Eval(type, line1, line2, range, bang, mods, args) abort
     endif
   endif
   try
-    let client = fireplace#{a:type}()
+    let args = (a:type ==# 'client' ? [] : [fireplace#{a:type}()]) + [expr, options]
     if a:bang
-      let result = split(join(map(fireplace#eval(client, expr, &textwidth, options), 'substitute(v:val, "\n*$", "", "")'), "\n"), "\n")
+      let result = split(join(map(call('fireplace#eval', args + [&textwidth]), 'substitute(v:val, "\n*$", "", "")'), "\n"), "\n")
       if a:args !=# ''
         call append(a:line1, result)
         exe a:line1
@@ -1377,7 +1375,7 @@ function! s:Eval(type, line1, line2, range, bang, mods, args) abort
         exe a:line1-1
       endif
     else
-      call fireplace#echo_session_eval(client, expr, options)
+      call call('fireplace#echo_session_eval', args)
     endif
   catch /^Clojure:/
   catch /^Fireplace:/
