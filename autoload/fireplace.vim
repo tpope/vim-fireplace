@@ -1161,8 +1161,9 @@ let g:fireplace#reader =
       \  ' (cond' .
       \    ' (map? x)     (str "{" (apply str (interpose ", " (map (fn [[k v]] (str (*vimify k) ": " (*vimify v))) x))) "}")' .
       \    ' (coll? x)    (str "[" (apply str (interpose ", " (map *vimify x))) "]")' .
-      \    ' (true? x)    "1"' .
-      \    ' (false? x)   "0"' .
+      \    ' (true? x)    "v:true"' .
+      \    ' (false? x)   "v:false"' .
+      \    ' (nil? x)     "v:null"' .
       \    ' (number? x)  (pr-str x)' .
       \    ' (keyword? x) (pr-str (name x))' .
       \    ' :else        (pr-str (str x)))) %s))'
