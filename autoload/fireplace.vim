@@ -386,20 +386,32 @@ function! s:repl.preload(lib) dict abort
   return {}
 endfunction
 
-function! s:repl.eval(expr, options) dict abort
-  let options = s:NormalizeNs(self, a:options)
+function! s:repl.Eval(...) dict abort
+  let options = {'op': 'eval', 'code': ''}
+  for l:Arg in a:000
+    if type(Arg) == v:t_string
+      let options.code = Arg
+    elseif type(Arg) == v:t_dict
+      call extend(options, Arg)
+    elseif type(Arg) == v:t_func
+      let l:Callback = Arg
+    endif
+  endfor
+  let options = s:NormalizeNs(self, options)
   if has_key(options, 'ns') && options.ns !=# self.user_ns()
     let error = self.preload(options.ns)
     if !empty(error)
       return error
     endif
   endif
-  let response = self.message(extend({'op': 'eval', 'code': a:expr}, options), v:t_dict)
-  if index(response.status, 'namespace-not-found') < 0
+  let response = self.message(extend(options), exists('l:Callback') ? Callback : v:t_dict)
+  if index(get(response, 'status', []), 'namespace-not-found') < 0
     return response
   endif
   throw 'Fireplace: namespace not found: ' . get(options, 'ns', self.user_ns())
 endfunction
+
+let s:repl.eval = s:repl.Eval
 
 let s:piggieback = copy(s:repl)
 
@@ -686,19 +698,34 @@ function! s:oneoff.Path() dict abort
   return self._path
 endfunction
 
-function! s:oneoff.eval(expr, options) dict abort
-  if !empty(get(a:options, 'session', 1))
+function! s:oneoff.Eval(...) dict abort
+  let options = {'op': 'eval', 'code': ''}
+  for l:Arg in a:000
+    if type(Arg) == v:t_string
+      let options.code = Arg
+    elseif type(Arg) == v:t_dict
+      call extend(options, Arg)
+    elseif type(Arg) == v:t_func
+      let l:Callback = Arg
+    endif
+  endfor
+  if !empty(get(options, 'session', 1))
     throw s:no_repl
   endif
-  let id = has_key(a:options, 'id') ? a:options.id : fireplace#transport#id()
+  let id = has_key(options, 'id') ? options.id : fireplace#transport#id()
   let path = join(self.path(), has('win32') ? ';' : ':')
-  let options = s:NormalizeNs(self, a:options)
+  let options = s:NormalizeNs(self, options)
   let ns = get(options, 'ns', self.user_ns())
   let queue = []
-  call s:spawn_eval(id, path, a:expr, ns, function('add', [queue]))
+  if exists('l:Callback')
+    return s:spawn_eval(id, path, options.code, ns, l:Callback)
+  endif
+  call s:spawn_eval(id, path, options.code, ns, function('add', [queue]))
   call s:spawn_wait(id)
   return fireplace#transport#combine(queue)
 endfunction
+
+let s:oneoff.eval = s:oneoff.Eval
 
 function! s:oneoff.Session(...) abort
   throw s:no_repl
@@ -1366,7 +1393,7 @@ function! s:Eval(type, line1, line2, range, bang, mods, args) abort
   try
     let args = (a:type ==# 'client' ? [] : [fireplace#{a:type}()]) + [expr, options]
     if a:bang
-      let result = split(join(map(call('fireplace#eval', args + [&textwidth]), 'substitute(v:val, "\n*$", "", "")'), "\n"), "\n")
+      let result = split(join(map(call('fireplace#eval', [&textwidth] + args), 'substitute(v:val, "\n*$", "", "")'), "\n"), "\n")
       if a:args !=# ''
         call append(a:line1, result)
         exe a:line1
