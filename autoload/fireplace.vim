@@ -1168,23 +1168,39 @@ let g:fireplace#reader =
       \    ' (keyword? x) (pr-str (name x))' .
       \    ' :else        (pr-str (str x)))) %s))'
 
-function! fireplace#evalparse(expr, ...) abort
-  let options = extend({'session': 0}, a:0 ? a:1 : {})
-  let response = s:eval(printf(g:fireplace#reader, a:expr), options)
+function! fireplace#query(...) abort
+  let client = fireplace#client()
+  let opts = {'session': v:false, 'ns': v:true}
+  for l:Arg in a:000
+    if type(Arg) == v:t_string
+      let opts.code = Arg
+    elseif type(Arg) == v:t_dict && type(get(Arg, 'Session')) ==# v:t_func
+      let client = Arg
+    elseif type(Arg) == v:t_dict
+      call extend(opts, Arg)
+    elseif type(Arg) == v:t_func
+      let l:Callback = Arg
+    endif
+  endfor
+  let opts.code = printf(g:fireplace#reader, get(opts, 'code', 'null'))
+  if exists('Callback')
+    return client.Eval(opts, { m -> len(get(m, 'value', '')) ? Callback(eval(m.value)) : 0 })
+  endif
+  let response = client.Eval(opts)
   call s:output_response(response)
 
   if get(response, 'ex', '') !=# ''
     let err = 'Clojure: '.response.ex
   elseif has_key(response, 'value')
-    return empty(response.value) ? '' : eval(response.value[0])
+    return empty(response.value) ? '' : eval(response.value[-1])
   else
     let err = 'fireplace.vim: No value in '.string(response)
   endif
   throw err
 endfunction
 
-function! fireplace#query(expr, ...) abort
-  return fireplace#evalparse(a:expr, a:0 ? a:1 : {})
+function! fireplace#evalparse(expr, ...) abort
+  return fireplace#query(a:expr, a:0 ? a:1 : {})
 endfunction
 
 " Section: Quickfix
@@ -1672,7 +1688,7 @@ function! fireplace#info(symbol) abort
         \ .    ' :arglists-str (clojure.core/str (:arglists m))}'
         \ .   ' {})'
         \ . ' )'
-  return fireplace#evalparse(cmd)
+  return fireplace#query(cmd)
 endfunction
 
 function! fireplace#source(symbol) abort
