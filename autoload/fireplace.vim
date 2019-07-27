@@ -631,20 +631,18 @@ if !exists('s:spawns')
   let s:spawns = {}
 endif
 
-function! s:spawn_wait(id) abort
+function! s:spawn_wait(id, ...) abort
   let message = get(s:spawns, a:id, {})
   if type(get(message, 'job', '')) == v:t_number
-    while jobwait([message.job])[0] == -1
-      sleep 1m
-    endwhile
+    call jobwait([message.job])
   elseif type(get(message, 'job', '')) != v:t_string
     while job_status(message.job) ==# 'run'
       sleep 1m
     endwhile
   endif
-  while has_key(s:spawns, a:id)
-    sleep 1m
-  endwhile
+  if has_key(s:spawns, a:id)
+    throw 'Fireplace: race condition waiting on spawning eval?'
+  endif
 endfunction
 
 function! s:spawn_complete(id, name, callback) abort
@@ -975,6 +973,23 @@ function! fireplace#message(payload, ...) abort
     return call(client.message, [payload] + a:000, client)
   endif
   throw 'Fireplace: change fireplace#message({...}) to fireplace#message({...}, v:t_list)'
+endfunction
+
+function! fireplace#wait(msg_or_id_or_list, ...) abort
+  if type(a:msg_or_id_or_list) == v:t_list
+    return map(copy(a:msg_or_id_or_list), 'fireplace#wait(v:val)')
+  elseif type(a:msg_or_id_or_list) == v:t_dict
+    let id = get(a:msg_or_id_or_list, 'id', '')
+  else
+    let id = a:msg_or_id_or_list
+  endif
+  call call('s:spawn_wait', [id] + a:000)
+  call call('fireplace#transport#wait', [id] + a:000)
+  return a:msg_or_id_or_list
+endfunction
+
+function! fireplace#id() abort
+  return fireplace#transport#id()
 endfunction
 
 function! s:op_missing_error(op, ...) abort

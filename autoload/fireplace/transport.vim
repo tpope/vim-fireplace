@@ -246,9 +246,6 @@ function! s:transport_has_op(op) dict abort
 endfunction
 
 function! s:transport_message(request, ...) dict abort
-  if !a:0
-    throw 'Fireplace: change .message({...}) to .message({...}, v:t_list)'
-  endif
   let request = copy(a:request)
   if empty(get(request, 'id'))
     let request.id = fireplace#transport#id()
@@ -259,18 +256,21 @@ function! s:transport_message(request, ...) dict abort
   if empty(get(request, 'ns', 1))
     unlet request.ns
   endif
-  let message = {'id': request.id}
 
-  if !a:0 || type(a:1) == v:t_number
-    let msgs = []
-    let self.requests[request.id] = function('add', [msgs])
-  elseif empty(a:1)
-    let self.requests[request.id] = function('len')
+  if empty(get(request, 'id', 1))
+    call s:json_send(self.job, request)
+    return {}
+  endif
+
+  let message = {'id': request.id}
+  if !a:0 || type(a:1) == v:t_number || empty(a:1)
+    let received = []
+    let self.requests[request.id] = function('add', [received])
   else
     let self.requests[request.id] = function(a:1, a:000[1:-1])
   endif
   call s:json_send(self.job, request)
-  if !exists('msgs')
+  if !a:0 || type(a:1) != v:t_number
     return message
   endif
   try
@@ -282,13 +282,25 @@ function! s:transport_message(request, ...) dict abort
       call s:json_send(self.job, {'op': 'interrupt', 'id': fireplace#transport#id(), 'session': request.session, 'interrupt-id': request.id})
     endif
   endtry
-  if !a:0 || a:1 is# v:t_list
-    return msgs
-  elseif a:1 is# v:t_dict
-    return fireplace#transport#combine(msgs)
+  if a:0 && a:1 is# v:t_list
+    return received
+  elseif a:0 && a:1 is# v:t_dict
+    return fireplace#transport#combine(received)
   else
     return message
   endif
+endfunction
+
+function! fireplace#transport#wait(id, ...) abort
+  for [url, dict] in items(s:urls)
+    while has_key(dict.transport, 'job') && has_key(dict.transport.requests, a:id)
+      if type(dict.transport.job) == v:t_number
+        call jobwait([dict.transport.job], 1)
+      else
+        sleep 1m
+      endif
+    endwhile
+  endfor
 endfunction
 
 let s:transport = {
