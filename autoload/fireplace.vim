@@ -404,7 +404,7 @@ function! s:repl.Eval(...) dict abort
       return error
     endif
   endif
-  let response = self.message(extend(options), exists('l:Callback') ? Callback : v:t_dict)
+  let response = self.message(options, exists('l:Callback') ? Callback : v:t_dict)
   if index(get(response, 'status', []), 'namespace-not-found') < 0
     return response
   endif
