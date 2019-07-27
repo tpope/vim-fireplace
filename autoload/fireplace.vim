@@ -371,9 +371,9 @@ function! s:repl.preload(lib) dict abort
     let self.requires[a:lib] = 0
     if self.user_ns() ==# 'user'
       let qsym = s:qsym(a:lib)
-      let expr = '(when-not (find-ns '.qsym.') (try'
+      let expr = '(clojure.core/when-not (clojure.core/find-ns '.qsym.') (try'
             \ . ' (#''clojure.core/load-one '.qsym.' true true)'
-            \ . ' (catch Exception e (when-not (find-ns '.qsym.') (throw e)))))'
+            \ . ' (catch Exception e (clojure.core/when-not (clojure.core/find-ns '.qsym.') (throw e)))))'
     else
       let expr = '(ns '.self.user_ns().' (:require '.a:lib.reload.'))'
     endif
