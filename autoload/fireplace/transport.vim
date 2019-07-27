@@ -128,10 +128,12 @@ function! s:json_callback(url, state, requests, sessions, job, msg) abort
     let a:sessions[a:msg['new-session']] = 'len'
   endif
   if has_key(a:requests, get(a:msg, 'id'))
-    try
-      call call(a:requests[a:msg.id], [a:msg])
-    catch
-    endtry
+    for l:Callback in a:requests[a:msg.id].callbacks
+      try
+        call call(l:Callback, [a:msg])
+      catch
+      endtry
+    endfor
     if index(get(a:msg, 'status', []), 'done') >= 0
       call remove(a:requests, a:msg.id)
     endif
@@ -262,13 +264,16 @@ function! s:transport_message(request, ...) dict abort
     return {}
   endif
 
+  let received = []
   let message = {'id': request.id}
-  if !a:0 || type(a:1) == v:t_number || empty(a:1)
-    let received = []
-    let self.requests[request.id] = function('add', [received])
-  else
-    let self.requests[request.id] = function(a:1, a:000[1:-1])
+  let callbacks = [function('add', [received])]
+  if a:0 && type(a:1) ==# v:t_list
+    call extend(callbacks, map(copy(a:1), 'function(v:val, a:000[1:-1])'))
+  elseif a:0 && (type(a:1) == v:t_func || type(a:1) == v:t_string && len(a:1))
+    call add(callbacks, function(a:1, a:000[1:-1]))
   endif
+
+  let self.requests[request.id] = {'callbacks': callbacks}
   call s:json_send(self.job, request)
   if !a:0 || type(a:1) != v:t_number
     return message
