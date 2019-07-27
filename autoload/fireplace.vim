@@ -300,7 +300,7 @@ endfunction
 let s:clj = {}
 
 function! s:CljBufferNs(...) dict abort
-  if call('s:bufext', a:000) =~# '^clj[cx]\=$'
+  if call('s:bufext', a:0 ? a:000 : get(self, 'args', [])) =~# '^clj[cx]\=$'
     return call('fireplace#ns', a:000)
   else
     return self.UserNs()
@@ -311,6 +311,10 @@ function! s:CljExt() dict abort
   return 'clj'
 endfunction
 
+function! s:CljReplNs() dict abort
+  return 'clojure.repl'
+endfunction
+
 function! s:CljUserNs() dict abort
   return 'user'
 endfunction
@@ -318,17 +322,38 @@ endfunction
 let s:clj = {
       \ 'BufferNs': function('s:CljBufferNs'),
       \ 'Ext': function('s:CljExt'),
+      \ 'ReplNs': function('s:CljReplNs'),
       \ 'UserNs': function('s:CljUserNs')}
 
-function! s:clj.path() abort
-  return self.Path()
+function! s:CljsBufferNs(...) dict abort
+  if call('s:bufext', a:0 ? a:000 : get(self, 'args', [])) =~# '^clj[scx]$'
+    return call('fireplace#ns', a:000)
+  else
+    return self.UserNs()
+  endif
 endfunction
 
-function! s:clj.user_ns() abort
-  return self.UserNs()
+function! s:CljsExt() dict abort
+  return 'cljs'
 endfunction
+
+function! s:CljsReplNs() dict abort
+  return 'cljs.repl'
+endfunction
+
+function! s:CljsUserNs() dict abort
+  return 'cljs.user'
+endfunction
+
+let s:cljs = {
+      \ 'BufferNs': function('s:CljsBufferNs'),
+      \ 'Ext': function('s:CljsExt'),
+      \ 'ReplNs': function('s:CljsReplNs'),
+      \ 'UserNs': function('s:CljsUserNs')}
 
 let s:repl = extend({"requires": {}}, s:clj)
+
+let s:repl.user_ns = s:repl.UserNs
 
 if !exists('s:repls')
   let s:repls = []
@@ -343,6 +368,8 @@ endfunction
 function! s:repl.Path() dict abort
   return self.transport._path
 endfunction
+
+let s:repl.path = s:repl.Path
 
 function! s:repl.message(payload, ...) dict abort
   call s:NormalizeNs(self, a:payload)
@@ -413,23 +440,9 @@ endfunction
 
 let s:repl.eval = s:repl.Eval
 
-let s:piggieback = copy(s:repl)
+let s:piggieback = extend(copy(s:repl), s:cljs)
 
-function! s:piggieback.BufferNs(...) abort
-  if call('s:bufext', a:000) =~# '^clj[scx]$'
-    return call('fireplace#ns', a:000)
-  else
-    return self.UserNs()
-  endif
-endfunction
-
-function! s:piggieback.Ext() abort
-  return 'cljs'
-endfunction
-
-function! s:piggieback.UserNs() abort
-  return 'cljs.user'
-endfunction
+let s:piggieback.user_ns = s:piggieback.UserNs
 
 function! s:piggieback.Piggieback(arg, ...) abort
   if a:0 && a:1
@@ -597,7 +610,7 @@ endfunction
 
 function! s:piggieback(count, arg, remove) abort
   try
-    let response = fireplace#cljs().Piggieback(a:arg, a:remove)
+    let response = s:Cljs().Piggieback(a:arg, a:remove)
     call s:output_response(response)
     return ''
   catch /^Fireplace:/
@@ -694,9 +707,13 @@ let s:no_repl = 'Fireplace: no live REPL connection'
 
 let s:oneoff = copy(s:clj)
 
+let s:oneoff.user_ns = s:repl.UserNs
+
 function! s:oneoff.Path() dict abort
   return self._path
 endfunction
+
+let s:oneoff.path = s:oneoff.Path
 
 function! s:oneoff.Eval(...) dict abort
   let options = {'op': 'eval', 'code': ''}
@@ -797,7 +814,7 @@ function! s:impl_ns(...) abort
     return 'clojure'
   elseif !empty(get(b:, 'fireplace_cljc_platform', ''))
     return b:fireplace_cljc_platform is# 'cljs' ? 'cljs' : 'clj'
-  elseif len(get(call('fireplace#clj', a:000), 'cljs_sessions', []))
+  elseif len(get(call('fireplace#native', a:000), 'cljs_sessions', []))
     return 'cljs'
   else
     return 'clojure'
@@ -850,7 +867,7 @@ function! fireplace#path(...) abort
   return s:path_extract(getbufvar(buf, '&path'))
 endfunction
 
-function! fireplace#clj(...) abort
+function! fireplace#native(...) abort
   call s:unregister_dead()
   for [k, v] in items(s:repl_portfiles)
     if getftime(k) != v.time
@@ -888,16 +905,44 @@ function! fireplace#clj(...) abort
   throw s:no_repl
 endfunction
 
-function! fireplace#native(...) abort
-  return call('fireplace#clj', a:000)
+function! s:SessionDelegate(func, ...) dict abort
+  if self.Ext() ==# 'cljs'
+    let fn = 's:Cljs'
+  else
+    let fn = 'fireplace#native'
+  endif
+  let obj = call(fn, get(self, 'args', []))
+  return call(obj[a:func], a:000, obj)
 endfunction
 
-function! fireplace#platform(...) abort
-  return call('fireplace#clj', a:000)
+let s:delegate = {
+      \ 'Session': function('s:SessionDelegate', ['Session']),
+      \ 'Message': function('s:SessionDelegate', ['Message']),
+      \ 'Path': function('s:SessionDelegate', ['Path']),
+      \ 'Eval': function('s:SessionDelegate', ['Eval']),
+      \ }
+
+let s:clj_delegate = extend(copy(s:clj), s:delegate)
+let s:cljs_delegate = extend(copy(s:cljs), s:delegate)
+
+function! fireplace#clj(...) abort
+  return extend({'args': a:000}, s:clj_delegate)
 endfunction
 
 function! fireplace#cljs(...) abort
-  let client = call('fireplace#clj', a:000)
+  return extend({'args': a:000}, s:cljs_delegate)
+endfunction
+
+function! fireplace#platform(...) abort
+  if call('s:impl_ns', a:000) ==# 'cljs'
+    return call('fireplace#cljs', a:000)
+  else
+    return call('fireplace#clj', a:000)
+  endif
+endfunction
+
+function! s:Cljs(...) abort
+  let client = call('fireplace#native', a:000)
   if !has_key(client, 'cljs_sessions')
     throw s:no_repl
   endif
@@ -911,11 +956,11 @@ function! fireplace#client(...) abort
   let buf = a:0 ? a:1 : s:buf()
   let ext = fnamemodify(bufname(buf), ':e')
   if ext ==# 'cljs'
-    return call('fireplace#cljs', a:000)
+    return call('s:Cljs', a:000)
   endif
-  let client = call('fireplace#clj', a:000)
+  let client = call('fireplace#native', a:000)
   if ext !=# 'clj' && len(get(client, 'cljs_sessions', []))
-    return call('fireplace#cljs', a:000)
+    return call('s:Cljs', a:000)
   endif
   return client
 endfunction
@@ -934,7 +979,7 @@ endfunction
 
 function! s:op_missing_error(op, ...) abort
   try
-    let client = fireplace#clj()
+    let client = fireplace#native()
     if !has_key(client, 'transport')
       return s:no_repl
     elseif client.transport.has_op(a:op)
@@ -1073,10 +1118,10 @@ function! fireplace#eval(...) abort
   endfor
   let code = remove(opts, 'code')
 
-  let platform = fireplace#clj()
+  let native = fireplace#native()
   let ext = matchstr(bufname(s:buf()), '\.\zs\w\+$')
-  if !exists('client') && !has_key(opts, 'session') && has_key(platform, 'cljs_sessions') && ext =~# '^clj[csx]$' && code =~# '^\s*(\S\+/cljs-repl'
-    let client = platform
+  if !exists('client') && !has_key(opts, 'session') && has_key(native, 'cljs_sessions') && ext =~# '^clj[csx]$' && code =~# '^\s*(\S\+/cljs-repl'
+    let client = native
   elseif !exists('client')
     let client = fireplace#client()
   endif
