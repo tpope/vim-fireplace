@@ -49,8 +49,8 @@ properly, and that not all operations are supported.
                         cljs.repl.browser will be used to provide the REPL
                         environment.
 
-:Piggieback             If no argument is given, :Piggieback defaults to a
-                        to the ClojureScript environment specified in
+:Piggieback             If no argument is given, :Piggieback defaults to
+                        the ClojureScript environment specified in
                         *b:fireplace_cljs_repl* or *g:fireplace_cljs_repl* .
                         If projectionist.vim is installed, the "cljsRepl"
                         projectionist key is also checked.  This default will
