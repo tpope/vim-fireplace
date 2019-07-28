@@ -351,7 +351,39 @@ let s:cljs = {
       \ 'ReplNs': function('s:CljsReplNs'),
       \ 'UserNs': function('s:CljsUserNs')}
 
-let s:repl = extend({"requires": {}}, s:clj)
+function! s:EvalQuery(...) dict abort
+  let opts = {'session': v:false}
+  for l:Arg in a:000
+    if type(Arg) == v:t_string
+      let opts.code = Arg
+    elseif type(Arg) == v:t_dict && type(get(Arg, 'Session')) ==# v:t_func
+      let client = Arg
+    elseif type(Arg) == v:t_dict
+      call extend(opts, Arg)
+    elseif type(Arg) == v:t_func
+      let l:Callback = Arg
+    endif
+  endfor
+  let opts.code = printf(g:fireplace#reader, get(opts, 'code', 'null'))
+  if exists('Callback')
+    return self.Eval(opts, { m -> len(get(m, 'value', '')) ? Callback(eval(m.value)) : 0 })
+  endif
+  let response = self.Eval(opts)
+  call s:output_response(response)
+
+  if get(response, 'ex', '') !=# ''
+    let err = 'Clojure: '.response.ex
+  elseif has_key(response, 'value')
+    return empty(response.value) ? '' : eval(response.value[-1])
+  else
+    let err = 'fireplace.vim: No value in '.string(response)
+  endif
+  throw err
+endfunction
+
+let s:common = {'Query': function('s:EvalQuery')}
+
+let s:repl = extend(extend({"requires": {}}, s:clj), s:common)
 
 let s:repl.user_ns = s:repl.UserNs
 
@@ -947,11 +979,12 @@ endfunction
 
 let s:delegate = {
       \ 'Client': function('s:PlatformDelegate', ['Client']),
-      \ 'Session': function('s:PlatformDelegate', ['Session']),
-      \ 'Message': function('s:PlatformDelegate', ['Message']),
-      \ 'Path': function('s:NativeDelegate', ['Path']),
       \ 'Eval': function('s:PlatformDelegate', ['Eval']),
       \ 'HasOp': function('s:NativeDelegate', ['HasOp']),
+      \ 'Query': function('s:PlatformDelegate', ['Query']),
+      \ 'Message': function('s:PlatformDelegate', ['Message']),
+      \ 'Path': function('s:NativeDelegate', ['Path']),
+      \ 'Session': function('s:PlatformDelegate', ['Session']),
       \ }
 
 let s:clj_delegate = extend(copy(s:clj), s:delegate)
@@ -1264,34 +1297,16 @@ let g:fireplace#reader =
       \    ' :else        (pr-str (str x)))) %s))'
 
 function! fireplace#query(...) abort
-  let client = fireplace#client()
-  let opts = {'session': v:false, 'ns': v:true}
+  let args = [{'ns': v:true}]
+  let client = fireplace#platform()
   for l:Arg in a:000
-    if type(Arg) == v:t_string
-      let opts.code = Arg
-    elseif type(Arg) == v:t_dict && type(get(Arg, 'Session')) ==# v:t_func
+    if type(Arg) == v:t_dict && type(get(Arg, 'Session')) ==# v:t_func
       let client = Arg
-    elseif type(Arg) == v:t_dict
-      call extend(opts, Arg)
-    elseif type(Arg) == v:t_func
-      let l:Callback = Arg
+    else
+      call add(args, Arg)
     endif
   endfor
-  let opts.code = printf(g:fireplace#reader, get(opts, 'code', 'null'))
-  if exists('Callback')
-    return client.Eval(opts, { m -> len(get(m, 'value', '')) ? Callback(eval(m.value)) : 0 })
-  endif
-  let response = client.Eval(opts)
-  call s:output_response(response)
-
-  if get(response, 'ex', '') !=# ''
-    let err = 'Clojure: '.response.ex
-  elseif has_key(response, 'value')
-    return empty(response.value) ? '' : eval(response.value[-1])
-  else
-    let err = 'fireplace.vim: No value in '.string(response)
-  endif
-  throw err
+  return call(client.Query, args, client)
 endfunction
 
 function! fireplace#evalparse(expr, ...) abort
