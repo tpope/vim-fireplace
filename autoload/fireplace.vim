@@ -631,10 +631,21 @@ if !exists('s:spawns')
   let s:spawns = {}
 endif
 
+function! s:spawn_interrupt(id) abort
+  let message = get(s:spawns, a:id, {})
+  if type(get(message, 'job', '')) == v:t_number
+    call jobstop(message.job)
+  elseif type(get(message, 'job', '')) != v:t_string
+    call job_stop(message.job)
+  endif
+endfunction
+
 function! s:spawn_wait(id, ...) abort
   let message = get(s:spawns, a:id, {})
   if type(get(message, 'job', '')) == v:t_number
-    call jobwait([message.job])
+    while jobwait([message.job], 0) == -1
+      sleep 1m
+    endwhile
   elseif type(get(message, 'job', '')) != v:t_string
     while job_status(message.job) ==# 'run'
       sleep 1m
@@ -975,17 +986,29 @@ function! fireplace#message(payload, ...) abort
   throw 'Fireplace: change fireplace#message({...}) to fireplace#message({...}, v:t_list)'
 endfunction
 
+function! fireplace#interrupt(msg_or_id) abort
+  let id = type(a:msg_or_id) ==# v:t_dict ? get(a:msg_or_id, 'id', '') : a:msg_or_id
+  call s:spawn_interrupt(id)
+  call fireplace#transport#interrupt(id)
+  return a:msg_or_id
+endfunction
+
 function! fireplace#wait(msg_or_id_or_list, ...) abort
-  if type(a:msg_or_id_or_list) == v:t_list
-    return map(copy(a:msg_or_id_or_list), 'fireplace#wait(v:val)')
-  elseif type(a:msg_or_id_or_list) == v:t_dict
-    let id = get(a:msg_or_id_or_list, 'id', '')
-  else
-    let id = a:msg_or_id_or_list
+  if type(a:msg_or_id_or_list) != v:t_list
+    return call('fireplace#wait', [[a:msg_or_id_or_list]])[0]
   endif
-  call call('s:spawn_wait', [id] + a:000)
-  call call('fireplace#transport#wait', [id] + a:000)
-  return a:msg_or_id_or_list
+  try
+    for item in a:msg_or_id_or_list
+      let id = type(item) ==# v:t_dict ? get(item, 'id', '') : item
+      call call('s:spawn_wait', [id] + a:000)
+      call call('fireplace#transport#wait', [id] + a:000)
+    endfor
+    return a:msg_or_id_or_list
+  finally
+    for item in a:msg_or_id_or_list
+      call fireplace#interrupt(item)
+    endfor
+  endtry
 endfunction
 
 function! fireplace#id() abort

@@ -139,7 +139,10 @@ function! s:json_callback(url, state, requests, sessions, job, msg) abort
     endif
   endif
   if has_key(a:sessions, get(a:msg, 'session'))
-    call call(a:sessions[a:msg.session], [a:msg])
+    try
+      call call(a:sessions[a:msg.session], [a:msg])
+    catch
+    endtry
     if index(get(a:msg, 'status', []), 'session-closed') >= 0
       call remove(a:sessions, a:msg.session)
     endif
@@ -274,6 +277,9 @@ function! s:transport_message(request, ...) dict abort
   endif
 
   let self.requests[request.id] = {'callbacks': callbacks}
+  if has_key(request, 'session')
+    let self.requests[request.id].session = request.session
+  endif
   call s:json_send(self.job, request)
   if !a:0 || type(a:1) != v:t_number
     return message
@@ -296,14 +302,21 @@ function! s:transport_message(request, ...) dict abort
   endif
 endfunction
 
+function! fireplace#transport#interrupt(id) abort
+  for [url, dict] in items(s:urls)
+    if has_key(dict.transport.requests, a:id)
+      let request = dict.transport.requests[a:id]
+      if has_key(dict.transport, 'job') && has_key(request, 'session')
+        call s:json_send(dict.transport.job, {'op': 'interrupt', 'id': fireplace#transport#id(), 'session': request.session, 'interrupt-id': a:id})
+      endif
+    endif
+  endfor
+endfunction
+
 function! fireplace#transport#wait(id, ...) abort
   for [url, dict] in items(s:urls)
     while has_key(dict.transport, 'job') && has_key(dict.transport.requests, a:id)
-      if type(dict.transport.job) == v:t_number
-        call jobwait([dict.transport.job], 1)
-      else
-        sleep 1m
-      endif
+      sleep 1m
     endwhile
   endfor
 endfunction
