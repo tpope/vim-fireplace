@@ -86,8 +86,13 @@ function! s:session_has_op(op) dict abort
 endfunction
 
 let s:session = {
+      \ 'Close': s:function('s:session_close'),
+      \ 'Clone': s:function('s:session_clone'),
+      \ 'Message': s:function('s:session_message'),
+      \ 'HasOp': s:function('s:session_has_op'),
+      \ 'Path': s:function('s:session_path'),
       \ 'close': s:function('s:session_close'),
       \ 'clone': s:function('s:session_clone'),
-      \ 'message': s:function('s:session_message'),
       \ 'has_op': s:function('s:session_has_op'),
+      \ 'message': s:function('s:session_message'),
       \ 'path': s:function('s:session_path')}

@@ -322,6 +322,11 @@ function! fireplace#transport#wait(id, ...) abort
 endfunction
 
 let s:transport = {
+      \ 'Alive': function('s:transport_alive'),
+      \ 'Clone': function('s:transport_clone'),
+      \ 'Close': function('s:transport_close'),
+      \ 'HasOp': function('s:transport_has_op'),
+      \ 'Message': function('s:transport_message'),
       \ 'alive': function('s:transport_alive'),
       \ 'clone': function('s:transport_clone'),
       \ 'close': function('s:transport_close'),

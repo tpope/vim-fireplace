@@ -440,6 +440,10 @@ endfunction
 
 let s:repl.eval = s:repl.Eval
 
+function! s:repl.HasOp(op) abort
+  return self.transport.has_op(a:op)
+endfunction
+
 let s:piggieback = extend(copy(s:repl), s:cljs)
 
 let s:piggieback.user_ns = s:piggieback.UserNs
@@ -757,6 +761,10 @@ function! s:oneoff.Session(...) abort
   throw s:no_repl
 endfunction
 
+function! s:oneoff.HasOp(op) abort
+  return 0
+endfunction
+
 let s:oneoff.message = s:oneoff.Session
 let s:oneoff.Message = s:oneoff.Session
 
@@ -914,7 +922,7 @@ function! fireplace#native(...) abort
   throw s:no_repl
 endfunction
 
-function! s:SessionDelegate(func, ...) dict abort
+function! s:PlatformDelegate(func, ...) dict abort
   if self.Ext() ==# 'cljs'
     let fn = 's:Cljs'
   else
@@ -924,11 +932,17 @@ function! s:SessionDelegate(func, ...) dict abort
   return call(obj[a:func], a:000, obj)
 endfunction
 
+function! s:NativeDelegate(func, ...) dict abort
+  let obj = call('fireplace#native', get(self, 'args', []))
+  return call(obj[a:func], a:000, obj)
+endfunction
+
 let s:delegate = {
-      \ 'Session': function('s:SessionDelegate', ['Session']),
-      \ 'Message': function('s:SessionDelegate', ['Message']),
-      \ 'Path': function('s:SessionDelegate', ['Path']),
-      \ 'Eval': function('s:SessionDelegate', ['Eval']),
+      \ 'Session': function('s:PlatformDelegate', ['Session']),
+      \ 'Message': function('s:PlatformDelegate', ['Message']),
+      \ 'Path': function('s:NativeDelegate', ['Path']),
+      \ 'Eval': function('s:PlatformDelegate', ['Eval']),
+      \ 'HasOp': function('s:NativeDelegate', ['HasOp']),
       \ }
 
 let s:clj_delegate = extend(copy(s:clj), s:delegate)
@@ -980,10 +994,7 @@ function! fireplace#message(payload, ...) abort
   if !has_key(payload, 'ns')
     let payload.ns = v:true
   endif
-  if a:0
-    return call(client.message, [payload] + a:000, client)
-  endif
-  throw 'Fireplace: change fireplace#message({...}) to fireplace#message({...}, v:t_list)'
+  return call(client.message, [payload] + a:000, client)
 endfunction
 
 function! fireplace#interrupt(msg_or_id) abort
@@ -1078,15 +1089,6 @@ function! s:output_response(response) abort
   endif
 endfunction
 
-function! s:eval(expr, ...) abort
-  let options = a:0 ? copy(a:1) : {}
-  let client = fireplace#client()
-  if !has_key(options, 'ns')
-    let options.ns = client.BufferNs()
-  endif
-  return client.eval(a:expr, options)
-endfunction
-
 function! s:temp_response(response, ext) abort
   let output = []
   call extend(output, map(split(get(a:response, 'err', ''), "\n"), '";!".v:val'))
@@ -1168,7 +1170,7 @@ function! fireplace#eval(...) abort
   endif
   let ext = client.Ext()
 
-  let response = client.eval(code, opts)
+  let response = client.Eval(code, opts)
 
   if !has_key(opts, 'session')
     if len(get(client, 'sessions', [])) && code =~# '^\s*:cljs/quit\s*$' && !has_key(response, 'ex')
@@ -2086,7 +2088,7 @@ endfunction
 
 function! s:Lookup(ns, macro, arg) abort
   try
-    let response = s:eval('('.a:ns.'/'.a:macro.' '.a:arg.')', {'session': ''})
+    let response = fireplace#client().Eval('('.a:ns.'/'.a:macro.' '.a:arg.')', {'session': '', 'ns': v:true})
     call s:output_response(response)
   catch /^Clojure:/
   catch /.*/
