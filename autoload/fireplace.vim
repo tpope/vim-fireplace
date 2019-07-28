@@ -361,6 +361,10 @@ if !exists('s:repls')
   let s:repl_portfiles = {}
 endif
 
+function! s:repl.Client() dict abort
+  return self
+endfunction
+
 function! s:repl.Session() dict abort
   return self.session
 endfunction
@@ -722,6 +726,10 @@ let s:oneoff = copy(s:clj)
 
 let s:oneoff.user_ns = s:repl.UserNs
 
+function! s:oneoff.Client() dict abort
+  return self
+endfunction
+
 function! s:oneoff.Path() dict abort
   return self._path
 endfunction
@@ -938,6 +946,7 @@ function! s:NativeDelegate(func, ...) dict abort
 endfunction
 
 let s:delegate = {
+      \ 'Client': function('s:PlatformDelegate', ['Client']),
       \ 'Session': function('s:PlatformDelegate', ['Session']),
       \ 'Message': function('s:PlatformDelegate', ['Message']),
       \ 'Path': function('s:NativeDelegate', ['Path']),
@@ -1149,7 +1158,7 @@ function! fireplace#eval(...) abort
     if type(arg) == v:t_string
       let opts.code = arg
     elseif type(arg) == v:t_dict && type(get(arg, 'Session')) ==# v:t_func
-      let client = arg
+      let platform = arg
     elseif type(arg) == v:t_dict
       call extend(opts, arg)
     elseif type(arg) == v:t_number
@@ -1160,16 +1169,17 @@ function! fireplace#eval(...) abort
 
   let native = fireplace#native()
   let ext = matchstr(bufname(s:buf()), '\.\zs\w\+$')
-  if !exists('client') && !has_key(opts, 'session') && has_key(native, 'cljs_sessions') && ext =~# '^clj[csx]$' && code =~# '^\s*(\S\+/cljs-repl'
-    let client = native
-  elseif !exists('client')
-    let client = fireplace#client()
+  if !exists('platform') && !has_key(opts, 'session') && has_key(native, 'cljs_sessions') && ext =~# '^clj[csx]$' && code =~# '^\s*(\S\+/cljs-repl'
+    let platform = native
+  elseif !exists('platform')
+    let platform = fireplace#platform()
   endif
   if !has_key(opts, 'ns')
-    let opts.ns = client.BufferNs()
+    let opts.ns = v:true
   endif
-  let ext = client.Ext()
+  let ext = platform.Ext()
 
+  let client = platform.Client()
   let response = client.Eval(code, opts)
 
   if !has_key(opts, 'session')
