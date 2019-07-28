@@ -28,10 +28,15 @@ The only adapter shipped with fireplace.vim is for nREPL.  You need either
 `python` or `python3` in your path.
 
                         *fireplace-piggieback* *fireplace-clojurescript*
-ClojureScript can be evaled with Piggieback if the appropriate nREPL
-middleware is loaded: https://github.com/nrepl/piggieback.  Be aware that your
-ClojureScript files must be available on the classpath for this to work
-properly, and that not all operations are supported.
+To use a ClojureScript, invoke |:CljEval| with the command you would normally
+use to start a ClojureScript REPL.  For example:
+>
+        :CljEval (cider.piggieback/cljs-env (cljs.repl.nashorn/repl-env))
+<
+Be aware that your ClojureScript files must be available on the classpath for
+this to work properly, and that not all operations are supported.
+
+The :Piggieback command is softly deprecated wrapper for invoking Piggieback.
 
                                                 *fireplace-:Piggieback*
 :Piggieback ({ns}/repl-env [...])
