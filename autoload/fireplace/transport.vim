@@ -267,13 +267,19 @@ function! s:transport_message(request, ...) dict abort
     return {}
   endif
 
+  let args = copy(a:000)
+
+  if len(args) && type(args[0]) == v:t_number
+    let ret_type = remove(args, 0)
+  endif
+
   let received = []
   let message = {'id': request.id}
   let callbacks = [function('add', [received])]
-  if a:0 && type(a:1) ==# v:t_list
-    call extend(callbacks, map(copy(a:1), 'function(v:val, a:000[1:-1])'))
-  elseif a:0 && (type(a:1) == v:t_func || type(a:1) == v:t_string && len(a:1))
-    call add(callbacks, function(a:1, a:000[1:-1]))
+  if len(args) && type(args[0]) ==# v:t_list
+    call extend(callbacks, map(copy(args), 'function(v:val, args[1:-1])'))
+  elseif len(args) && (type(args[0]) == v:t_func || type(args[0]) == v:t_string && len(args[0]))
+    call add(callbacks, function(args[0], args[1:-1]))
   endif
 
   let self.requests[request.id] = {'callbacks': callbacks}
@@ -281,7 +287,7 @@ function! s:transport_message(request, ...) dict abort
     let self.requests[request.id].session = request.session
   endif
   call s:json_send(self.job, request)
-  if !a:0 || type(a:1) != v:t_number
+  if !exists('ret_type')
     return message
   endif
   try
@@ -293,10 +299,12 @@ function! s:transport_message(request, ...) dict abort
       call s:json_send(self.job, {'op': 'interrupt', 'id': fireplace#transport#id(), 'session': request.session, 'interrupt-id': request.id})
     endif
   endtry
-  if a:0 && a:1 is# v:t_list
+  if ret_type is# v:t_list
     return received
-  elseif a:0 && a:1 is# v:t_dict
+  elseif ret_type is# v:t_dict
     return fireplace#transport#combine(received)
+  elseif ret_type is# v:t_number
+    return len(received)
   else
     return message
   endif
