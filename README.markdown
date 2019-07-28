@@ -1,6 +1,6 @@
 # fireplace.vim
 
-There's a REPL in fireplace, but you probably wouldn't have noticed if I hadn't
+There's a REPL in Fireplace, but you probably wouldn't have noticed if I hadn't
 told you.  Such is the way with fireplace.vim.  By the way, this plugin is for
 Clojure.
 
@@ -25,21 +25,21 @@ This list isn't exhaustive; see the `:help` for details.
 
 ### Transparent setup
 
-Fireplace.vim talks to nREPL.  With Leiningen and Boot, it connects
-automatically using the `.nrepl-port` file created when you run `lein repl` or
-`boot repl`. If you are starting nREPL some other way, run `:Connect` and enter
-the host and port.  You can connect to multiple instances of nREPL for different
-projects, and it will use the right one automatically.  ClojureScript support is
-just as seamless with [Piggieback][].
+Fireplace talks to nREPL.  With Leiningen and Boot, it connects automatically
+using the `.nrepl-port` file created when you run `lein repl` or `boot repl`.
+If you are starting nREPL some other way, run `:FireplaceConnect host:port`.
+You can connect to multiple instances of nREPL for different projects, and it
+will use the right one automatically.  ClojureScript support is just as
+seamless with [Piggieback][].
 
 Oh, and if you don't have an nREPL connection, installing [salve.vim][]
 lets it fall back to using `java clojure.main` for some of the basics, using a
-class path based on your Leiningen config.  It's a bit slow, but a two-second
-delay is vastly preferable to being forced out of my flow for a single
-command, in my book.
+class path based on your Leiningen or Boot config.  It's a bit slow, but a
+two-second delay is vastly preferable to being forced out of my flow for a
+single command, in my book.
 
 [cider-nrepl]: https://github.com/clojure-emacs/cider-nrepl
-[Piggieback]: https://github.com/cemerick/piggieback
+[Piggieback]: https://github.com/nrepl/piggieback
 [classpath.vim]: https://github.com/tpope/vim-classpath
 [salve.vim]: https://github.com/tpope/vim-salve
 
@@ -50,7 +50,7 @@ absolutely flawlessly, never breaking just because you did something innocuous
 like backspace through part of the prompt?  No?  Such a shame, you really
 would have liked it.
 
-I've taken a different approach in fireplace.vim.  `cq`  (Think "Clojure
+I've taken a different approach in Fireplace.  `cq`  (Think "Clojure
 Quasi-REPL") is the prefix for a set of commands that bring up a *command-line
 window* — the same thing you get when you hit `q:` — but set up for Clojure
 code.
