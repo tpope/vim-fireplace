@@ -127,7 +127,9 @@ EVALUATING CODE                                 *fireplace-eval*
 
 All code is evaluated in the namespace of the current file, requiring it if
 necessary.  If the current file sits outside the class path (project.clj, for
-example), the user namespace is used instead.
+example), the user namespace is used instead.  ClojureScript is used for .cljs
+files always and for .cljc files if a ClojureScript repl has already been
+initialized.
 
                                                 *fireplace-:Require*
 :Require [ns]           Require :reload the given/current namespace.
@@ -150,12 +152,13 @@ example), the user namespace is used instead.
                         the given range or current line.
 
                                                 *fireplace-:CljEval*
-:CljEval [...]          Like :Eval, but always use Clojure, never
-                        ClojureScript.  This command is available globally.
+:CljEval [...]          Like :Eval, but always use the user namespace and
+                        Clojure platform.  This command is available globally.
 
                                                 *fireplace-:CljsEval*
-:CljsEval [...]         Like :Eval, but always use ClojureScript, never
-                        Clojure.  This command is available globally.
+:CljsEval [...]         Like :Eval, but always use the cljs.user namespace and
+                        ClojureScript platform.  This command is available
+                        globally.
 
                                                 *fireplace-:RunTests*
 :RunTests [ns] [...]    Call clojure.test/run-tests on the given namespaces

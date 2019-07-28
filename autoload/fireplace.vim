@@ -1518,7 +1518,7 @@ function! s:Eval(type, line1, line2, range, bang, mods, args) abort
     endif
   endif
   try
-    let args = (a:type ==# 'client' ? [] : [fireplace#{a:type}()]) + [expr, options]
+    let args = (a:type ==# 'platform' || a:type ==# 'client' ? [{'ns': v:true}] : [fireplace#{a:type}(), {'ns': v:true}]) + [expr, options]
     if a:bang
       let result = split(join(map(call('fireplace#eval', [&textwidth] + args), 'substitute(v:val, "\n*$", "", "")'), "\n"), "\n")
       if a:args !=# ''
@@ -1679,7 +1679,7 @@ function! s:Last(bang, count) abort
 endfunction
 
 function! s:set_up_eval() abort
-  command! -buffer -bang -range -nargs=? -complete=customlist,fireplace#eval_complete Eval :exe s:Eval('client', <line1>, <count>, +'<range>', <bang>0, <q-mods>, <q-args>)
+  command! -buffer -bang -range -nargs=? -complete=customlist,fireplace#eval_complete Eval :exe s:Eval('platform', <line1>, <count>, +'<range>', <bang>0, <q-mods>, <q-args>)
   command! -buffer -bang -bar -count=1 Last exe s:Last(<bang>0, <count>)
   command! -buffer -bang -bar -nargs=* Stacktrace exe s:StacktraceCommand(<bang>0, [<f-args>])
 
