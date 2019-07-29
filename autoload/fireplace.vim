@@ -287,11 +287,18 @@ endfunction
 function! s:NormalizeNs(client, payload) abort
   if get(a:payload, 'ns') is# v:true
     let a:payload.ns = a:client.BufferNs()
+    if empty(a:payload.ns)
+      let a:payload.ns = a:client.UserNs()
+    endif
   elseif get(a:payload, 'ns') is# v:false
     let a:payload.ns = a:client.UserNs()
   elseif type(get(a:payload, 'ns', '')) == v:t_number
     let a:payload.ns = a:client.BufferNs(a:payload.ns)
-  elseif empty(get(a:payload, 'ns', 1))
+    if empty(a:payload.ns)
+      let a:payload.ns = a:client.UserNs()
+    endif
+  endif
+  if empty(get(a:payload, 'ns', 1))
     call remove(a:payload, 'ns')
   endif
   return a:payload
@@ -301,9 +308,10 @@ let s:clj = {}
 
 function! s:CljBufferNs(...) dict abort
   if call('s:bufext', a:0 ? a:000 : get(self, 'args', [])) =~# '^clj[cx]\=$'
-    return call('fireplace#ns', a:000)
+    let ns = call('fireplace#ns', a:000)
+    return ns =~# '^\%(cljs\.\)\=user$' ? '' : ns
   else
-    return self.UserNs()
+    return ''
   endif
 endfunction
 
@@ -327,9 +335,10 @@ let s:clj = {
 
 function! s:CljsBufferNs(...) dict abort
   if call('s:bufext', a:0 ? a:000 : get(self, 'args', [])) =~# '^clj[scx]$'
-    return call('fireplace#ns', a:000)
+    let ns = call('fireplace#ns', a:000)
+    return ns =~# '^\%(cljs\.\)\=user$' ? '' : ns
   else
-    return self.UserNs()
+    return ''
   endif
 endfunction
 
@@ -429,18 +438,18 @@ function! s:repl.done(id) dict abort
 endfunction
 
 function! s:repl.preload(lib) dict abort
-  if !empty(a:lib) && a:lib !=# self.user_ns() && !get(self.requires, a:lib)
+  if !empty(a:lib) && a:lib !=# self.UserNs() && !get(self.requires, a:lib)
     let reload = has_key(self.requires, a:lib) ? ' :reload' : ''
     let self.requires[a:lib] = 0
-    if self.user_ns() ==# 'user'
+    if self.Ext() ==# 'clj'
       let qsym = s:qsym(a:lib)
       let expr = '(clojure.core/when-not (clojure.core/find-ns '.qsym.') (try'
             \ . ' (#''clojure.core/load-one '.qsym.' true true)'
             \ . ' (catch Exception e (clojure.core/when-not (clojure.core/find-ns '.qsym.') (throw e)))))'
     else
-      let expr = '(ns '.self.user_ns().' (:require '.a:lib.reload.'))'
+      let expr = '(ns '.self.UserNs().' (:require '.a:lib.reload.'))'
     endif
-    let result = self.message({'op': 'eval', 'code': expr, 'ns': self.user_ns(), 'session': ''}, v:t_dict)
+    let result = self.message({'op': 'eval', 'code': expr, 'ns': self.UserNs(), 'session': ''}, v:t_dict)
     let self.requires[a:lib] = !has_key(result, 'ex')
     if has_key(result, 'ex')
       return result
@@ -461,7 +470,7 @@ function! s:repl.Eval(...) dict abort
     endif
   endfor
   let options = s:NormalizeNs(self, options)
-  if has_key(options, 'ns') && options.ns !=# self.user_ns()
+  if has_key(options, 'ns') && options.ns !=# self.UserNs()
     let error = self.preload(options.ns)
     if !empty(error)
       return error
@@ -471,7 +480,7 @@ function! s:repl.Eval(...) dict abort
   if index(get(response, 'status', []), 'namespace-not-found') < 0
     return response
   endif
-  throw 'Fireplace: namespace not found: ' . get(options, 'ns', self.user_ns())
+  throw 'Fireplace: namespace not found: ' . get(options, 'ns', '?')
 endfunction
 
 let s:repl.eval = s:repl.Eval
@@ -785,7 +794,7 @@ function! s:oneoff.Eval(...) dict abort
   let id = has_key(options, 'id') ? options.id : fireplace#transport#id()
   let path = join(self.path(), has('win32') ? ';' : ':')
   let options = s:NormalizeNs(self, options)
-  let ns = get(options, 'ns', self.user_ns())
+  let ns = get(options, 'ns', self.UserNs())
   let queue = []
   if exists('l:Callback')
     return s:spawn_eval(id, path, options.code, ns, l:Callback)
