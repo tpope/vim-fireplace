@@ -230,6 +230,87 @@ And insert mode:
 There's omnicomplete on |CTRL-X_CTRL-O|, which works in Clojure buffers and
 in the |command-line-window|, and tab complete at the cqp prompt.
 
+API                                             *fireplace-api*
+
+Use fireplace#clj() or fireplace#cljs() to get a "platform" object for Clojure
+or ClojureScript, or fireplace#platform() to pick automatically for the
+current buffer.  The following instance methods are available:
+>
+        let ext = platform.Ext()
+<
+Retrieve the appropriate file extension, either "clj" or "cljs".
+>
+        let user_ns = platform.UserNs()
+<
+Retrieve the user namespace, either "user" or "cljs.user".
+>
+        let ns = platform.BufferNs()
+        let ns = platform.BufferNs(bufnr(''))
+<
+Retrieve the namespace for the current or given buffer number, determined by
+looking for a (ns) declaration and falling back to a using the class path
+relative filename.  This is the same namespace used by operations like :Eval.
+>
+        call platform.Message({"op": "some-op"})
+        call platform.Message({"op": "some-op"}, function("Callback"))
+<
+Send an nREPL message asynchronously.  If given, invoke the callback on each
+message.
+>
+        let list = platform.Message({"op": "..."}, v:t_list)
+        let list = platform.Message({"op": "..."}, v:t_list,
+              \ function("Callback"))
+<
+Send an nREPL message and return all response messages as a list.  If given,
+invoke the callback on each message.
+>
+        let dict = platform.Message({"op": "some-op"}, v:t_dict)
+        let dict = platform.Message({"op": "some-op"}, v:t_dict,
+              \ function("Callback"))
+<
+Send an nREPL message and return all response messages as a single combined
+dictionary.  If given, invoke the callback on each message.
+>
+        let list = platform.Message({"op": "some-op", "ns": bufnr('')})
+<
+If a buffer number is given as an "ns" parameter, it is replaced with the
+namespace for that buffer, as retrieved by platform.BufferNs().
+>
+        let list = platform.Message({"op": "some-op", "session": v:true})
+<
+If v:true is given as "session", the current session is cloned for the given
+operation, and closed when the operation completes.  Use this to do an
+arbitrary eval without tainting *1, etc.  (Although platform.Query() is
+generally a better choice for such operations.)
+>
+        if platform.HasOp("some-op")
+<
+Check for the presence of an nREPL op.  Always returns false if no live
+connection is available.
+>
+        let msg1 = platform.Message({"op": "some-op"})
+        let msg2 = platform.Message({"op": "other-op"}, function("Callback"))
+        call fireplace#wait([msg1, msg2])
+<
+Wait on one or more asynchronous messages to finish.  If CTRL-C is pressed by
+the user, all messages will be interrupted with {"op": "interrupt"}.
+>
+        let classpath = platform.Path()
+<
+Retrieve the class path, either from a REPL connection or from 'path' as set
+by classpath.vim or salve.vim.
+>
+        let data = platform.Query("code")
+        let data = platform.Query("code", {"ns": bufnr('')})
+<
+Evaluate the given code on the REPL and return it as a Vim data structure.
+Works offline if a class path is available.
+>
+        let msg = platform.Query("code", function("Callback"))
+<
+Evaluate the given code on the REPL and pass it to the callback as a Vim data
+structure.  Works offline if a class path is available.
+
 ABOUT                                           *fireplace-about*
 
 Grab the latest version or report a bug on GitHub:
