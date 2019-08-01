@@ -32,6 +32,13 @@ You can connect to multiple instances of nREPL for different projects, and it
 will use the right one automatically.  ClojureScript support is just as
 seamless with [Piggieback][].
 
+If you're using the new [Clojure CLI][], you can follow the instructions for
+[running cider-nrepl with `clj`][cider-nrepl-via-clj].
+Briefly, `clj -Sdeps '{:deps {cider/cider-nrepl {:mvn/version "0.21.1"} }}'
+-m nrepl.cmdline --middleware "[cider.nrepl/cider-middleware]"` should do the trick.
+The [cider-nrepl][cider-nrepl-via-clj] docs also show you how you can add an alias to
+your user's `~/.clojure/deps.edn` file, letting you more simply run `clj -A:cider-clj`.
+
 Oh, and if you don't have an nREPL connection, installing [salve.vim][]
 lets it fall back to using `java clojure.main` for some of the basics, using a
 class path based on your Leiningen or Boot config.  It's a bit slow, but a
@@ -39,7 +46,9 @@ two-second delay is vastly preferable to being forced out of my flow for a
 single command, in my book.
 
 [cider-nrepl]: https://github.com/clojure-emacs/cider-nrepl
+[cider-nrepl-via-clj]: https://github.com/clojure-emacs/cider-nrepl#via-clj
 [Piggieback]: https://github.com/nrepl/piggieback
+[Clojure CLI]: https://clojure.org/guides/deps_and_cli
 [classpath.vim]: https://github.com/tpope/vim-classpath
 [salve.vim]: https://github.com/tpope/vim-salve
 
