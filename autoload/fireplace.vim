@@ -271,7 +271,7 @@ function! fireplace#omnicomplete(findstart, base, ...) abort
     if type(a:findstart) == v:t_func
       return fireplace#message(request, function('s:complete_delegate', [[], a:findstart]))
     elseif type(a:findstart) == v:t_dict
-      return s:complete_extract(a:findstart.message(request, v:t_dict))
+      return s:complete_extract(a:findstart.Message(request, v:t_dict))
     endif
     let id = fireplace#message(request, function('s:complete_add')).id
     while !fireplace#client().done(id)
