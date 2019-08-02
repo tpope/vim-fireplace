@@ -264,7 +264,7 @@ function! fireplace#omnicomplete(findstart, base, ...) abort
     let request = {
           \ 'op': 'complete',
           \ 'symbol': a:base,
-          \ 'ns': v:true,
+          \ 'ns': type(a:findstart) == v:t_dict ? v:null : v:true,
           \ 'extra-metadata': ['arglists', 'doc'],
           \ 'context': a:0 ? a:1 : s:get_complete_context()
           \ }
