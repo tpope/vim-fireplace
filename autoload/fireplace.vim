@@ -880,9 +880,13 @@ function! s:impl_ns(...) abort
     return 'clojure'
   elseif !empty(get(b:, 'fireplace_cljc_platform', ''))
     return b:fireplace_cljc_platform is# 'cljs' ? 'cljs' : 'clj'
-  elseif len(get(call('fireplace#native', a:000), 'cljs_sessions', []))
-    return 'cljs'
   else
+    try
+      if len(get(call('fireplace#native', a:000), 'cljs_sessions', []))
+        return 'cljs'
+      endif
+    catch /^Fireplace: no live REPL connection/
+    endtry
     return 'clojure'
   endif
 endfunction
