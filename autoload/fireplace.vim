@@ -2063,7 +2063,7 @@ function! s:SpecForm(kw) abort
     let symbol = fireplace#qualify_keyword(a:kw)
     let response = fireplace#message({'op': op, 'spec-name': symbol}, v:t_dict)
     if !empty(get(response, op))
-      echo s:pr(response.op)
+      echo s:pr(get(response, op))
     endif
   catch /^Fireplace:/
     return 'echoerr ' . string(v:exception)
