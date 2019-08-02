@@ -287,16 +287,10 @@ endfunction
 function! s:NormalizeNs(client, payload) abort
   if get(a:payload, 'ns') is# v:true
     let a:payload.ns = a:client.BufferNs()
-    if empty(a:payload.ns)
-      let a:payload.ns = a:client.UserNs()
-    endif
   elseif get(a:payload, 'ns') is# v:false
     let a:payload.ns = a:client.UserNs()
   elseif type(get(a:payload, 'ns', '')) == v:t_number
     let a:payload.ns = a:client.BufferNs(a:payload.ns)
-    if empty(a:payload.ns)
-      let a:payload.ns = a:client.UserNs()
-    endif
   endif
   if empty(get(a:payload, 'ns', 1))
     call remove(a:payload, 'ns')
@@ -1531,7 +1525,7 @@ function! s:Eval(type, line1, line2, range, bang, mods, args) abort
     endif
   endif
   try
-    let args = (a:type ==# 'platform' || a:type ==# 'client' ? [{'ns': v:true}] : [fireplace#{a:type}(), {'ns': v:true}]) + [expr, options]
+    let args = (a:type ==# 'platform' || a:type ==# 'client' ? [{'ns': v:true}] : [fireplace#{a:type}(), {'ns': v:null}]) + [expr, options]
     if a:bang
       let result = split(join(map(call('fireplace#eval', [&textwidth] + args), 'substitute(v:val, "\n*$", "", "")'), "\n"), "\n")
       if a:args !=# ''
