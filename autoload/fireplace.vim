@@ -819,6 +819,9 @@ function! s:buffer_path(...) abort
     return ''
   endif
   let path = substitute(fnamemodify(bufname(buffer), ':p'), '\C^zipfile:\(.*\)::', '\1/', '')
+  if path !~# '^/\|^\a\+:\|^$'
+    let path = getcwd() . matchstr(getcwd(), '[\/]') . path
+  endif
   for dir in fireplace#path(buffer)
     if dir !=# '' && path[0 : strlen(dir)-1] ==# dir && path[strlen(dir)] =~# '[\/]'
       return path[strlen(dir)+1:-1]
