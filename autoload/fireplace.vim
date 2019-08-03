@@ -823,9 +823,9 @@ function! s:buffer_absolute(...) abort
     return ''
   endif
   if path !~# '^/\|^\a\+:\|^$' && isdirectory(matchstr(path, '^[^\/]\+[\/]'))
-    let path = getcwd() . matchstr(getcwd(), '[\/]') . path
+    let path = getcwd() . matchstr(path, '[\/]') . path
   endif
-  return path =~# '^\a\a\+:' ? '' : simplify(path)
+  return path =~# '^\a:[\/]\|^/' ? simplify(path) : ''
 endfunction
 
 function! s:buffer_path(...) abort
