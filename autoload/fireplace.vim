@@ -813,15 +813,24 @@ let s:oneoff.Message = s:oneoff.Session
 
 " Section: Client
 
-function! s:buffer_path(...) abort
-  let buffer = a:0 ? a:1 : s:buf()
-  if getbufvar(buffer, '&buftype') =~# '^no'
+function! s:buffer_absolute(...) abort
+  let buffer = call('s:buf', a:000)
+  let path = substitute(fnamemodify(bufname(buffer), ':p'), '\C^zipfile:\(.*\)::', '\1/', '')
+  let scheme = substitute(matchstr(path, '^\a\a\+\ze:'), '^.', '\u&', '')
+  if len(scheme) && exists('*' . scheme . 'Real')
+    let path = {scheme}Real(path)
+  elseif getbufvar(buffer, '&buftype') !~# '^$\|^acwrite$'
     return ''
   endif
-  let path = substitute(fnamemodify(bufname(buffer), ':p'), '\C^zipfile:\(.*\)::', '\1/', '')
-  if path !~# '^/\|^\a\+:\|^$'
+  if path !~# '^/\|^\a\+:\|^$' && isdirectory(matchstr(path, '^[^\/]\+[\/]'))
     let path = getcwd() . matchstr(getcwd(), '[\/]') . path
   endif
+  return path =~# '^\a\a\+:' ? '' : simplify(path)
+endfunction
+
+function! s:buffer_path(...) abort
+  let buffer = call('s:buf', a:000)
+  let path = s:buffer_absolute(buffer)
   for dir in fireplace#path(buffer)
     if dir !=# '' && path[0 : strlen(dir)-1] ==# dir && path[strlen(dir)] =~# '[\/]'
       return path[strlen(dir)+1:-1]
@@ -901,10 +910,8 @@ function! s:slash() abort
 endfunction
 
 function! s:includes_file(file, path) abort
-  let file = substitute(a:file, '\C^zipfile:\(.*\)::', '\1/', '')
-  let file = substitute(file, '\C^fugitive:[\/][\/]\(.*\)\.git[\/][\/][^\/]\+[\/]', '\1', '')
   for path in a:path
-    if file[0 : len(path)-1] ==? path
+    if len(path) && strpart(a:file, 0, len(path)) ==? path
       return 1
     endif
   endfor
@@ -926,8 +933,9 @@ endfunction
 
 function! fireplace#path(...) abort
   let buf = a:0 ? a:1 : s:buf()
+  let absolute = s:buffer_absolute(buf)
   for repl in s:repls
-    if s:includes_file(fnamemodify(bufname(buf), ':p'), repl.path())
+    if s:includes_file(absolute, repl.path())
       return repl.path()
     endif
   endfor
@@ -951,7 +959,8 @@ function! fireplace#native(...) abort
   endif
 
   let buf = a:0 ? a:1 : s:buf()
-  let root = simplify(fnamemodify(bufname(buf), ':p:s?[\/]$??'))
+  let path = s:buffer_absolute(buf)
+  let root = substitute(path, '[\/]$', '', '')
   let previous = ""
   while root !=# previous
     if has_key(s:repl_paths, root)
@@ -961,7 +970,7 @@ function! fireplace#native(...) abort
     let root = fnamemodify(root, ':h')
   endwhile
   for repl in s:repls
-    if s:includes_file(fnamemodify(bufname(buf), ':p'), repl.path())
+    if s:includes_file(path, repl.path())
       return repl
     endif
   endfor
