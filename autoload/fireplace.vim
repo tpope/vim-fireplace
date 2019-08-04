@@ -1377,7 +1377,9 @@ function! fireplace#massage_list(...) abort
   let path = p =~# '^[:;]' ? split(p[1:-1], p[0]) : p[0] ==# ',' ? s:path_extract(p[1:-1], 1) : s:path_extract(p, 1)
   let qflist = l:GetList()
   for entry in qflist
-    call extend(entry, s:qfmassage(get(entry, 'text', ''), path))
+    if !entry.bufnr && !entry.lnum
+      call extend(entry, s:qfmassage(get(entry, 'text', ''), path))
+    endif
   endfor
   let attrs = l:GetList({'title': 1})
   call l:SetList(qflist, 'r')
