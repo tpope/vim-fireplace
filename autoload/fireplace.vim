@@ -523,7 +523,7 @@ function! s:piggieback.Piggieback(arg, ...) abort
     endif
   endif
   let response = session.message({'op': 'eval', 'code': arg}, v:t_dict)
-  if empty(get(response, 'ex'))
+  if !has_key(response, 'ex') && get(response, 'ns', 'user') ==# 'cljs.user'
     call insert(self.sessions, session)
     return {}
   endif
@@ -535,9 +535,10 @@ function! s:piggieback.Session() abort
   if len(self.sessions)
     return self.sessions[0]
   endif
-  let result = self.Piggieback('')
-  if has_key(result, 'ex')
-    throw 'Fireplace: ' . substitute(get(result, 'err', result.ex), "\n$", '', '')
+  let response = self.Piggieback('')
+  call s:output_response(response)
+  if len(response)
+    throw 'Fireplace: error starting ClojureScript REPL'
   endif
   return self.sessions[0]
 endfunction
