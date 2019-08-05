@@ -957,6 +957,11 @@ function! fireplace#native(...) abort
   let portfile = findfile('.nrepl-port', (a:0 ? fnamemodify(path, ':h') : '') . ';')
   if !empty(portfile) && filereadable(portfile)
     call fireplace#register_port_file(portfile, fnamemodify(portfile, ':p:h'))
+  else
+    let portfile = findfile('.shadow-cljs/nrepl.port', (a:0 ? fnamemodify(path, ':h') : '') . ';')
+    if !empty(portfile) && filereadable(portfile)
+      call fireplace#register_port_file(portfile, fnamemodify(portfile, ':p:h:h'))
+    endif
   endif
 
   if !a:0
