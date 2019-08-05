@@ -951,16 +951,18 @@ function! fireplace#native(...) abort
     endif
   endfor
 
-  if !a:0
-    let portfile = findfile('.nrepl-port', '.;')
-    if !empty(portfile)
-      call fireplace#register_port_file(portfile, fnamemodify(portfile, ':p:h'))
-    endif
-    silent doautocmd User FireplacePreConnect
-  endif
-
   let buf = a:0 ? a:1 : s:buf()
   let path = s:buffer_absolute(buf)
+
+  let portfile = findfile('.nrepl-port', (a:0 ? fnamemodify(path, ':h') : '') . ';')
+  if !empty(portfile) && filereadable(portfile)
+    call fireplace#register_port_file(portfile, fnamemodify(portfile, ':p:h'))
+  endif
+
+  if !a:0
+    silent doautocmd <nomodeline> User FireplacePreConnect
+  endif
+
   let root = substitute(path, '[\/]$', '', '')
   let previous = ""
   while root !=# previous
