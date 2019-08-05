@@ -210,10 +210,17 @@ function! fireplace#transport#connect(arg) abort
     endif
     if !has_key(transport, '_path')
       let response = transport.message({'op': 'eval', 'code':
-            \ '[(System/getProperty "path.separator") (or' .
+            \ '(System/getProperty "path.separator") (or' .
             \ ' (System/getProperty "fake.class.path")' .
-            \ ' (System/getProperty "java.class.path") "")]'}, v:t_dict)
-      let transport._path = split(eval(response.value[-1][5:-2]), response.value[-1][2])
+            \ ' (System/getProperty "java.class.path") "") ' .
+            \ '(System/getProperty "user.dir")'}, v:t_dict)
+      let transport._path = split(eval(response.value[1]), response.value[0][1])
+      let cwd = eval(response.value[2])
+      for i in range(len(transport._path))
+        if transport._path[i] !~# '^/\|^\a\+:'
+          let transport._path[i] = cwd . matchstr(cwd, '[\/]') . transport._path[i]
+        endif
+      endfor
     endif
     return transport
   endif
