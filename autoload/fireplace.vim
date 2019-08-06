@@ -525,8 +525,9 @@ function! s:piggieback.Piggieback(arg, ...) abort
   let response = session.message({'op': 'eval', 'code': arg}, v:t_dict)
   if !has_key(response, 'ex') && get(response, 'ns', 'user') ==# 'cljs.user'
     call insert(self.sessions, session)
+  else
+    call session.close()
   endif
-  call session.close()
   return response
 endfunction
 
