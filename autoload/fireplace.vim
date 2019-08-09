@@ -1290,9 +1290,17 @@ function! fireplace#session_eval(...) abort
   return get(call('fireplace#eval', a:000), -1, '')
 endfunction
 
+function! s:DisplayWidth() abort
+  if exists('g:fireplace_display_width') && g:fireplace_display_width < &columns
+    return g:fireplace_display_width
+  else
+    return &columns
+  endif
+endfunction
+
 function! fireplace#echo_session_eval(...) abort
   try
-    let values = call('fireplace#eval', [&columns] + a:000)
+    let values = call('fireplace#eval', [s:DisplayWidth()] + a:000)
     if empty(values)
       echohl WarningMsg
       echo "No return value"
