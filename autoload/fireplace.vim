@@ -758,7 +758,7 @@ endfunction
 
 let s:no_repl = 'Fireplace: no live REPL connection'
 
-let s:oneoff = copy(s:clj)
+let s:oneoff = extend(copy(s:clj), s:common)
 
 let s:oneoff.user_ns = s:repl.UserNs
 
