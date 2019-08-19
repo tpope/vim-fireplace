@@ -1798,7 +1798,7 @@ endfunction
 
 function! fireplace#info(symbol) abort
   if fireplace#op_available('info')
-    let response = fireplace#message({'op': 'info', 'symbol': a:symbol}, v:t_dict)
+    let response = fireplace#message({'op': 'info', 'symbol': a:symbol, 'ns': fireplace#ns()}, v:t_dict)
     if type(get(response, 'value')) == type({})
       return response.value
     elseif has_key(response, 'file') || has_key(response, 'doc')
@@ -1842,10 +1842,13 @@ function! fireplace#source(symbol) abort
   let info = fireplace#info(a:symbol)
 
   let file = ''
-  if !empty(get(info, 'resource'))
-    let file = fireplace#findresource(info.resource)
-  elseif get(info, 'file', '') =~# '^file:'
+  if get(info, 'file', '') =~# '^file:'
     let file = substitute(strpart(info.file, 5), '/', s:slash(), 'g')
+  elseif get(info, 'file', '') =~# '^jar:file:'
+    let zip = matchstr(info.file, '^jar:file:\zs.*\ze!')
+    let file = 'zipfile:' . zip . '::' . info.resource
+  elseif !empty(get(info, 'resource'))
+    let file = fireplace#findresource(info.resource)
   else
     let file = get(info, 'file', '')
   endif
