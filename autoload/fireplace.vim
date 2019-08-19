@@ -1798,7 +1798,7 @@ endfunction
 
 function! fireplace#info(symbol) abort
   if fireplace#op_available('info')
-    let response = fireplace#message({'op': 'info', 'symbol': a:symbol, 'ns': fireplace#ns()}, v:t_dict)
+    let response = fireplace#message({'op': 'info', 'symbol': a:symbol}, v:t_dict)
     if type(get(response, 'value')) == type({})
       return response.value
     elseif has_key(response, 'file') || has_key(response, 'doc')
