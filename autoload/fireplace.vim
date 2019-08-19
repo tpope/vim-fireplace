@@ -1842,15 +1842,19 @@ function! fireplace#source(symbol) abort
   let info = fireplace#info(a:symbol)
 
   let file = ''
-  if get(info, 'file', '') =~# '^file:'
-    let file = substitute(strpart(info.file, 5), '/', s:slash(), 'g')
-  elseif get(info, 'file', '') =~# '^jar:file:'
-    let zip = matchstr(info.file, '^jar:file:\zs.*\ze!')
-    let file = 'zipfile:' . zip . '::' . info.resource
-  elseif !empty(get(info, 'resource'))
+  if !empty(get(info, 'resource'))
     let file = fireplace#findresource(info.resource)
-  else
-    let file = get(info, 'file', '')
+  endif
+
+  if empty(file)
+    if get(info, 'file', '') =~# '^file:'
+      let file = substitute(strpart(info.file, 5), '/', s:slash(), 'g')
+    elseif get(info, 'file', '') =~# '^jar:file:'
+      let zip = matchstr(info.file, '^jar:file:\zs.*\ze!')
+      let file = 'zipfile:' . zip . '::' . info.resource
+    else
+      let file = get(info, 'file', '')
+    endif
   endif
 
   if !empty(file) && !empty(get(info, 'line', ''))
