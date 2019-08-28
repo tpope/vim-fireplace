@@ -50,7 +50,7 @@ endfunction
 function! s:cword() abort
   let isk = &l:iskeyword
   try
-    setlocal iskeyword+='
+    setlocal iskeyword+=',#,%,&
     return substitute(expand('<cword>'), "^''*", '', '')
   finally
     let &l:iskeyword = isk
