@@ -954,7 +954,7 @@ function! fireplace#native(...) abort
   let buf = a:0 ? a:1 : s:buf()
   let path = s:buffer_absolute(buf)
 
-  let portfile = findfile('.nrepl-port', (a:0 ? fnamemodify(path, ':h') : '') . ';')
+  let portfile = findfile('.nrepl-port', (a:0 ? fnamemodify(path, ':h') : '.') . ';')
   if !empty(portfile) && filereadable(portfile)
     call fireplace#register_port_file(portfile, fnamemodify(portfile, ':p:h'))
   else
