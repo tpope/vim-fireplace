@@ -1785,6 +1785,8 @@ function! s:Require(bang, echo, ns) abort
     return ''
   catch /^Clojure:.*/
     return ''
+  catch /^Fireplace:.*/
+    return 'echoerr ' . string(v:exception)
   endtry
 endfunction
 
