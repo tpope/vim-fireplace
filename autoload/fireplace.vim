@@ -1212,17 +1212,76 @@ function! s:stacktrace() abort
   return split(join(get(response, 'value', []), "\n"), "\n")
 endfunction
 
+function! s:echon(state, str) abort
+  let str = get(a:state, 'echo_buffer', '') . a:str
+  let a:state.echo_buffer = matchstr(str, "\n$")
+  echon len(a:state.echo_buffer) ? str[0:-2] : str
+endfunction
+
+function! s:eval_callback(state, delegates, message) abort
+  call add(a:state.history.messages, a:message)
+  if has_key(a:message, 'ex')
+    let a:state.ex = a:message.ex
+  endif
+  if has_key(a:message, 'ns')
+    let a:state.ns = a:message.ns
+  endif
+  if has_key(a:message, 'out')
+    echohl Question
+    call s:echon(a:state, a:message.out)
+    echohl NONE
+  endif
+  if has_key(a:message, 'err')
+    echohl WarningMsg
+    call s:echon(a:state, a:message.err)
+    echohl NONE
+  endif
+  for Delegate in a:delegates
+    try
+      call call(Delegate, [a:message])
+    catch
+    endtry
+  endfor
+  if index(get(a:message, 'status', []), 'done') >= 0
+    if has_key(a:state, 'client')
+      let client = a:state.client
+      if len(get(client, 'sessions', [])) && a:state.code =~# '^\s*:cljs/quit\s*$' && !has_key(state, 'ex')
+        let old_session = remove(client.sessions, 0)
+        call old_session.close()
+      elseif has_key(client, 'cljs_sessions') && get(a:state, 'ns', '') ==# 'cljs.user'
+        call insert(client.cljs_sessions, client.Session().clone())
+        call client.message({'op': 'eval', 'code': ':cljs/quit'}, v:t_dict)
+      endif
+    endif
+    let a:state.history.response = fireplace#transport#combine(a:state.history.messages)
+    call insert(s:history, a:state.history)
+    if len(s:history) > &history
+      call remove(s:history, &history, -1)
+    endif
+    if a:state.history.buffer == bufnr('')
+      try
+        silent doautocmd User FireplaceEvalPost
+      catch
+      endtry
+    endif
+  endif
+endfunction
+
 function! fireplace#eval(...) abort
   let opts = {}
-  for arg in a:000
-    if type(arg) == v:t_string
-      let opts.code = arg
-    elseif type(arg) == v:t_dict && type(get(arg, 'Session')) ==# v:t_func
-      let platform = arg
-    elseif type(arg) == v:t_dict
-      call extend(opts, arg)
-    elseif type(arg) == v:t_number
-      call s:add_pprint_opts(opts, arg)
+  let state = {}
+  let callbacks = []
+  for l:Arg in a:000
+    if type(Arg) == v:t_string
+      let opts.code = Arg
+    elseif type(Arg) == v:t_dict && type(get(Arg, 'Session')) ==# v:t_func
+      let platform = Arg
+    elseif type(Arg) == v:t_dict
+      call extend(opts, Arg)
+    elseif type(Arg) == v:t_func
+      call add(callbacks, Arg)
+    elseif type(Arg) == v:t_number
+      call s:add_pprint_opts(opts, Arg)
     endif
   endfor
   let code = remove(opts, 'code')
@@ -1240,37 +1299,23 @@ function! fireplace#eval(...) abort
   let ext = platform.Ext()
 
   let client = platform.Client()
-  let response = client.Eval(code, opts)
-
+  let state.code = code
+  let state.history = {'buffer': bufnr(''), 'ext': ext, 'code': code, 'ns': fireplace#ns(), 'messages': []}
   if !has_key(opts, 'session')
-    if len(get(client, 'sessions', [])) && code =~# '^\s*:cljs/quit\s*$' && !has_key(response, 'ex')
-      let old_session = remove(client.sessions, 0)
-      call old_session.close()
-    elseif has_key(client, 'cljs_sessions') && get(response, 'ns', '') ==# 'cljs.user'
-      call insert(client.cljs_sessions, client.Session().clone())
-      call client.message({'op': 'eval', 'code': ':cljs/quit'}, v:t_dict)
-    endif
+    let state.client = client
+  endif
+  let msg = client.Eval(code, opts, function('s:eval_callback', [state, callbacks]))
+
+  if len(callbacks)
+    return msg
   endif
 
-  call insert(s:history, {'buffer': bufnr(''), 'ext': ext, 'code': code, 'ns': fireplace#ns(), 'response': response})
-  if len(s:history) > &history
-    call remove(s:history, &history, -1)
-  endif
+  call fireplace#wait(msg)
 
-  try
-    silent doautocmd User FireplaceEvalPost
-  catch
-    echohl ErrorMSG
-    echomsg v:exception
-    echohl NONE
-  endtry
-
-  call s:output_response(response)
-
-  if get(response, 'ex', '') !=# ''
+  if get(state, 'ex', '') !=# ''
     let err = 'Clojure: '.response.ex
   else
-    return get(response, 'value', [])
+    return get(state.history.response, 'value', [])
   endif
   throw err
 endfunction
@@ -1287,19 +1332,19 @@ function! s:DisplayWidth() abort
   endif
 endfunction
 
+function! s:echo_value_callback(state, message) abort
+  if has_key(a:message, 'value')
+    call s:echon(a:state, a:message.value)
+    if has_key(a:message, 'ns')
+      call s:echon(a:state, "\n")
+    endif
+  endif
+endfunction
+
 function! fireplace#echo_session_eval(...) abort
   try
-    let values = call('fireplace#eval', [s:DisplayWidth()] + a:000)
-    if empty(values)
-      echohl WarningMsg
-      echo "No return value"
-      echohl NONE
-    else
-      for value in values
-        echo substitute(value, "\n*$", '', '')
-      endfor
-    endif
-  catch /^Clojure:/
+    let msg = call('fireplace#eval', [s:DisplayWidth(), function('s:echo_value_callback', [{}])] + a:000)
+    call fireplace#wait(msg)
   catch
     echohl ErrorMSG
     echomsg v:exception
