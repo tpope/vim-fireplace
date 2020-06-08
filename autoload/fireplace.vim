@@ -1257,17 +1257,6 @@ function! fireplace#eval(...) abort
     call remove(s:history, &history, -1)
   endif
 
-  if !empty(get(response, 'ex', ''))
-    let nr = 0
-    if has_key(s:qffiles, expand('%:p'))
-      let nr = winbufnr(s:qffiles[expand('%:p')].buffer)
-    endif
-    if nr != -1
-      call setloclist(nr, [{'text': 'Use :Stacktrace to see most recent error'}])
-      call setloclist(nr, [], 'a', {'title': code})
-    endif
-  endif
-
   try
     silent doautocmd User FireplaceEvalPost
   catch
