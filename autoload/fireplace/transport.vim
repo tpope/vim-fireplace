@@ -328,6 +328,21 @@ function! fireplace#transport#interrupt(id) abort
   endfor
 endfunction
 
+function! fireplace#transport#stdin(session_or_id, data) abort
+  let str = type(a:data) == v:t_string ? a:data : nr2char(a:data)
+  let id = a:session_or_id
+  for [url, dict] in items(s:urls)
+    if has_key(dict.transport, 'job') && has_key(dict.transport.sessions, id)
+      call s:json_send(dict.transport.job, {'op': 'stdin', 'id': fireplace#transport#id(), 'session': id, 'stdin': str})
+      return v:true
+    elseif has_key(dict.transport, 'job') && has_key(dict.transport.requests, id)
+      call s:json_send(dict.transport.job, {'op': 'stdin', 'id': fireplace#transport#id(), 'session': dict.transport.requests[id].session, 'stdin': str})
+      return v:true
+    endif
+  endfor
+  return v:false
+endfunction
+
 function! fireplace#transport#wait(id, ...) abort
   let max = a:0 ? a:1 : -1
   let ms = 0
@@ -341,7 +356,7 @@ function! fireplace#transport#wait(id, ...) abort
         if c ==# "\<C-D>"
           let closed = 1
         else
-          call s:json_send(dict.transport.job, {'op': 'stdin', 'id': fireplace#transport#id(), 'session': dict.transport.requests[a:id].session, 'stdin': c})
+          call fireplace#transport#stdin(a:id, c)
           echon c
         endif
       endif
