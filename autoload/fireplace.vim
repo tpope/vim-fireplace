@@ -686,18 +686,25 @@ endfunction
 
 function! s:spawn_wait(id, ...) abort
   let message = get(s:spawns, a:id, {})
+  let finished = v:true
   if type(get(message, 'job', '')) == v:t_number
-    while jobwait([message.job], 0) == -1
-      sleep 1m
-    endwhile
+    let finished = jobwait([message.job], a:0 ? a:1 : -1)[0] == -1 ? v:false : v:true
   elseif type(get(message, 'job', '')) != v:t_string
+    let ms = 0
+    let max = a:0 ? a:1 : -1
     while job_status(message.job) ==# 'run'
+      if ms == max
+        let finished = v:false
+        break
+      endif
+      let ms += 1
       sleep 1m
     endwhile
   endif
   if has_key(s:spawns, a:id)
     throw 'Fireplace: race condition waiting on spawning eval?'
   endif
+  return finished
 endfunction
 
 function! s:spawn_complete(id, name, callback) abort
@@ -1075,19 +1082,23 @@ endfunction
 
 function! fireplace#wait(msg_or_id_or_list, ...) abort
   if type(a:msg_or_id_or_list) != v:t_list
-    return call('fireplace#wait', [[a:msg_or_id_or_list]])[0]
+    return call('fireplace#wait', [[a:msg_or_id_or_list]] + a:000)[0]
   endif
   try
+    let results = []
     for item in a:msg_or_id_or_list
       let id = type(item) ==# v:t_dict ? get(item, 'id', '') : item
-      call call('s:spawn_wait', [id] + a:000)
-      call call('fireplace#transport#wait', [id] + a:000)
+      call add(results, (call('s:spawn_wait', [id] + a:000) &&
+            \ call('fireplace#transport#wait', [id] + a:000)) ? v:true : v:false)
     endfor
-    return a:msg_or_id_or_list
+    let finished = 1
+    return results
   finally
-    for item in a:msg_or_id_or_list
-      call fireplace#interrupt(item)
-    endfor
+    if !a:0 && !exists('finished')
+      for item in a:msg_or_id_or_list
+        call fireplace#interrupt(item)
+      endfor
+    endif
   endtry
 endfunction
 

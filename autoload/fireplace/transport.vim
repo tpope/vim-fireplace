@@ -329,6 +329,8 @@ function! fireplace#transport#interrupt(id) abort
 endfunction
 
 function! fireplace#transport#wait(id, ...) abort
+  let max = a:0 ? a:1 : -1
+  let ms = 0
   for [url, dict] in items(s:urls)
     let closed = 0
     while has_key(dict.transport, 'job') && has_key(dict.transport.requests, a:id)
@@ -343,9 +345,18 @@ function! fireplace#transport#wait(id, ...) abort
           echon c
         endif
       endif
-      sleep 1m
+      if ms == max
+        return v:false
+      endif
+      let ms += 1
+      if exists('*jobwait')
+        call jobwait([dict.transport.job], 1)
+      else
+        sleep 1m
+      endif
     endwhile
   endfor
+  return v:true
 endfunction
 
 let s:transport = {
