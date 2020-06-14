@@ -1212,10 +1212,26 @@ function! s:stacktrace() abort
   return split(join(get(response, 'value', []), "\n"), "\n")
 endfunction
 
-function! s:echon(state, str) abort
+function! s:echon(state, str, ...) abort
   let str = get(a:state, 'echo_buffer', '') . a:str
   let a:state.echo_buffer = matchstr(str, "\n$")
-  echon len(a:state.echo_buffer) ? str[0:-2] : str
+  if get(a:state, 'echo', v:true)
+    if a:0 > 1
+      exe 'echohl' a:2
+    endif
+    echon len(a:state.echo_buffer) ? str[0:-2] : str
+    echohl NONE
+  endif
+  if has_key(a:state.history, 'tempfile')
+    let lines = split(a:str, "\n", 1)
+    if a:0
+      call map(lines, 'a:1 . v:val')
+      if get(lines, -1) is# a:1
+        let lines[-1] = ''
+      endif
+    endif
+    call writefile(lines, a:state.history.tempfile, 'ab')
+  endif
 endfunction
 
 function! s:eval_callback(state, delegates, message) abort
@@ -1227,15 +1243,18 @@ function! s:eval_callback(state, delegates, message) abort
     let a:state.ns = a:message.ns
   endif
   if has_key(a:message, 'out')
-    echohl Question
-    call s:echon(a:state, a:message.out)
-    echohl NONE
+    call s:echon(a:state, a:message.out, ';=', 'Question')
   endif
   if has_key(a:message, 'err')
-    echohl WarningMsg
-    call s:echon(a:state, a:message.err)
-    echohl NONE
+    call s:echon(a:state, a:message.err, ';!', 'WarningMsg')
   endif
+  if has_key(a:message, 'value')
+    call s:echon(a:state, a:message.value)
+    if has_key(a:message, 'ns')
+      call s:echon(a:state, "\n")
+    endif
+  endif
+
   for Delegate in a:delegates
     try
       call call(Delegate, [a:message])
@@ -1269,7 +1288,7 @@ endfunction
 
 function! fireplace#eval(...) abort
   let opts = {}
-  let state = {}
+  let state = {'echo': v:false}
   let callbacks = []
   for l:Arg in a:000
     if type(Arg) == v:t_string
@@ -1280,6 +1299,8 @@ function! fireplace#eval(...) abort
       call extend(opts, Arg)
     elseif type(Arg) == v:t_func
       call add(callbacks, Arg)
+    elseif type(Arg) == v:t_bool
+      let state.echo = Arg
     elseif type(Arg) == v:t_number
       call s:add_pprint_opts(opts, Arg)
     endif
@@ -1300,7 +1321,7 @@ function! fireplace#eval(...) abort
 
   let client = platform.Client()
   let state.code = code
-  let state.history = {'buffer': bufnr(''), 'ext': ext, 'code': code, 'ns': fireplace#ns(), 'messages': []}
+  let state.history = {'buffer': bufnr(''), 'tempfile': tempname() . '.' . ext, 'ext': ext, 'code': code, 'ns': fireplace#ns(), 'messages': []}
   if !has_key(opts, 'session')
     let state.client = client
   endif
@@ -1332,18 +1353,9 @@ function! s:DisplayWidth() abort
   endif
 endfunction
 
-function! s:echo_value_callback(state, message) abort
-  if has_key(a:message, 'value')
-    call s:echon(a:state, a:message.value)
-    if has_key(a:message, 'ns')
-      call s:echon(a:state, "\n")
-    endif
-  endif
-endfunction
-
 function! fireplace#echo_session_eval(...) abort
   try
-    let msg = call('fireplace#eval', [s:DisplayWidth(), function('s:echo_value_callback', [{}])] + a:000)
+    let msg = call('fireplace#eval', [s:DisplayWidth(), v:true] + a:000)
     call fireplace#wait(msg)
   catch
     echohl ErrorMSG
