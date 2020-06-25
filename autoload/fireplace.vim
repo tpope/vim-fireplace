@@ -1199,7 +1199,7 @@ endfunction
 
 function! s:qfhistory() abort
   let list = []
-  for entry in reverse(s:history)
+  for entry in reverse(copy(s:history))
     call extend(list, [s:qfentry(entry)])
   endfor
   return list
