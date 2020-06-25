@@ -347,19 +347,7 @@ function! fireplace#transport#wait(id, ...) abort
   let max = a:0 ? a:1 : -1
   let ms = 0
   for [url, dict] in items(s:urls)
-    let closed = 0
     while has_key(dict.transport, 'job') && has_key(dict.transport.requests, a:id)
-      let peek = getchar(1)
-      if !closed && peek != 0 && !(has('win32') && peek == 128)
-        let c = getchar()
-        let c = type(c) == type(0) ? nr2char(c) : c
-        if c ==# "\<C-D>"
-          let closed = 1
-        else
-          call fireplace#transport#stdin(a:id, c)
-          echon c
-        endif
-      endif
       if ms == max
         return v:false
       endif

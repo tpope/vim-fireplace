@@ -1288,6 +1288,9 @@ function! s:eval_callback(state, delegates, message) abort
     if len(s:history) > &history
       call remove(s:history, &history, -1)
     endif
+    if get(a:state, 'bg')
+      Last!
+    endif
     if a:state.history.buffer == bufnr('')
       try
         silent doautocmd User FireplaceEvalPost
@@ -1342,7 +1345,22 @@ function! fireplace#eval(...) abort
     return msg
   endif
 
-  call fireplace#wait(msg)
+  while !fireplace#wait(msg.id, 1)
+    let peek = getchar(1)
+    if state.echo && peek != 0 && !(has('win32') && peek == 128)
+      let c = getchar()
+      let c = type(c) == type(0) ? nr2char(c) : c
+      if c ==# "\<C-D>"
+        let state.echo = 1
+        let state.bg = 1
+        echo "\rBackgrounded"
+        return []
+      else
+        call fireplace#transport#stdin(msg.id, c)
+        echon c
+      endif
+    endif
+  endwhile
 
   if get(state, 'ex', '') !=# ''
     let err = 'Clojure: '.response.ex
@@ -1366,8 +1384,7 @@ endfunction
 
 function! fireplace#echo_session_eval(...) abort
   try
-    let msg = call('fireplace#eval', [s:DisplayWidth(), v:true] + a:000)
-    call fireplace#wait(msg)
+    call call('fireplace#eval', [s:DisplayWidth(), v:true] + a:000)
   catch
     echohl ErrorMSG
     echomsg v:exception
