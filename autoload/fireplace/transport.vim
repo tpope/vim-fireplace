@@ -282,6 +282,9 @@ function! s:transport_message(request, ...) dict abort
 
   let received = []
   let message = {'id': request.id}
+  if has_key(request, 'session')
+    let message.session = request.session
+  endif
   let callbacks = [function('add', [received])]
   if len(args) && type(args[0]) ==# v:t_list
     call extend(callbacks, map(copy(args), 'function(v:val, args[1:-1])'))
