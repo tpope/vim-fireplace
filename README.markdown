@@ -100,7 +100,7 @@ Because why not?  It works in the quasi-REPL too.
 
 ## FAQ
 
-> Why does it take so long for Vim to startup?
+> Why does it take so long for Vim to start up?
 
 That's either [classpath.vim][] or [salve.vim][].
 
