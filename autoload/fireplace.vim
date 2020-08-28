@@ -1972,6 +1972,44 @@ nnoremap <silent> <Plug>FireplaceDjump :<C-U>exe <SID>Edit('edit', <SID>cword())
 nnoremap <silent> <Plug>FireplaceDsplit :<C-U>exe <SID>Edit('split', <SID>cword())<CR>
 nnoremap <silent> <Plug>FireplaceDtabjump :<C-U>exe <SID>Edit('tabedit', <SID>cword())<CR>
 
+if !exists('s:tag_file')
+  let s:tag_file = tempname() . '.fireplace.tags'
+endif
+
+function! s:Tag(cmd, keyword) abort
+  try
+    let location = fireplace#source(a:keyword)
+  catch /^Clojure:/
+    return ''
+  endtry
+  let after = ''
+  let tag_contents = [
+        \ "!_TAG_FILE_FORMAT\t2\t/extended format; --format=1 will not append ;\" to lines/",
+        \ "!_TAG_FILE_SORTED\t1\t/0=unsorted, 1=sorted, 2=foldcase/",
+        \ "!_TAG_PROGRAM_NAME\tfireplace.vim\t//"]
+  if len(location)
+    let line = matchstr(location, '^+\zs\d\+')
+    let file = expand(matchstr(location, ' \zs.*'))
+    if file =~# '^zipfile:.*::'
+      let after = '|keepalt keepjumps edit +' . line . ' ' . fnameescape(file)
+      let line = 1
+      let file = matchstr(file, 'zipfile:\zs.\{-\}\ze::')
+    endif
+    call add(tag_contents, a:keyword . "\t" . file . "\t" . line . ";\"\tlanguage:Clojure")
+  endif
+  call writefile(tag_contents, s:tag_file)
+  let old_tags = &l:tags
+  let &l:tags = escape(s:tag_file, ' ,')
+  return a:cmd . ' ' . a:keyword . '|call setbufvar(' . bufnr('') . ', "&tags", ' . string(old_tags). ')' . after
+endfunction
+
+nnoremap <silent> <Plug>FireplaceTag :<C-U>exe <SID>Tag('tag', <SID>cword())<CR>
+nnoremap <silent> <Plug>FireplaceTjump :<C-U>exe <SID>Tag('tjump', <SID>cword())<CR>
+nnoremap <silent> <Plug>FireplaceTselect :<C-U>exe <SID>Tag('tselect', <SID>cword())<CR>
+nnoremap <silent> <Plug>FireplaceStag :<C-U>exe <SID>Tag('stag', <SID>cword())<CR>
+nnoremap <silent> <Plug>FireplaceStjump :<C-U>exe <SID>Tag('stjump', <SID>cword())<CR>
+nnoremap <silent> <Plug>FireplaceStselect :<C-U>exe <SID>Tag('stselect', <SID>cword())<CR>
+
 function! s:set_up_source() abort
   setlocal define=^\\s*(def\\w*
   command! -bar -buffer -nargs=1 -complete=customlist,fireplace#eval_complete Djump  :exe s:Edit('edit', <q-args>)
@@ -1982,6 +2020,16 @@ function! s:set_up_source() abort
   call s:map('n', '<C-W><C-D>', '<Plug>FireplaceDsplit')
   call s:map('n', '<C-W>d',     '<Plug>FireplaceDsplit')
   call s:map('n', '<C-W>gd',    '<Plug>FireplaceDtabjump')
+
+  call s:map('n', '<C-]>',         '<Plug>FireplaceTag')
+  call s:map('n', 'g<LeftMouse>',  '<Plug>FireplaceTag')
+  call s:map('n', '<C LeftMouse>', '<Plug>FireplaceTag')
+  call s:map('n', 'g]',            '<Plug>FireplaceTselect')
+  call s:map('n', 'g<C-]>',        '<Plug>FireplaceTjump')
+  call s:map('n', '<C-W>]',        '<Plug>FireplaceStag')
+  call s:map('n', '<C-W><C-]>',    '<Plug>FireplaceStag')
+  call s:map('n', '<C-W>g]',       '<Plug>FireplaceStselect')
+  call s:map('n', '<C-W>g<C-]>',   '<Plug>FireplaceStjump')
 endfunction
 
 " Section: Go to file

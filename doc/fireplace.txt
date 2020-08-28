@@ -116,6 +116,14 @@ on a remote server wouldn't be very useful locally.
                                                 *fireplace-gf*
 gf                      Go to the file for the namespace under the cursor.
 
+                                                *fireplace-CTRL-]*
+<C-]>                   Jump to the source of the symbol under the cursor
+g]                      and put the symbol on the tag stack.  See the help for
+g<C-]>                  the built-in |CTRL-]|.  All other tag maps are provided
+<C-W>]                  as well.
+<C-W>g]
+<C-W>g<C-]>
+
                                                 *fireplace-:Djump*
 :Djump {symbol}         Jump to the definition for the given symbol.
 

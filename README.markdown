@@ -87,7 +87,7 @@ understand code was a top priority.
 * `[d` is mapped to look up the symbol under the cursor with `source`.
 
 * `[<C-D>` jumps to the definition of a symbol (even if it's inside a jar
-  file).
+  file).  `<C-]>` does the same and uses the tag stack.
 
 * `gf`, everybody's favorite "go to file" command, works on namespaces.
 
