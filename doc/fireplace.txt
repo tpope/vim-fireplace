@@ -131,6 +131,10 @@ example), the user namespace is used instead.  ClojureScript is used for .cljs
 files always and for .cljc files if a ClojureScript repl has already been
 initialized.
 
+Evaluation happens in the foreground and blocks Vim by default.  Press <C-D>
+during a prolonged execution to detach from it and return Vim.  When
+evaluation is complete, results will load into the preview window.
+
                                                 *fireplace-:Require*
 :Require [ns]           Require :reload the given/current namespace.
 
