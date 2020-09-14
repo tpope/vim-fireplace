@@ -1189,7 +1189,7 @@ if !exists('s:qffiles')
   let s:qffiles = {}
 endif
 
-function! s:qfentry(entry) abort
+function! s:qfhistory_item(entry) abort
   if !has_key(a:entry, 'tempfile')
     let a:entry.tempfile = s:temp_response(a:entry.response, get(a:entry, 'ext', 'clj'))
   endif
@@ -1200,7 +1200,7 @@ endfunction
 function! s:qfhistory() abort
   let list = []
   for entry in reverse(copy(s:history))
-    call extend(list, [s:qfentry(entry)])
+    call extend(list, [s:qfhistory_item(entry)])
   endfor
   return list
 endfunction
@@ -1425,26 +1425,26 @@ endfunction
 " Section: Quickfix
 
 function! s:qfmassage(line, path) abort
-  let entry = {'text': a:line}
+  let item = {'text': a:line}
   let match = matchlist(a:line, '^\s*\(\S\+\)\s\=(\([^:()[:space:]]*\)\%(:\(\d\+\)\)\=)$')
   if !empty(match)
     let [_, class, file, lnum; __] = match
-    let entry.module = class
-    let entry.lnum = +lnum
+    let item.module = class
+    let item.lnum = +lnum
     if file ==# 'NO_SOURCE_FILE' || !lnum
-      let entry.resource = ''
+      let item.resource = ''
     else
       let truncated = substitute(class, '\.[A-Za-z0-9_]\+\%([$/].*\)$', '', '')
-      let entry.resource = tr(truncated, '.', '/') . '/' . file
+      let item.resource = tr(truncated, '.', '/') . '/' . file
     endif
-    let entry.filename = fireplace#findresource(entry.resource, a:path)
+    let item.filename = fireplace#findresource(item.resource, a:path)
     if has('patch-8.0.1782')
-      let entry.text = ''
+      let item.text = ''
     else
-      let entry.text = class
+      let item.text = class
     endif
   endif
-  return entry
+  return item
 endfunction
 
 function! fireplace#quickfix_for(stacktrace) abort
@@ -1466,9 +1466,9 @@ function! fireplace#massage_list(...) abort
   endif
   let path = p =~# '^[:;]' ? split(p[1:-1], p[0]) : p[0] ==# ',' ? s:path_extract(p[1:-1], 1) : s:path_extract(p, 1)
   let qflist = l:GetList()
-  for entry in qflist
-    if !entry.bufnr && !entry.lnum
-      call extend(entry, s:qfmassage(get(entry, 'text', ''), path))
+  for item in qflist
+    if !item.bufnr && !entry.lnum
+      call extend(item, s:qfmassage(get(item, 'text', ''), path))
     endif
   endfor
   let attrs = l:GetList({'title': 1})
@@ -2419,31 +2419,31 @@ function! s:handle_test_response(buffer, id, path, expr, bang, message) abort
   else
     let a:buffer[0] = ''
   endif
-  let entries = []
+  let items = []
   for line in lines
     if line =~# '\t.*\t.*\t'
-      let entry = {'text': line}
+      let item = {'text': line}
       let [resource, lnum, type, name] = split(line, "\t", 1)
-      let entry.lnum = lnum
-      let entry.type = (type ==# 'fail' ? 'W' : 'E')
-      let entry.text = name
+      let item.lnum = lnum
+      let item.type = (type ==# 'fail' ? 'W' : 'E')
+      let item.text = name
       if resource ==# 'NO_SOURCE_FILE'
         let resource = ''
-        let entry.lnum = 0
+        let item.lnum = 0
       endif
-      let entry.filename = fireplace#findresource(resource, a:path)
-      if empty(entry.filename)
-        let entry.lnum = 0
+      let item.filename = fireplace#findresource(resource, a:path)
+      if empty(item.filename)
+        let item.lnum = 0
       endif
     else
-      let entry = s:qfmassage(line, a:path)
+      let item = s:qfmassage(line, a:path)
     endif
-    call add(entries, entry)
+    call add(items, item)
   endfor
   if a:id
-    call setqflist([], 'a', {'id': a:id, 'items': entries})
+    call setqflist([], 'a', {'id': a:id, 'items': items})
   else
-    call setqflist(entries, 'a')
+    call setqflist(items, 'a')
   endif
   if has_key(a:message, 'status')
     if !a:bang && get(getqflist({'id': 0}), 'id') ==# a:id
