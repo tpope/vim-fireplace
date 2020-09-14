@@ -1363,7 +1363,7 @@ function! fireplace#eval(...) abort
   endwhile
 
   if get(state, 'ex', '') !=# ''
-    let err = 'Clojure: '.response.ex
+    let err = 'Clojure: '.state.ex
   else
     return get(state.history.response, 'value', [])
   endif
