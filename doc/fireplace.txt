@@ -232,7 +232,10 @@ cq{motion}              Bring up a |command-line-window| with text indicated
 
                                                 *fireplace-:Stacktrace*
 :Stacktrace             Retrieve the most recent Clojure error and load the
-                        stacktrace into the quickfix list.
+                        stacktrace into the quickfix list.  By default this is
+                        filtered to exclude duplicates and tooling (e.g.,
+                        nREPL internals).  Use :Stacktrace! to get an
+                        unfiltered version.
 
 And insert mode:
 

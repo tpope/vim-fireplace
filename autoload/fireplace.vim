@@ -1639,7 +1639,7 @@ function! fireplace#CljsEvalCommand(line1, line2, range, bang, mods, args) abort
   return s:Eval('cljs', a:line1, a:line2, a:range, a:bang, a:mods, a:args)
 endfunction
 
-function! s:stacktrace_list() abort
+function! s:stacktrace_list(all) abort
   let response = fireplace#message({'op': 'stacktrace'}, v:t_dict)
   if !has_key(response, 'stacktrace')
     throw 'Fireplace: no error available'
@@ -1651,6 +1651,9 @@ function! s:stacktrace_list() abort
         \ 'items': []}
   for entry in response.stacktrace
     let flags = get(entry, 'flags', [])
+    if !a:all && (index(flags, 'dup') != -1 || index(flags, 'repl') != -1 || index(flags, 'tooling') != -1)
+      continue
+    endif
     let item = {
           \ 'module': get(entry, 'var', entry.name),
           \ 'lnum': get(entry, 'line'),
@@ -1681,7 +1684,7 @@ endfunction
 function! s:StacktraceCommand(bang, args) abort
   exe s:op_guard('stacktrace', 'cider-nrepl')
   try
-    let list = s:stacktrace_list()
+    let list = s:stacktrace_list(a:bang)
     call setqflist(remove(list, 'items'))
     call setqflist([], 'a', list)
     return 'copen'
