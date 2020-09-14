@@ -1205,24 +1205,6 @@ function! s:qfhistory() abort
   return list
 endfunction
 
-function! s:stacktrace() abort
-  let format_st =
-        \ '(if-not *e (symbol "") ' .
-        \ '(let [st (or (when (= "#''cljs.core/str" (str #''str))' .
-        \               ' (.-stack *e))' .
-        \             ' (.getStackTrace *e))]' .
-        \  ' (symbol' .
-        \    ' (if (string? st)' .
-        \      ' st' .
-        \      ' (let [parts (if (= "class [Ljava.lang.StackTraceElement;" (str (type st)))' .
-        \                    ' (map str st)' .
-        \                    ' (seq (amap st idx ret (str (aget st idx)))))]' .
-        \        ' (apply str (interpose "\n" (cons *e parts)))))' .
-        \    ')))'
-  let response = fireplace#message({'op': 'eval', 'code': format_st, 'ns': 'user', 'session': v:true}, v:t_dict)
-  return split(join(get(response, 'value', []), "\n"), "\n")
-endfunction
-
 function! s:echon(state, str, ...) abort
   let str = get(a:state, 'echo_buffer', '') . a:str
   let a:state.echo_buffer = matchstr(str, "\n$")
@@ -1657,14 +1639,51 @@ function! fireplace#CljsEvalCommand(line1, line2, range, bang, mods, args) abort
   return s:Eval('cljs', a:line1, a:line2, a:range, a:bang, a:mods, a:args)
 endfunction
 
-function! s:StacktraceCommand(bang, args) abort
-  try
-    let stacktrace = s:stacktrace()
-    if empty(stacktrace)
-      return 'echoerr ' . string('Fireplace: no error available')
+function! s:stacktrace_list() abort
+  let response = fireplace#message({'op': 'stacktrace'}, v:t_dict)
+  if !has_key(response, 'stacktrace')
+    throw 'Fireplace: no error available'
+  endif
+  let path = fireplace#path()
+  let qf = {
+        \ 'title': response.class . ': ' . response.message,
+        \ 'context': {'fireplace': response},
+        \ 'items': []}
+  for entry in response.stacktrace
+    let flags = get(entry, 'flags', [])
+    let item = {
+          \ 'module': get(entry, 'var', entry.name),
+          \ 'lnum': get(entry, 'line'),
+          \ }
+    if get(entry, 'file', '') =~# '^\%(NO_SOURCE_FILE\)\=$' || !item.lnum || !has_key(entry, 'class')
+      let item.resource = ''
+    else
+      let item.resource = tr(entry.class, '.', '/') . '/' . entry.file
     endif
-    call setqflist(fireplace#quickfix_for(stacktrace[1:-1]))
-    call setqflist([], 'a', {'title': stacktrace[0]})
+    let item.filename = fireplace#findresource(item.resource, path)
+    if empty(item.filename) && !empty(get(entry, 'file-url', ''))
+      let item.filename = substitute(substitute(entry['file-url'],
+            \ '^jar:file:\([^!]*\)!', 'zipfile:\1:', ''),
+            \ '^file:', '', '')
+    endif
+    if has('patch-8.0.1782')
+      let item.text = join(flags, ' ')
+    else
+      let item.text = item.module
+    endif
+    if index(flags, 'dup') == -1
+      call add(qf.items, item)
+    endif
+  endfor
+  return qf
+endfunction
+
+function! s:StacktraceCommand(bang, args) abort
+  exe s:op_guard('stacktrace', 'cider-nrepl')
+  try
+    let list = s:stacktrace_list()
+    call setqflist(remove(list, 'items'))
+    call setqflist([], 'a', list)
     return 'copen'
   catch /^Fireplace:/
     return 'echoerr ' . string(v:exception)
