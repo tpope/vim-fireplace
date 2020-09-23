@@ -16,7 +16,7 @@ function! fireplace#session#for(transport, ...) abort
     call add(session.callbacks, function(a:2, a:000[2:-1]))
   endif
   let session.transport = a:transport
-  let session.id = a:transport.message({'op': 'clone', 'session': a:0 ? a:1 : ''}, v:t_dict)['new-session']
+  let session.id = a:transport.Message({'op': 'clone', 'session': a:0 ? a:1 : ''}, v:t_dict)['new-session']
   let session.session = session.id
   let session.url = a:transport.url . '#' . session.id
   let a:transport.sessions[session.id] = function('s:session_callback', [], session)
@@ -38,7 +38,7 @@ endfunction
 function! s:session_close() dict abort
   if has_key(self, 'id')
     try
-      call self.message({'op': 'close'}, '')
+      call self.Message({'op': 'close'}, '')
     catch
     finally
       call filter(self, 'v:key !=# "id" && v:key !=# "session"')
@@ -61,7 +61,7 @@ endfunction
 
 function! s:close_on_first_done(transport, msg) abort
   if index(get(a:msg, 'status', []), 'done') >= 0
-    call a:transport.message({'op': 'close', 'session': a:msg.session}, '')
+    call a:transport.Message({'op': 'close', 'session': a:msg.session}, '')
   endif
 endfunction
 
@@ -74,7 +74,7 @@ function! s:session_message(msg, ...) dict abort
     let msg = copy(msg)
     let msg.session = self.id
   elseif empty(msg.session) && msg.session isnot# v:null || msg.session is# v:true
-    let session = self.clone(function('s:close_on_first_done', [self.transport]))
+    let session = self.Clone(function('s:close_on_first_done', [self.transport]))
     let msg = copy(msg)
     let msg.session = session.id
   endif
@@ -82,14 +82,14 @@ function! s:session_message(msg, ...) dict abort
 endfunction
 
 function! s:session_has_op(op) dict abort
-  return self.transport.has_op(a:op)
+  return self.transport.HasOp(a:op)
 endfunction
 
 let s:session = {
       \ 'Close': s:function('s:session_close'),
       \ 'Clone': s:function('s:session_clone'),
-      \ 'Message': s:function('s:session_message'),
       \ 'HasOp': s:function('s:session_has_op'),
+      \ 'Message': s:function('s:session_message'),
       \ 'Path': s:function('s:session_path'),
       \ 'close': s:function('s:session_close'),
       \ 'clone': s:function('s:session_clone'),

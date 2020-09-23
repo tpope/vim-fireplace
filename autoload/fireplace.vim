@@ -413,7 +413,7 @@ let s:repl.path = s:repl.Path
 function! s:repl.message(payload, ...) dict abort
   call s:NormalizeNs(self, a:payload)
   if has_key(a:payload, 'ns') && a:payload.ns !=# self.UserNs()
-    let ignored_error = self.preload(a:payload.ns)
+    let ignored_error = self.Preload(a:payload.ns)
   endif
   let session = self.Session()
   return call(session.message, [a:payload] + a:000, session)
@@ -431,6 +431,8 @@ function! s:repl.done(id) dict abort
   endif
 endfunction
 
+let s:repl.Done = s:repl.done
+
 function! s:repl.preload(lib) dict abort
   if !empty(a:lib) && a:lib !=# self.UserNs() && !get(self.requires, a:lib)
     let reload = has_key(self.requires, a:lib) ? ' :reload' : ''
@@ -443,7 +445,7 @@ function! s:repl.preload(lib) dict abort
     else
       let expr = '(ns '.self.UserNs().' (:require '.a:lib.reload.'))'
     endif
-    let result = self.message({'op': 'eval', 'code': expr, 'ns': self.UserNs(), 'session': ''}, v:t_dict)
+    let result = self.Message({'op': 'eval', 'code': expr, 'ns': self.UserNs(), 'session': ''}, v:t_dict)
     let self.requires[a:lib] = !has_key(result, 'ex')
     if has_key(result, 'ex')
       return result
@@ -451,6 +453,8 @@ function! s:repl.preload(lib) dict abort
   endif
   return {}
 endfunction
+
+let s:repl.Preload = s:repl.preload
 
 function! s:repl.Eval(...) dict abort
   let options = {'op': 'eval', 'code': ''}
@@ -465,12 +469,12 @@ function! s:repl.Eval(...) dict abort
   endfor
   let options = s:NormalizeNs(self, options)
   if has_key(options, 'ns') && options.ns !=# self.UserNs()
-    let error = self.preload(options.ns)
+    let error = self.Preload(options.ns)
     if !empty(error)
       return error
     endif
   endif
-  let response = self.message(options, exists('l:Callback') ? Callback : v:t_dict)
+  let response = self.Message(options, exists('l:Callback') ? Callback : v:t_dict)
   if index(get(response, 'status', []), 'namespace-not-found') < 0
     return response
   endif
@@ -480,7 +484,7 @@ endfunction
 let s:repl.eval = s:repl.Eval
 
 function! s:repl.HasOp(op) abort
-  return self.transport.has_op(a:op)
+  return self.transport.HasOp(a:op)
 endfunction
 
 let s:piggieback = extend(copy(s:repl), s:cljs)
@@ -491,16 +495,16 @@ function! s:piggieback.Piggieback(arg, ...) abort
   if a:0 && a:1
     if len(self.sessions)
       let session = remove(self.sessions, 0)
-      call session.message({'op': 'eval', 'code': ':cljs/quit'}, v:t_list)
-      call session.close()
+      call session.Message({'op': 'eval', 'code': ':cljs/quit'}, v:t_list)
+      call session.Close()
     endif
     return {}
   endif
-  let session = self.clj_session.clone()
+  let session = self.clj_session.Clone()
   if empty(a:arg)
     let arg = get(self, 'default', '')
   elseif a:arg =~# '^\d\{1,5}$'
-    if len(fireplace#findresource('weasel/repl/websocket.clj', self.path()))
+    if len(fireplace#findresource('weasel/repl/websocket.clj', self.Path()))
       let arg = '(weasel.repl.websocket/repl-env :port ' . a:arg . ')'
     else
       let arg = '(cljs.repl.browser/repl-env :port ' . a:arg .')'
@@ -513,20 +517,20 @@ function! s:piggieback.Piggieback(arg, ...) abort
   endif
   let replns = matchstr(arg, '^\%((\w\+\.piggieback/cljs-repl \)\=(\=\zs[a-z][a-z0-9-]\+\.[a-z0-9.-]\+\ze/')
   if len(replns)
-    call session.message({'op': 'eval', 'code': "(require '" . replns . ")"}, v:t_dict)
+    call session.Message({'op': 'eval', 'code': "(require '" . replns . ")"}, v:t_dict)
   endif
   if arg =~# '^\S*repl-env\>' || arg !~# '('
-    if len(fireplace#findresource('cemerick/piggieback.clj', self.path())) && !len(fireplace#findresource('cider/piggieback.clj', self.path()))
+    if len(fireplace#findresource('cemerick/piggieback.clj', self.Path())) && !len(fireplace#findresource('cider/piggieback.clj', self.Path()))
       let arg = '(cemerick.piggieback/cljs-repl ' . arg . ')'
     else
       let arg = '(cider.piggieback/cljs-repl ' . arg . ')'
     endif
   endif
-  let response = session.message({'op': 'eval', 'code': arg}, v:t_dict)
+  let response = session.Message({'op': 'eval', 'code': arg}, v:t_dict)
   if !has_key(response, 'ex') && get(response, 'ns', 'user') ==# 'cljs.user'
     call insert(self.sessions, session)
   else
-    call session.close()
+    call session.Close()
   endif
   return response
 endfunction
@@ -560,7 +564,7 @@ function! s:unregister(transport) abort
 endfunction
 
 function! s:unregister_dead() abort
-  let criteria = 'has_key(v:val, "transport") && v:val.transport.alive()'
+  let criteria = 'has_key(v:val, "transport") && v:val.transport.Alive()'
   call filter(s:repl_paths, criteria)
   call filter(s:repls, criteria)
   call filter(s:repl_portfiles, criteria)
@@ -577,7 +581,7 @@ function! fireplace#register_port_file(portfile, ...) abort
     let port = matchstr(readfile(portfile, 'b', 1)[0], '\d\+')
     try
       let transport = fireplace#transport#connect(port)
-      let session = transport.clone()
+      let session = transport.Clone()
       let s:repl_portfiles[portfile] = {
             \ 'time': getftime(portfile),
             \ 'session': session,
@@ -643,7 +647,7 @@ function! fireplace#ConnectCommand(line1, line2, range, bang, mods, arg, args) a
   if type(transport) !=# type({}) || empty(transport)
     return ''
   endif
-  let client = s:register(transport.clone())
+  let client = s:register(transport.Clone())
   echo 'Connected to ' . transport.url
   let root = len(a:args) > 1 ? expand(a:args[1]) : input('Scope connection to: ', path, 'dir')
   if root !=# '' && root !=# '-'
@@ -794,7 +798,7 @@ function! s:oneoff.Eval(...) dict abort
     throw s:no_repl
   endif
   let id = has_key(options, 'id') ? options.id : fireplace#transport#id()
-  let path = join(self.path(), has('win32') ? ';' : ':')
+  let path = join(self.Path(), has('win32') ? ';' : ':')
   let options = s:NormalizeNs(self, options)
   let ns = get(options, 'ns', self.UserNs())
   let queue = []
@@ -943,8 +947,8 @@ function! fireplace#path(...) abort
   let buf = a:0 ? a:1 : s:buf()
   let absolute = s:buffer_absolute(buf)
   for repl in s:repls
-    if s:includes_file(absolute, repl.path())
-      return repl.path()
+    if s:includes_file(absolute, repl.Path())
+      return repl.Path()
     endif
   endfor
   return s:path_extract(getbufvar(buf, '&path'))
@@ -985,7 +989,7 @@ function! fireplace#native(...) abort
     let root = fnamemodify(root, ':h')
   endwhile
   for repl in s:repls
-    if s:includes_file(path, repl.path())
+    if s:includes_file(path, repl.Path())
       return repl
     endif
   endfor
@@ -1070,7 +1074,7 @@ function! fireplace#message(payload, ...) abort
   if !has_key(payload, 'ns')
     let payload.ns = v:true
   endif
-  return call(client.message, [payload] + a:000, client)
+  return call(client.Message, [payload] + a:000, client)
 endfunction
 
 function! fireplace#interrupt(msg_or_id) abort
@@ -1111,7 +1115,7 @@ function! s:op_missing_error(op, ...) abort
     let client = fireplace#native()
     if !has_key(client, 'transport')
       return s:no_repl
-    elseif client.transport.has_op(a:op)
+    elseif client.transport.HasOp(a:op)
       return ''
     elseif a:0
       return 'Fireplace: no ' . string(a:op) . ' nREPL op available (is ' . a:1 . ' installed?)'
@@ -1259,10 +1263,10 @@ function! s:eval_callback(state, delegates, message) abort
       let client = a:state.client
       if len(get(client, 'sessions', [])) && a:state.code =~# '^\s*:cljs/quit\s*$' && !has_key(state, 'ex')
         let old_session = remove(client.sessions, 0)
-        call old_session.close()
+        call old_session.Close()
       elseif has_key(client, 'cljs_sessions') && get(a:state, 'ns', '') ==# 'cljs.user'
-        call insert(client.cljs_sessions, client.Session().clone())
-        call client.message({'op': 'eval', 'code': ':cljs/quit'}, v:t_dict)
+        call insert(client.cljs_sessions, client.Session().Clone())
+        call client.Message({'op': 'eval', 'code': ':cljs/quit'}, v:t_dict)
       endif
     endif
     let a:state.history.response = fireplace#transport#combine(a:state.history.messages)

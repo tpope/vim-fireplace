@@ -163,7 +163,7 @@ endif
 augroup fireplace_transport
   autocmd!
   autocmd VimLeave for s:dict in values(s:urls)
-        \ |   call s:dict.transport.close()
+        \ |   call s:dict.transport.Close()
         \ | endfor
 augroup END
 
@@ -196,20 +196,20 @@ function! fireplace#transport#connect(arg) abort
   let transport.requests = {}
   let cb_args = [url, transport.state, transport.requests, transport.sessions]
   let transport.job = s:json_start(command + [url], function('s:json_callback', cb_args), function('s:exit_callback', cb_args))
-  while !has_key(transport.state, 'status') && transport.alive()
+  while !has_key(transport.state, 'status') && transport.Alive()
     sleep 1m
   endwhile
   if get(transport.state, 'status') is# ''
     let s:urls[transport.url] = {'transport': transport}
-    let transport.describe = transport.message({'op': 'describe', 'verbose?': 1}, v:t_dict)
-    if transport.has_op('classpath')
-      let response = transport.message({'op': 'classpath', 'session': ''}, v:t_dict)
+    let transport.describe = transport.Message({'op': 'describe', 'verbose?': 1}, v:t_dict)
+    if transport.HasOp('classpath')
+      let response = transport.Message({'op': 'classpath', 'session': ''}, v:t_dict)
       if type(get(response, 'classpath')) == type([])
         let transport._path = response.classpath
       endif
     endif
     if !has_key(transport, '_path')
-      let response = transport.message({'op': 'eval', 'code':
+      let response = transport.Message({'op': 'eval', 'code':
             \ '(System/getProperty "path.separator") (or' .
             \ ' (System/getProperty "fake.class.path")' .
             \ ' (System/getProperty "java.class.path") "") ' .
@@ -238,7 +238,7 @@ endfunction
 function! s:transport_close() dict abort
   if has_key(self, 'job')
     for session in keys(self.sessions)
-      call self.message({'op': 'close', 'session': session}, '')
+      call self.Message({'op': 'close', 'session': session}, '')
       call remove(self.sessions, session)
     endfor
     call s:close(self.job)
