@@ -106,8 +106,9 @@ function! s:json_start(command, out_cb, exit_cb) abort
           \ "exit_cb": a:exit_cb,
           \ })
   else
+    let buf = ['']
     return jobstart(a:command, {
-          \ "on_stdout": function('s:wrap_nvim_callback', [a:out_cb, ['']]),
+          \ "on_stdout": { job, data, type -> timer_start(0, { t -> s:wrap_nvim_callback(a:out_cb, buf, job, data, type) }) },
           \ "on_exit": { job, status, type -> call(a:exit_cb, [job, status])},
           \ })
   endif
@@ -346,22 +347,29 @@ function! fireplace#transport#stdin(session_or_id, data) abort
   return v:false
 endfunction
 
+function! s:done(id) abort
+  for [url, dict] in items(s:urls)
+    if has_key(dict.transport, 'job') && has_key(dict.transport.requests, a:id)
+      return v:false
+    endif
+  endfor
+  return v:true
+endfunction
+
 function! fireplace#transport#wait(id, ...) abort
   let max = a:0 ? a:1 : -1
   let ms = 0
-  for [url, dict] in items(s:urls)
-    while has_key(dict.transport, 'job') && has_key(dict.transport.requests, a:id)
-      if ms == max
-        return v:false
-      endif
-      let ms += 1
-      if exists('*jobwait')
-        call jobwait([dict.transport.job], 1)
-      else
-        sleep 1m
-      endif
-    endwhile
-  endfor
+  while !s:done(a:id)
+    if ms == max
+      return v:false
+    endif
+    let ms += 1
+    if exists('*wait')
+      call wait(1, { -> v:false })
+    else
+      sleep 1m
+    endif
+  endwhile
   return v:true
 endfunction
 
