@@ -1886,10 +1886,10 @@ function! s:Require(bang, echo, ns) abort
     let cmd = ('(clojure.core/require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
   endif
   if a:echo
-    echo cmd
+    echo cmd . "\n"
   endif
   try
-    call fireplace#eval(cmd, {'ns': s:user_ns()})
+    call fireplace#echo_session_eval(cmd, {'ns': s:user_ns()})
     return ''
   catch /^Clojure:.*/
     return ''
