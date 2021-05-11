@@ -1881,9 +1881,9 @@ function! s:Require(bang, echo, ns) abort
     silent! wall
   endif
   if s:impl_ns() ==# 'cljs'
-    let cmd = '(load-file '.s:str(tr(a:ns ==# '' ? fireplace#ns() : a:ns, '-.', '_/').'.cljs').')'
+    let cmd = '(ns cljs.user (:require '.(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').'))'
   else
-    let cmd = ('(clojure.core/require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
+    let cmd = '(clojure.core/require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')'
   endif
   if a:echo
     echo cmd . "\n"
