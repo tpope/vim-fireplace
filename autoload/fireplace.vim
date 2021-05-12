@@ -1337,8 +1337,8 @@ function! fireplace#eval(...) abort
       let c = getchar()
       let c = type(c) == type(0) ? nr2char(c) : c
       if c ==# "\<C-D>"
-        let state.echo = 1
-        let state.bg = 1
+        let state.echo = v:false
+        let state.bg = v:true
         echo "\rBackgrounded"
         return []
       else
