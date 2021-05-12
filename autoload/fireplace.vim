@@ -1327,6 +1327,10 @@ function! fireplace#eval(...) abort
   endif
   let msg = client.Eval(code, opts, function('s:eval_callback', [state, callbacks]))
 
+  if state.echo
+    echo ""
+  endif
+
   if len(callbacks)
     return msg
   endif
@@ -1886,7 +1890,7 @@ function! s:Require(bang, echo, ns) abort
     let cmd = ('(clojure.core/require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')')
   endif
   if a:echo
-    echo cmd . "\n"
+    echo cmd
   endif
   try
     call fireplace#echo_session_eval(cmd, {'ns': s:user_ns()})
