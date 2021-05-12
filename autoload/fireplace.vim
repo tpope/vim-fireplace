@@ -1880,7 +1880,7 @@ augroup END
 
 " Section: :Require
 
-function! s:Require(bang, echo, ns) abort
+function! s:Require(bang, ns) abort
   if &autowrite || &autowriteall
     silent! wall
   endif
@@ -1888,9 +1888,6 @@ function! s:Require(bang, echo, ns) abort
     let cmd = '(ns cljs.user (:require '.(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').'))'
   else
     let cmd = '(' . s:impl_ns() . '.core/require '.s:qsym(a:ns ==# '' ? fireplace#ns() : a:ns).' :reload'.(a:bang ? '-all' : '').')'
-  endif
-  if a:echo
-    echo cmd
   endif
   try
     call fireplace#echo_session_eval(cmd, {'ns': s:user_ns()})
@@ -1903,7 +1900,7 @@ function! s:Require(bang, echo, ns) abort
 endfunction
 
 function! s:set_up_require() abort
-  command! -buffer -bar -bang -complete=customlist,fireplace#ns_complete -nargs=? Require :exe s:Require(<bang>0, 1, <q-args>)
+  command! -buffer -bar -bang -complete=customlist,fireplace#ns_complete -nargs=? Require :exe s:Require(<bang>0, <q-args>)
 
   call s:map('n', 'cpr', ":<C-R>=<SID>impl_ns() ==# 'cljs' ? 'Require' : 'RunTests'<CR><CR>", '<silent>')
 endfunction
