@@ -192,36 +192,44 @@ function! s:candidate(val) abort
         \ }
 endfunction
 
-function! s:get_complete_context() abort
-  " Find toplevel form
-  " If cursor is on start parenthesis we don't want to find the form
-  " If cursor is on end parenthesis we want to find the form
-  let [line1, col1] = searchpairpos('(', '', ')', 'Wrnb', g:fireplace#skip)
-  let [line2, col2] = searchpairpos('(', '', ')', 'Wrnc', g:fireplace#skip)
+function! s:internal_get_complete_context() abort
+    " Find toplevel form
+    " If cursor is on start parenthesis we don't want to find the form
+    " If cursor is on end parenthesis we want to find the form
+    let [line1, col1] = searchpairpos('(', '', ')', 'Wrnb', g:fireplace#skip)
+    let [line2, col2] = searchpairpos('(', '', ')', 'Wrnc', g:fireplace#skip)
 
-  if (line1 == 0 && col1 == 0) || (line2 == 0 && col2 == 0)
-    return ""
-  endif
+    if (line1 == 0 && col1 == 0) || (line2 == 0 && col2 == 0)
+      return ""
+    endif
 
-  if line1 == line2
-    let expr = getline(line1)[col1-1 : col2-1]
-  else
-    let expr = getline(line1)[col1-1 : -1] . ' '
-          \ . join(getline(line1+1, line2-1), ' ')
-          \ . getline(line2)[0 : col2-1]
-  endif
+    if line1 == line2
+      let expr = getline(line1)[col1-1 : col2-1]
+    else
+      let expr = getline(line1)[col1-1 : -1] . ' '
+            \ . join(getline(line1+1, line2-1), ' ')
+            \ . getline(line2)[0 : col2-1]
+    endif
 
-  " Calculate the position of cursor inside the expr
-  if line1 == line('.')
-    let p = col('.') - col1
-  else
-    let p = strlen(getline(line1)[col1-1 : -1])
-          \ + strlen(join(getline(line1 + 1, line('.') - 1), ' '))
-          \ + col('.')
-  endif
+    " Calculate the position of cursor inside the expr
+    if line1 == line('.')
+      let p = col('.') - col1
+    else
+      let p = strlen(getline(line1)[col1-1 : -1])
+            \ + strlen(join(getline(line1 + 1, line('.') - 1), ' '))
+            \ + col('.')
+    endif
 
-  return strpart(expr, 0, p) . ' __prefix__ ' . strpart(expr, p)
+    return strpart(expr, 0, p) . ' __prefix__ ' . strpart(expr, p)
 endfunction
+
+if has('nvim-0.5')
+  let s:lua_impl = luaeval("require'_fireplace'")
+else
+  let s:lua_impl = {}
+endif
+
+let s:get_complete_context = get(s:lua_impl, 'get_completion_context', function('s:internal_get_complete_context'))
 
 function! s:complete_extract(msg) abort
   let trans = '{"word": (v:val =~# ''[./]'' ? "" : matchstr(a:base, ''^.\+/'')) . v:val}'
