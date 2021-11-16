@@ -2315,8 +2315,9 @@ endfunction
 " Section: Documentation
 
 function! s:Lookup(ns, macro, arg) abort
+  let require_form = (s:impl_ns() ==# "clojure") ? "(clojure.core/require '".a:ns.")" : ''
   try
-    let response = fireplace#client().Eval('('.a:ns.'/'.a:macro.' '.a:arg.')', {'session': '', 'ns': v:true})
+    let response = fireplace#client().Eval('(do '.require_form.' ('.a:ns.'/'.a:macro.' '.a:arg.'))', {'session': '', 'ns': v:true})
     call s:output_response(response)
   catch /^Clojure:/
   catch /.*/
