@@ -1372,18 +1372,25 @@ function! s:DisplayWidth() abort
   endif
 endfunction
 
+function! s:refresh_Last() abort
+  for win in range(1, winnr('$'))
+    if getwinvar(win, '&previewwindow')
+      let loclist = getloclist(win)
+      if len(loclist) && map(loclist, 'v:val.text') == map(s:qfhistory()[0 : len(loclist)-1], 'v:val.text')
+        exe s:Last(1, 1)
+      endif
+    endif
+  endfor
+endfunction
+
 function! fireplace#echo_session_eval(...) abort
   try
     call call('fireplace#eval', [s:DisplayWidth(), v:true] + a:000)
-    for win in range(1, winnr('$'))
-      if getwinvar(win, '&previewwindow')
-        let loclist = getloclist(win)
-        if len(loclist) && map(loclist, 'v:val.text') == map(s:qfhistory()[0 : len(loclist)-1], 'v:val.text')
-          exe s:Last(1, 1)
-        endif
-      endif
-    endfor
+    call s:refresh_Last()
   catch
+    if v:exception =~# '^Clojure:'
+      call s:refresh_Last()
+    endif
     echohl ErrorMSG
     echomsg v:exception
     echohl NONE
