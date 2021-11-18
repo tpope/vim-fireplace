@@ -1372,7 +1372,7 @@ function! s:DisplayWidth() abort
   endif
 endfunction
 
-function! s:refresh_Last() abort
+function! s:RefreshLast() abort
   for win in range(1, winnr('$'))
     if getwinvar(win, '&previewwindow')
       let loclist = getloclist(win)
@@ -1386,10 +1386,10 @@ endfunction
 function! fireplace#echo_session_eval(...) abort
   try
     call call('fireplace#eval', [s:DisplayWidth(), v:true] + a:000)
-    call s:refresh_Last()
+    call s:RefreshLast()
   catch
     if v:exception =~# '^Clojure:'
-      call s:refresh_Last()
+      call s:RefreshLast()
     endif
     echohl ErrorMSG
     echomsg v:exception
