@@ -1354,6 +1354,8 @@ function! fireplace#eval(...) abort
 
   if get(state, 'ex', '') !=# ''
     let err = 'Clojure: '.state.ex
+  elseif get(msg, 'err', '') !=# ''
+    let err = 'Clojure: '.msg.err
   else
     return get(state.history.response, 'value', [])
   endif
