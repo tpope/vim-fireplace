@@ -1152,7 +1152,11 @@ function! fireplace#findresource(resource, ...) abort
   for dir in a:0 ? a:1 : fireplace#path()
     for suffix in suffixes
       if fnamemodify(dir, ':e') ==# 'jar' && index(fireplace#jar_contents(dir), resource . suffix) >= 0
-        return 'zipfile:' . dir . '::' . resource . suffix
+        if get(g:, 'loaded_zipPlugin')[1:-1] > 31
+          return 'zipfile://' . dir . '::' . resource . suffix
+        else
+          return 'zipfile:' . dir . '::' . resource . suffix
+        endif
       elseif filereadable(dir . '/' . resource . suffix)
         return dir . s:slash() . resource . suffix
       endif
