@@ -57,6 +57,14 @@ function! s:cword() abort
   endtry
 endfunction
 
+function! s:zipfile_url(archive, path) abort
+  if get(g:, 'loaded_zipPlugin')[1:-1] > 31
+    return 'zipfile://' . a:archive . '::' . a:path
+  else
+    return 'zipfile:' . a:archive . '::' . a:path
+  endif
+endfunction
+
 " Section: Escaping
 
 function! s:str(string) abort
@@ -827,7 +835,7 @@ let s:oneoff.Message = s:oneoff.Session
 
 function! s:buffer_absolute(...) abort
   let buffer = call('s:buf', a:000)
-  let path = substitute(fnamemodify(bufname(buffer), ':p'), '\C^zipfile:\(.*\)::', '\1/', '')
+  let path = substitute(fnamemodify(bufname(buffer), ':p'), '\C^zipfile:\%([\/][\/]\)\=\(.*\)::', '\1/', '')
   let scheme = substitute(matchstr(path, '^\a\a\+\ze:'), '^.', '\u&', '')
   if len(scheme) && exists('*' . scheme . 'Real')
     let path = {scheme}Real(path)
@@ -1152,11 +1160,7 @@ function! fireplace#findresource(resource, ...) abort
   for dir in a:0 ? a:1 : fireplace#path()
     for suffix in suffixes
       if fnamemodify(dir, ':e') ==# 'jar' && index(fireplace#jar_contents(dir), resource . suffix) >= 0
-        if get(g:, 'loaded_zipPlugin')[1:-1] > 31
-          return 'zipfile://' . dir . '::' . resource . suffix
-        else
-          return 'zipfile:' . dir . '::' . resource . suffix
-        endif
+        return s:zipfile_url(dir, resource . suffix)
       elseif filereadable(dir . '/' . resource . suffix)
         return dir . s:slash() . resource . suffix
       endif
@@ -1693,7 +1697,7 @@ function! s:stacktrace_list(all) abort
     let item.filename = fireplace#findresource(item.resource, path)
     if empty(item.filename) && !empty(get(entry, 'file-url', ''))
       let item.filename = substitute(substitute(entry['file-url'],
-            \ '^jar:file:\([^!]*\)!', 'zipfile:\1:', ''),
+            \ '^jar:file:\([^!]*\)!/', '\=s:zipfile_url(submatch(1), "")', ''),
             \ '^file:', '', '')
     endif
     if has('patch-8.0.1782')
@@ -1973,7 +1977,7 @@ function! fireplace#source(symbol) abort
       let file = substitute(strpart(info.file, 5), '/', s:slash(), 'g')
     elseif get(info, 'file', '') =~# '^jar:file:'
       let zip = matchstr(info.file, '^jar:file:\zs.*\ze!')
-      let file = 'zipfile:' . zip . '::' . info.resource
+      let file = s:zipfile_url(zip, info.resource)
     else
       let file = get(info, 'file', '')
     endif
@@ -2039,7 +2043,7 @@ function! s:Tag(cmd, keyword) abort
     if file =~# '^zipfile:.*::'
       let after = '|keepalt keepjumps edit +' . line . ' ' . fnameescape(file)
       let line = 1
-      let file = matchstr(file, 'zipfile:\zs.\{-\}\ze::')
+      let file = matchstr(file, 'zipfile:\%([\/][\/]\)\=\zs.\{-\}\ze::')
     endif
     call add(tag_contents, a:keyword . "\t" . file . "\t" . line . ";\"\tlanguage:Clojure")
   endif
