@@ -2187,7 +2187,7 @@ endfunction
 function! fireplace#cfile() abort
   let isfname = &isfname
   try
-    set isfname+='
+    set isfname+=',*
     let file = substitute(expand('<cfile>'), "^''*", '', '')
   finally
     let isfname = &isfname
