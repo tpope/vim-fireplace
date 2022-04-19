@@ -1353,6 +1353,7 @@ function! fireplace#eval(...) abort
           let state.echo = v:false
           let state.bg = v:true
           echo "\rBackgrounded"
+          let finished = 1
           return []
         else
           call fireplace#transport#stdin(msg.id, c)
