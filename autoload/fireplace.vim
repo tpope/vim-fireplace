@@ -1343,22 +1343,29 @@ function! fireplace#eval(...) abort
     return msg
   endif
 
-  while !fireplace#wait(msg.id, 1)
-    let peek = getchar(1)
-    if state.echo && peek != 0 && !(has('win32') && peek == 128)
-      let c = getchar()
-      let c = type(c) == type(0) ? nr2char(c) : c
-      if c ==# "\<C-D>"
-        let state.echo = v:false
-        let state.bg = v:true
-        echo "\rBackgrounded"
-        return []
-      else
-        call fireplace#transport#stdin(msg.id, c)
-        echon c
+  try
+    while !fireplace#wait(msg.id, 1)
+      let peek = getchar(1)
+      if state.echo && peek != 0 && !(has('win32') && peek == 128)
+        let c = getchar()
+        let c = type(c) == type(0) ? nr2char(c) : c
+        if c ==# "\<C-D>"
+          let state.echo = v:false
+          let state.bg = v:true
+          echo "\rBackgrounded"
+          return []
+        else
+          call fireplace#transport#stdin(msg.id, c)
+          echon c
+        endif
       endif
+    endwhile
+    let finished = 1
+  finally
+    if !exists('l:finished')
+      call fireplace#interrupt(msg.id)
     endif
-  endwhile
+  endtry
 
   if get(state, 'ex', '') !=# ''
     let err = 'Clojure: '.state.ex
