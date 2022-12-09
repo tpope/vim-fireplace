@@ -865,7 +865,7 @@ function! fireplace#ns(...) abort
     return getbufvar(buffer, 'fireplace_ns')
   endif
   let head = getbufline(buffer, 1, 500)
-  let blank = '^\s*\%(;.*\)\=$'
+  let blank = '^\s*\%(\%(;\|#!\).*\)\=$'
   call filter(head, 'v:val !~# blank')
   let keyword_group = '[A-Za-z0-9_?*!+/=<>.-]'
   let lines = join(head[0:49], ' ')
