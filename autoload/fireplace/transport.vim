@@ -8,7 +8,11 @@ let g:autoloaded_fireplace_transport = 1
 
 let s:python_dir = fnamemodify(expand("<sfile>"), ':p:h:h:h') . '/pythonx'
 if !exists('g:fireplace_python_executable')
-  let g:fireplace_python_executable = executable('python3') ? 'python3' : 'python'
+  if has('win32')
+    let g:fireplace_python_executable = 'python'
+  else
+    let g:fireplace_python_executable = executable('python3') ? 'python3' : 'python'
+  endif
 endif
 
 if !exists('s:id')
