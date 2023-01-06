@@ -675,7 +675,7 @@ function! s:piggieback(count, arg, remove) abort
 endfunction
 
 function! s:set_up_connect() abort
-  command! -buffer -bang -bar -complete=customlist,fireplace#connect_complete -nargs=*
+  command! -buffer -bang -bar -complete=customlist,fireplace#ConnectComplete -nargs=*
         \ Connect FireplaceConnect<bang> <args>
   command! -buffer -bang -range=-1 -complete=customlist,fireplace#eval_complete -nargs=*
         \ Piggieback exe s:piggieback(<count>, <q-args>, <bang>0)
