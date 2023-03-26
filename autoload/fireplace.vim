@@ -1217,25 +1217,13 @@ function! s:qfhistory() abort
   return list
 endfunction
 
-function! s:echon(state, str, ...) abort
+function! s:echon(state, str, hlgroup) abort
   let str = get(a:state, 'echo_buffer', '') . a:str
   let a:state.echo_buffer = matchstr(str, "\n$")
   if get(a:state, 'echo', v:true)
-    if a:0 > 1
-      exe 'echohl' a:2
-    endif
+    exe 'echohl' a:hlgroup
     echon len(a:state.echo_buffer) ? str[0:-2] : str
     echohl NONE
-  endif
-  if has_key(a:state.history, 'tempfile')
-    let lines = split(a:str, "\n", 1)
-    if a:0
-      call map(lines, 'a:1 . v:val')
-      if get(lines, -1) is# a:1
-        let lines[-1] = ''
-      endif
-    endif
-    call writefile(lines, a:state.history.tempfile, 'ab')
   endif
 endfunction
 
@@ -1248,15 +1236,15 @@ function! s:eval_callback(state, delegates, message) abort
     let a:state.ns = a:message.ns
   endif
   if has_key(a:message, 'out')
-    call s:echon(a:state, a:message.out, ';=', 'Question')
+    call s:echon(a:state, a:message.out, 'Question')
   endif
   if has_key(a:message, 'err')
-    call s:echon(a:state, a:message.err, ';!', 'WarningMsg')
+    call s:echon(a:state, a:message.err, 'WarningMsg')
   endif
   if has_key(a:message, 'value')
-    call s:echon(a:state, a:message.value)
+    call s:echon(a:state, a:message.value, 'NONE')
     if has_key(a:message, 'ns')
-      call s:echon(a:state, "\n")
+      call s:echon(a:state, "\n", 'NONE')
     endif
   endif
 
@@ -1278,6 +1266,18 @@ function! s:eval_callback(state, delegates, message) abort
       endif
     endif
     let a:state.history.response = fireplace#transport#combine(a:state.history.messages)
+    let response = a:state.history.response
+    let buffer = []
+    for [prefix, value] in [[';!', get(response, 'err', '')], [';=', get(response, 'out', '')]] +
+          \ map(copy(get(response, 'value', [])), { _, v -> ['', v]})
+      let lines = split(value, "\n", 1)
+      if empty(lines[-1])
+        call remove(lines, -1)
+      endif
+      let buffer += map(lines, 'prefix . v:val')
+    endfor
+    call add(buffer, '')
+    call writefile(buffer, a:state.history.tempfile, 'b')
     call insert(s:history, a:state.history)
     if len(s:history) > &history
       call remove(s:history, &history, -1)
