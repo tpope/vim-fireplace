@@ -8,7 +8,7 @@ let g:autoloaded_fireplace_transport = 1
 
 let s:python_dir = fnamemodify(expand("<sfile>"), ':p:h:h:h') . '/pythonx'
 if !exists('g:fireplace_python_executable')
-  let g:fireplace_python_executable = executable('python3') ? 'python3' : 'python'
+  let g:fireplace_python_executable = exepath('python3') =~? '^$\|\<appinstallerpythonredirector\.exe$' && executable('python') ? 'python' : 'python3'
 endif
 
 if !exists('s:id')
