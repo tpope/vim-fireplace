@@ -93,17 +93,22 @@ def quickfix(t, e, tb):
     return {'title': str(e), 'items': items}
 
 class Connection:
-    def __init__(self, host, port, keepalive_file=None):
+    def __init__(self, host, port, keepalive_file=None, socket_type=socket.AF_INET, socket_path=None):
         self.keepalive_file = keepalive_file
         self.connected = False
         self.host = host
-        self.port = int(port)
+        self.port = int(port) if port else None
+        self.socket_path = socket_path
+        self.socket_type = socket_type
 
     def socket(self):
         if not self.connected:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s = socket.socket(self.socket_type, socket.SOCK_STREAM)
             s.settimeout(8)
-            s.connect((self.host, self.port))
+            if self.socket_type == socket.AF_UNIX:
+                s.connect(self.socket_path)
+            else:
+                s.connect((self.host, self.port))
             s.setblocking(1)
             self._socket = s
             self.connected = True
@@ -178,11 +183,15 @@ class Connection:
 
 def main(host = None, port = None, *args):
     try:
-        match = re.search('//([^:/@]+)(?::(\d+))?', host)
-        if match:
-            host = match.groups()[0]
-            port = match.groups()[1]
-        conn = Connection(host, int(port or 7888))
+        if re.fullmatch('nrepl\+unix:.*', host):
+            socket_path = re.sub('^nrepl\+unix:', '', host)
+            conn = Connection(None, None, socket_path=socket_path, socket_type=socket.AF_UNIX)
+        else:
+            match = re.search('//([^:/@]+)(?::(\d+))?', host)
+            if match:
+                host = match.groups()[0]
+                port = match.groups()[1]
+            conn = Connection(host, int(port or 7888))
         try:
             conn.tunnel()
         finally:
