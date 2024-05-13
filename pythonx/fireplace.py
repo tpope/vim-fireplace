@@ -2,6 +2,7 @@ import json
 import os
 import re
 import socket
+import stat
 import sys
 import traceback
 import threading
@@ -92,18 +93,39 @@ def quickfix(t, e, tb):
             'text': line})
     return {'title': str(e), 'items': items}
 
+
+def parse_dest(dest):
+    match = re.search('//([^:/@]+)(?::(\d+))?', dest)
+    if match is not None:
+        host = match.groups()[0]
+        port = match.groups()[1]
+        return (None, host, int(port or 7888))
+    elif os.path.exists(dest) and stat.S_ISSOCK(os.stat(dest).st_mode):
+        return (dest, None, None)
+    else:
+        raise ValueError("Connection string must be a URL or a path to a socket file")
+
+
 class Connection:
-    def __init__(self, host, port, keepalive_file=None):
+    def __init__(self, dest, keepalive_file=None):
+        parsed_dest = parse_dest(dest)
+        (path, host, port) = parse_dest(dest)
+        self.path = path
+        self.host = host
+        self.port = port
         self.keepalive_file = keepalive_file
         self.connected = False
-        self.host = host
-        self.port = int(port)
 
     def socket(self):
         if not self.connected:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(8)
-            s.connect((self.host, self.port))
+            if self.path:
+                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                s.settimeout(8)
+                s.connect(self.path)
+            else:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(8)
+                s.connect((self.host, self.port))
             s.setblocking(1)
             self._socket = s
             self.connected = True
@@ -176,13 +198,10 @@ class Connection:
             self.notify(["exception", quickfix(*sys.exc_info())])
             os._exit(3)
 
-def main(host = None, port = None, *args):
+
+def main(dest = None, *args):
     try:
-        match = re.search('//([^:/@]+)(?::(\d+))?', host)
-        if match:
-            host = match.groups()[0]
-            port = match.groups()[1]
-        conn = Connection(host, int(port or 7888))
+        conn = Connection(dest)
         try:
             conn.tunnel()
         finally:
