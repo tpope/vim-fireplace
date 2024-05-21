@@ -168,35 +168,24 @@ augroup fireplace_transport
         \ | endfor
 augroup END
 
-function! fireplace#transport#connect(arg) abort
-  let url = substitute(a:arg, '#.*', '', '')
-  if url =~# '^\d\+$'
-    let url = 'nrepl://localhost:' . url
-  elseif url =~# '^[^:/@]\+\(:\d\+\)\=$'
-    let url = 'nrepl://' . url
-  elseif url !~# '^\a\+://'
-    throw "Fireplace: invalid connection string " . string(a:arg)
+function! fireplace#transport#connect(str, scheme) abort
+  if has_key(s:urls, a:str)
+    return s:urls[a:str].transport
   endif
-  let url = substitute(url, '^\a\+://[^/]*\zs$', '/', '')
-  let url = substitute(url, '^nrepl://[^/:]*\zs/', ':7888/', '')
-  if has_key(s:urls, url)
-    return s:urls[url].transport
-  endif
-  let scheme = matchstr(url, '^\a\+')
-  if scheme ==# 'nrepl'
+  if a:scheme ==# 'nrepl'
     let command = [g:fireplace_python_executable, s:python_dir.'/fireplace.py']
-  elseif exists('g:fireplace_argv_' . scheme)
-    let command = g:fireplace_argv_{scheme}
+  elseif exists('g:fireplace_argv_' . a:scheme)
+    let command = g:fireplace_argv_{a:scheme}
   else
-    throw 'Fireplace: unsupported protocol ' . scheme
+    throw 'Fireplace: unsupported protocol ' . a:scheme
   endif
   let transport = deepcopy(s:transport)
-  let transport.url = url
+  let transport.url = a:str
   let transport.state = {}
   let transport.sessions = {}
   let transport.requests = {}
-  let cb_args = [url, transport.state, transport.requests, transport.sessions]
-  let transport.job = s:json_start(command + [url], function('s:json_callback', cb_args), function('s:exit_callback', cb_args))
+  let cb_args = [a:str, transport.state, transport.requests, transport.sessions]
+  let transport.job = s:json_start(command + [a:str], function('s:json_callback', cb_args), function('s:exit_callback', cb_args))
   while !has_key(transport.state, 'status') && transport.Alive()
     sleep 1m
   endwhile
