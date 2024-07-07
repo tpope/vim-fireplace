@@ -96,9 +96,9 @@ K                       Look up the doc, javadoc, or spec-form for the
                                                 *fireplace-:Source*
 :Source {symbol}        Show the source for the given symbol.
 
-                                                *fireplace-[d*
-[d                      Show source for symbol under cursor.
-]d
+                                                *fireplace-[D*
+[D                      Show source for symbol under cursor.
+]D
 
 NAVIGATING                                      *fireplace-navigating*
 

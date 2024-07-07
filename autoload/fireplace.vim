@@ -2433,8 +2433,10 @@ function! s:set_up_doc() abort
   setlocal keywordprg=:Doc
 
   call s:map('n', 'K', '<Plug>FireplaceK', '<unique>')
-  call s:map('n', '[d', '<Plug>FireplaceSource')
-  call s:map('n', ']d', '<Plug>FireplaceSource')
+  call s:map('n', '[D', '<Plug>FireplaceSource')
+  call s:map('n', ']D', '<Plug>FireplaceSource')
+  call s:map('n', '[d', '<Plug>FireplaceSource', '<unique>')
+  call s:map('n', ']d', '<Plug>FireplaceSource', '<unique>')
 endfunction
 
 " Section: Tests
