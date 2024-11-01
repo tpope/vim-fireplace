@@ -2540,7 +2540,7 @@ function! s:RunTests(bang, count, ...) abort
     else
       let args = [fireplace#ns()]
       if a:count
-        let pattern = '^\s*(def\k*\s\+\(\h\k*\)'
+        let pattern = '^\s*(\%(\h\k*/\)\=def\k*\s\+\%(\^:\h\k*\s\+\)*\(\h\k*\)'
         let line = search(pattern, 'bcWn')
         if line
           let args[0] .= '/' . matchlist(getline(line), pattern)[1]
